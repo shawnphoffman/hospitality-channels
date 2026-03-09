@@ -1,13 +1,13 @@
-import { mkdirSync } from "node:fs";
-import path from "node:path";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
-const dbPath = process.env.DATABASE_URL ?? "data/guest-tv-pages.db";
+const dbUrl = process.env.DATABASE_URL
+  ? `file:${process.env.DATABASE_URL}`
+  : "file:data/guest-tv-pages.db";
 
-const CREATE_TABLES_SQL = `
-  CREATE TABLE IF NOT EXISTS templates (
+const CREATE_TABLES_SQL = [
+  `CREATE TABLE IF NOT EXISTS templates (
     id TEXT PRIMARY KEY,
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
@@ -17,16 +17,16 @@ const CREATE_TABLES_SQL = `
     preview_image TEXT,
     version INTEGER DEFAULT 1,
     status TEXT NOT NULL DEFAULT 'active'
-  );
-  CREATE TABLE IF NOT EXISTS rooms (
+  )`,
+  `CREATE TABLE IF NOT EXISTS rooms (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     default_channel_profile_id TEXT,
     default_theme_id TEXT,
     notes TEXT
-  );
-  CREATE TABLE IF NOT EXISTS guests (
+  )`,
+  `CREATE TABLE IF NOT EXISTS guests (
     id TEXT PRIMARY KEY,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
@@ -34,8 +34,8 @@ const CREATE_TABLES_SQL = `
     arrival_date TEXT,
     departure_date TEXT,
     notes TEXT
-  );
-  CREATE TABLE IF NOT EXISTS pages (
+  )`,
+  `CREATE TABLE IF NOT EXISTS pages (
     id TEXT PRIMARY KEY,
     template_id TEXT NOT NULL REFERENCES templates(id),
     slug TEXT NOT NULL,
@@ -49,8 +49,8 @@ const CREATE_TABLES_SQL = `
     status TEXT NOT NULL DEFAULT 'draft',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS assets (
+  )`,
+  `CREATE TABLE IF NOT EXISTS assets (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
     original_path TEXT NOT NULL,
@@ -60,8 +60,8 @@ const CREATE_TABLES_SQL = `
     duration REAL,
     tags TEXT,
     checksum TEXT
-  );
-  CREATE TABLE IF NOT EXISTS publish_profiles (
+  )`,
+  `CREATE TABLE IF NOT EXISTS publish_profiles (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     export_path TEXT NOT NULL,
@@ -69,8 +69,8 @@ const CREATE_TABLES_SQL = `
     lineup_type TEXT,
     room_scope TEXT,
     file_naming_pattern TEXT
-  );
-  CREATE TABLE IF NOT EXISTS published_artifacts (
+  )`,
+  `CREATE TABLE IF NOT EXISTS published_artifacts (
     id TEXT PRIMARY KEY,
     page_id TEXT NOT NULL REFERENCES pages(id),
     publish_profile_id TEXT NOT NULL REFERENCES publish_profiles(id),
@@ -80,8 +80,8 @@ const CREATE_TABLES_SQL = `
     render_version TEXT,
     status TEXT NOT NULL DEFAULT 'published',
     published_at TEXT
-  );
-  CREATE TABLE IF NOT EXISTS channel_definitions (
+  )`,
+  `CREATE TABLE IF NOT EXISTS channel_definitions (
     id TEXT PRIMARY KEY,
     channel_number INTEGER NOT NULL,
     channel_name TEXT NOT NULL,
@@ -90,32 +90,25 @@ const CREATE_TABLES_SQL = `
     description TEXT,
     poster_asset_id TEXT REFERENCES assets(id),
     enabled INTEGER NOT NULL DEFAULT 1
-  );
-`;
+  )`,
+];
 
-function createDb() {
-  const dir = path.dirname(dbPath);
-  mkdirSync(dir, { recursive: true });
-  const sqlite = new Database(dbPath);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.exec(CREATE_TABLES_SQL);
-  return drizzle(sqlite, { schema });
-}
+const client = createClient({ url: dbUrl });
 
-let _db: ReturnType<typeof createDb> | undefined;
+let initialized = false;
 
-export function getDb() {
-  if (!_db) {
-    _db = createDb();
+async function ensureTables() {
+  if (initialized) return;
+  for (const sql of CREATE_TABLES_SQL) {
+    await client.execute(sql);
   }
-  return _db;
+  initialized = true;
 }
 
-export const db = new Proxy({} as ReturnType<typeof createDb>, {
-  get(_target, prop) {
-    const instance = getDb();
-    return (instance as unknown as Record<string | symbol, unknown>)[prop];
-  },
+// Eagerly create tables on module load
+ensureTables().catch((err) => {
+  console.error("Failed to initialize database tables:", err);
 });
 
+export const db = drizzle(client, { schema });
 export { schema };

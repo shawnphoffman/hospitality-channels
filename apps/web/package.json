@@ -16,7 +16,7 @@
     "@hospitality-channels/templates": "workspace:*",
     "@hospitality-channels/publish": "workspace:*",
     "@hospitality-channels/ui": "workspace:*",
-    "better-sqlite3": "^11.6.0",
+    "@libsql/client": "^0.14.0",
     "drizzle-orm": "^0.36.1",
     "next": "^14.2.18",
     "react": "^18.3.1",
@@ -24,7 +24,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

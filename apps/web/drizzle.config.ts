@@ -5,6 +5,8 @@ export default {
   out: "./drizzle",
   dialect: "sqlite",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "data/guest-tv-pages.db",
+    url: process.env.DATABASE_URL
+      ? `file:${process.env.DATABASE_URL}`
+      : "file:data/guest-tv-pages.db",
   },
 } satisfies Config;
