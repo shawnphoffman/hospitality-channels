@@ -32,7 +32,6 @@ function Sidebar() {
     { href: "/pages", label: "Pages" },
     { href: "/templates", label: "Templates" },
     { href: "/rooms", label: "Rooms" },
-    { href: "/guests", label: "Guests" },
     { href: "/assets", label: "Assets" },
     { href: "/publish", label: "Publish" },
     { href: "/settings", label: "Settings" },

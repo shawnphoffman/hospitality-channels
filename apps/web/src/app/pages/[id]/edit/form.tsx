@@ -18,7 +18,6 @@ interface PageData {
   slug: string;
   templateId: string;
   roomId: string | null;
-  guestId: string | null;
   dataJson: Record<string, string>;
   defaultDurationSec: number;
   status: string;
@@ -30,7 +29,6 @@ interface EditPageFormProps {
   templateSlug: string;
   fields: TemplateField[];
   rooms: Array<{ id: string; name: string }>;
-  guests: Array<{ id: string; name: string }>;
 }
 
 export function EditPageForm({
@@ -39,14 +37,12 @@ export function EditPageForm({
   templateSlug,
   fields,
   rooms,
-  guests,
 }: EditPageFormProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState(page.title);
   const [slug, setSlug] = useState(page.slug);
   const [roomId, setRoomId] = useState(page.roomId ?? "");
-  const [guestId, setGuestId] = useState(page.guestId ?? "");
   const [status, setStatus] = useState(page.status);
   const [durationSec, setDurationSec] = useState(page.defaultDurationSec);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(
@@ -89,7 +85,6 @@ export function EditPageForm({
           title,
           slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
           roomId: roomId || null,
-          guestId: guestId || null,
           dataJson: fieldValues,
           defaultDurationSec: durationSec,
           status,
@@ -182,43 +177,23 @@ export function EditPageForm({
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="room" className="block text-sm text-slate-400">
-                Room
-              </label>
-              <select
-                id="room"
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">None</option>
-                {rooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="guest" className="block text-sm text-slate-400">
-                Guest
-              </label>
-              <select
-                id="guest"
-                value={guestId}
-                onChange={(e) => setGuestId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">None</option>
-                {guests.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label htmlFor="room" className="block text-sm text-slate-400">
+              Room
+            </label>
+            <select
+              id="room"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+            >
+              <option value="">None</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

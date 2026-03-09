@@ -42,7 +42,6 @@ export async function PUT(
       title: body.title ?? existing.title,
       slug: body.slug ?? existing.slug,
       roomId: body.roomId !== undefined ? body.roomId : existing.roomId,
-      guestId: body.guestId !== undefined ? body.guestId : existing.guestId,
       themeId: body.themeId !== undefined ? body.themeId : existing.themeId,
       dataJson: body.dataJson ?? existing.dataJson,
       animationProfile: body.animationProfile !== undefined ? body.animationProfile : existing.animationProfile,

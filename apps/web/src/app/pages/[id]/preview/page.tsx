@@ -29,16 +29,6 @@ export default async function PreviewPage({
 
   const registryTemplate = getTemplateBySlug(dbTemplate.slug);
 
-  let guest: { displayName: string | null; firstName: string; lastName: string } | null = null;
-  if (page.guestId) {
-    const [g] = await db
-      .select()
-      .from(schema.guests)
-      .where(eq(schema.guests.id, page.guestId))
-      .limit(1);
-    if (g) guest = g;
-  }
-
   let room: { name: string } | null = null;
   if (page.roomId) {
     const [r] = await db
@@ -63,7 +53,6 @@ export default async function PreviewPage({
       templateSlug={dbTemplate.slug}
       templateName={dbTemplate.name ?? registryTemplate?.name ?? "Unknown"}
       data={dataJson}
-      guest={guest ? { name: guest.displayName || `${guest.firstName} ${guest.lastName}` } : null}
       room={room}
     />
   );

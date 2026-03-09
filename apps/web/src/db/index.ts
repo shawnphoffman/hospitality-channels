@@ -26,22 +26,12 @@ const CREATE_TABLES_SQL = [
     default_theme_id TEXT,
     notes TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS guests (
-    id TEXT PRIMARY KEY,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    display_name TEXT,
-    arrival_date TEXT,
-    departure_date TEXT,
-    notes TEXT
-  )`,
   `CREATE TABLE IF NOT EXISTS pages (
     id TEXT PRIMARY KEY,
     template_id TEXT NOT NULL REFERENCES templates(id),
     slug TEXT NOT NULL,
     title TEXT NOT NULL,
     room_id TEXT REFERENCES rooms(id),
-    guest_id TEXT REFERENCES guests(id),
     theme_id TEXT,
     data_json TEXT DEFAULT '{}',
     animation_profile TEXT,

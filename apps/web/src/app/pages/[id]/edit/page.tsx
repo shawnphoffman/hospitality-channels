@@ -39,7 +39,6 @@ export default async function EditPage({
   }>);
 
   const rooms = await db.select().from(schema.rooms);
-  const guests = await db.select().from(schema.guests);
 
   return (
     <div>
@@ -51,7 +50,6 @@ export default async function EditPage({
           slug: page.slug,
           templateId: page.templateId,
           roomId: page.roomId,
-          guestId: page.guestId,
           dataJson: (page.dataJson ?? {}) as Record<string, string>,
           defaultDurationSec: page.defaultDurationSec ?? 30,
           status: page.status,
@@ -60,10 +58,6 @@ export default async function EditPage({
         templateSlug={dbTemplate.slug}
         fields={fields}
         rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
-        guests={guests.map((g) => ({
-          id: g.id,
-          name: g.displayName || `${g.firstName} ${g.lastName}`,
-        }))}
       />
     </div>
   );

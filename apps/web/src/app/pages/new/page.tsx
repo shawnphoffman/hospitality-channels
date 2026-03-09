@@ -11,7 +11,6 @@ export default async function NewPagePage({
 }) {
   const templates = getTemplateRegistry();
   const rooms = await db.select().from(schema.rooms);
-  const guests = await db.select().from(schema.guests);
   const dbTemplates = await db.select().from(schema.templates);
 
   const templateOptions = templates.map((t) => {
@@ -40,10 +39,6 @@ export default async function NewPagePage({
       <CreatePageForm
         templates={templateOptions}
         rooms={rooms.map((r) => ({ id: r.id, name: r.name, slug: r.slug }))}
-        guests={guests.map((g) => ({
-          id: g.id,
-          name: g.displayName || `${g.firstName} ${g.lastName}`,
-        }))}
         preselectedTemplate={preselectedSlug}
       />
     </div>

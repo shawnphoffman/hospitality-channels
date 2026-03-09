@@ -18,7 +18,6 @@ export const pageSchema = z.object({
   slug: z.string(),
   title: z.string(),
   roomId: z.string().optional().nullable(),
-  guestId: z.string().optional().nullable(),
   themeId: z.string().optional().nullable(),
   dataJson: z.record(z.unknown()).default({}),
   animationProfile: z.string().optional(),
@@ -34,16 +33,6 @@ export const roomSchema = z.object({
   slug: z.string(),
   defaultChannelProfileId: z.string().optional().nullable(),
   defaultThemeId: z.string().optional().nullable(),
-  notes: z.string().optional(),
-});
-
-export const guestSchema = z.object({
-  id: z.string().optional(),
-  firstName: z.string(),
-  lastName: z.string(),
-  displayName: z.string().optional(),
-  arrivalDate: z.string().optional().nullable(),
-  departureDate: z.string().optional().nullable(),
   notes: z.string().optional(),
 });
 
@@ -95,7 +84,6 @@ export const channelDefinitionSchema = z.object({
 export type Template = z.infer<typeof templateSchema>;
 export type Page = z.infer<typeof pageSchema>;
 export type Room = z.infer<typeof roomSchema>;
-export type Guest = z.infer<typeof guestSchema>;
 export type Asset = z.infer<typeof assetSchema>;
 export type PublishProfile = z.infer<typeof publishProfileSchema>;
 export type PublishedArtifact = z.infer<typeof publishedArtifactSchema>;

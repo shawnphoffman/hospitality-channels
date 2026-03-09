@@ -20,7 +20,6 @@ export const pages = sqliteTable("pages", {
   slug: text("slug").notNull(),
   title: text("title").notNull(),
   roomId: text("room_id").references(() => rooms.id),
-  guestId: text("guest_id").references(() => guests.id),
   themeId: text("theme_id"),
   dataJson: text("data_json", { mode: "json" }).default({}),
   animationProfile: text("animation_profile"),
@@ -36,16 +35,6 @@ export const rooms = sqliteTable("rooms", {
   slug: text("slug").notNull().unique(),
   defaultChannelProfileId: text("default_channel_profile_id"),
   defaultThemeId: text("default_theme_id"),
-  notes: text("notes"),
-});
-
-export const guests = sqliteTable("guests", {
-  id: text("id").primaryKey(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  displayName: text("display_name"),
-  arrivalDate: text("arrival_date"),
-  departureDate: text("departure_date"),
   notes: text("notes"),
 });
 

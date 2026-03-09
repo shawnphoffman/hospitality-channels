@@ -13,7 +13,6 @@ interface PreviewClientProps {
   templateSlug: string;
   templateName: string;
   data: Record<string, string>;
-  guest: { name: string } | null;
   room: { name: string } | null;
 }
 
@@ -25,7 +24,6 @@ export function PreviewClient({
   templateSlug,
   templateName,
   data,
-  guest,
   room,
 }: PreviewClientProps) {
   const [showSafeArea, setShowSafeArea] = useState(false);
@@ -115,7 +113,7 @@ export function PreviewClient({
               {/* TV Scene content */}
               <div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: "#0f172a" }}>
                 {templateSlug === "welcome" && (
-                  <WelcomeScene data={data} guest={guest} room={room} renderMode={renderMode} />
+                  <WelcomeScene data={data} room={room} renderMode={renderMode} />
                 )}
                 {templateSlug === "house-guide" && (
                   <HouseGuideScene data={data} renderMode={renderMode} />
@@ -148,16 +146,14 @@ export function PreviewClient({
 
 function WelcomeScene({
   data,
-  guest,
   room,
   renderMode,
 }: {
   data: Record<string, string>;
-  guest: { name: string } | null;
   room: { name: string } | null;
   renderMode: boolean;
 }) {
-  const guestName = data.guestName || guest?.name || "Guest";
+  const guestName = data.guestName || "Guest";
   const welcomeMessage = data.welcomeMessage || "Welcome to your home away from home!";
   const wifiSsid = data.wifiSsid;
   const wifiPassword = data.wifiPassword;
