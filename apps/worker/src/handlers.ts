@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { createLogger } from "@hospitality-channels/common";
-import { capturePageVideo, normalizeVideo } from "@hospitality-channels/render-core";
+import { capturePageVideo } from "@hospitality-channels/render-core";
 import { publishArtifact } from "@hospitality-channels/publish";
 import { db, publishedArtifacts } from "./db.js";
 import type { Job } from "./queue.js";
@@ -37,30 +37,18 @@ export async function handleRenderJob(job: Job): Promise<string> {
   const now = new Date();
   const ts = now.toISOString().replace(/[:T]/g, "-").replace(/\.\d+Z$/, "");
   const outputDir = path.resolve(RENDER_OUTPUT_DIR);
-  const rawPath = path.join(outputDir, `raw-${slug}-${Date.now()}.webm`);
   const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`);
 
   logger.info("Starting render", { pageId, url: payload.url, durationSec: payload.durationSec });
 
   const captureResult = await capturePageVideo({
     url: payload.url,
-    outputPath: rawPath,
+    outputPath: finalPath,
     durationSec: payload.durationSec,
   });
 
   if (!captureResult.success) {
     throw new Error(`Capture failed: ${captureResult.error}`);
-  }
-
-  const normalizeResult = await normalizeVideo({
-    inputPath: captureResult.outputPath,
-    outputPath: finalPath,
-    trimSec: captureResult.trimSec,
-    durationSec: payload.durationSec,
-  });
-
-  if (!normalizeResult.success) {
-    throw new Error(`FFmpeg normalization failed: ${normalizeResult.error}`);
   }
 
   logger.info("Render complete", { pageId, outputPath: finalPath });

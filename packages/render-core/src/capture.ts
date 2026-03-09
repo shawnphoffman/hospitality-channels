@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import path from "node:path";
 import { chromium } from "playwright";
 import { RENDER_DEFAULTS, RENDER_RESOLUTION, createLogger } from "@hospitality-channels/common";
@@ -26,12 +27,14 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
     url,
     outputPath,
     durationSec = RENDER_DEFAULTS.durationSec,
+    fps = RENDER_DEFAULTS.fps,
     width = RENDER_RESOLUTION.width,
     height = RENDER_RESOLUTION.height,
   } = options;
 
   const outputDir = path.dirname(outputPath);
-  await import("node:fs/promises").then((fs) => fs.mkdir(outputDir, { recursive: true }));
+  const fs = await import("node:fs/promises");
+  await fs.mkdir(outputDir, { recursive: true });
 
   const browser = await chromium.launch({
     headless: true,
@@ -39,79 +42,91 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
   });
 
   try {
-    // Phase 1: Pre-warm — load the page without recording so everything
-    // (network, React hydration, fonts, images) is cached and settled.
-    const warmupCtx = await browser.newContext({
+    const ctx = await browser.newContext({
       viewport: { width, height },
       deviceScaleFactor: 1,
     });
-    const warmupPage = await warmupCtx.newPage();
-    warmupPage.addInitScript(() => {
+
+    const page = await ctx.newPage();
+    page.addInitScript(() => {
       (window as unknown as { __RENDER_MODE__: boolean }).__RENDER_MODE__ = true;
     });
 
-    await warmupPage.goto(url, { waitUntil: "networkidle", timeout: 30000 });
-    await warmupPage.evaluate(() => document.fonts.ready);
-    // Give React/CSS a beat to fully paint
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+    await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() =>
+      new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    );
 
-    logger.info("Pre-warm complete, starting recording", { url });
-    await warmupCtx.close();
-
-    // Phase 2: Record — the browser cache is warm so the page loads near-instantly.
-    const recordStartedAt = Date.now();
-    const recordCtx = await browser.newContext({
-      viewport: { width, height },
-      deviceScaleFactor: 1,
-      recordVideo: {
-        dir: outputDir,
-        size: { width, height },
-      },
-    });
-
-    const recordPage = await recordCtx.newPage();
-    recordPage.addInitScript(() => {
-      (window as unknown as { __RENDER_MODE__: boolean }).__RENDER_MODE__ = true;
-    });
-
-    await recordPage.goto(url, { waitUntil: "networkidle", timeout: 30000 });
-    await recordPage.evaluate(() => document.fonts.ready);
-
-    // Wait for a full paint frame before counting the capture duration
-    await recordPage.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-    await recordPage.evaluate(() => {
+    await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("render-start"));
     });
 
-    const loadTimeMs = Date.now() - recordStartedAt;
-    const SAFETY_MARGIN_SEC = 0.5;
-    const trimSec = Math.ceil(loadTimeMs / 1000) + SAFETY_MARGIN_SEC;
+    // Let any enter-animations / initial paints settle
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-    logger.info("Page ready for recording", { loadTimeMs, trimSec });
+    const screenshotPath = path.join(outputDir, `_frame-${Date.now()}.png`);
+    await page.screenshot({ path: screenshotPath, type: "png" });
+    logger.info("Screenshot captured", { url, screenshotPath });
 
-    const bufferSec = Math.ceil(trimSec) + 1;
-    const durationMs = (durationSec + bufferSec) * 1000;
-    await new Promise((resolve) => setTimeout(resolve, durationMs));
+    await ctx.close();
 
-    const video = recordPage.video();
-    if (!video) {
-      await recordCtx.close();
-      return { outputPath: "", durationSec: 0, trimSec: 0, success: false, error: "No video recorded" };
+    // Use FFmpeg to loop the single frame into a video of the requested duration
+    const ffmpegResult = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      const proc = spawn("ffmpeg", [
+        "-y",
+        "-loop", "1",
+        "-framerate", String(fps),
+        "-i", screenshotPath,
+        "-c:v", "libx264",
+        "-preset", "slow",
+        "-crf", "18",
+        "-tune", "stillimage",
+        "-t", String(durationSec),
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        outputPath,
+      ], {
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+
+      let stderr = "";
+      proc.stderr?.on("data", (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      proc.on("close", (code) => {
+        if (code === 0) {
+          resolve({ success: true });
+        } else {
+          resolve({ success: false, error: stderr.slice(-500) });
+        }
+      });
+
+      proc.on("error", (err) => {
+        resolve({ success: false, error: err.message });
+      });
+    });
+
+    // Clean up the temporary screenshot
+    await fs.unlink(screenshotPath).catch(() => {});
+
+    if (!ffmpegResult.success) {
+      return {
+        outputPath: "",
+        durationSec: 0,
+        trimSec: 0,
+        success: false,
+        error: `FFmpeg encoding failed: ${ffmpegResult.error}`,
+      };
     }
 
-    const recordedPath = await video.path();
-    await recordCtx.close();
-
-    if (!recordedPath) {
-      return { outputPath: "", durationSec: 0, trimSec: 0, success: false, error: "Video path not available" };
-    }
-
-    logger.info("Capture complete", { url, durationSec, trimSec, recordedPath });
+    logger.info("Capture complete", { url, durationSec, outputPath });
 
     return {
-      outputPath: recordedPath,
+      outputPath,
       durationSec,
-      trimSec,
+      trimSec: 0,
       success: true,
     };
   } catch (err) {
