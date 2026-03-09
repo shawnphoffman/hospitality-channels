@@ -1,4 +1,6 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { createLogger } from "@hospitality-channels/common";
 import { capturePageVideo, normalizeVideo } from "@hospitality-channels/render-core";
@@ -6,13 +8,17 @@ import { publishArtifact } from "@hospitality-channels/publish";
 import { db, publishedArtifacts } from "./db.js";
 import type { Job } from "./queue.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = resolve(__dirname, "../../..");
+
 const logger = createLogger("worker:handlers");
 
 function generateId(): string {
   return randomBytes(12).toString("hex");
 }
 
-const RENDER_OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || "./renders";
+const RENDER_OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || resolve(projectRoot, "renders");
 
 export async function handleRenderJob(job: Job): Promise<string> {
   const payload = job.payload as {

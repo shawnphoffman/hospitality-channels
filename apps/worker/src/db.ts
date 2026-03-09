@@ -1,10 +1,17 @@
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = resolve(__dirname, "../../..");
+const defaultDbPath = resolve(projectRoot, "apps/web/data/guest-tv-pages.db");
+
 const dbUrl = process.env.DATABASE_URL
   ? `file:${process.env.DATABASE_URL}`
-  : "file:../../apps/web/data/guest-tv-pages.db";
+  : `file:${defaultDbPath}`;
 
 const client = createClient({ url: dbUrl });
 
