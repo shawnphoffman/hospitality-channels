@@ -30,6 +30,8 @@ export async function normalizeVideo(options: FFmpegNormalizeOptions): Promise<{
   return new Promise((resolve) => {
     const args = [
       "-y",
+      "-ss",
+      "0.5",
       "-i",
       inputPath,
       "-vf",
