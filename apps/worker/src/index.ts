@@ -4,39 +4,48 @@ import { handleRenderJob, handlePublishJob } from "./handlers.js";
 
 const logger = createLogger("worker");
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS) || 2000;
 let running = true;
 
 async function processNextJob(): Promise<boolean> {
-  const job = dequeue();
+  const job = await dequeue();
   if (!job) return false;
 
   try {
+    let outputPath: string | undefined;
+
     switch (job.type) {
       case "render":
-        await handleRenderJob(job);
+        outputPath = await handleRenderJob(job);
         break;
       case "publish":
-        await handlePublishJob(job);
+        outputPath = await handlePublishJob(job);
         break;
       default:
         throw new Error(`Unknown job type: ${job.type}`);
     }
-    completeJob(job.id);
+
+    await completeJob(job.id, outputPath);
     return true;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    failJob(job.id, msg);
+    logger.error("Job processing failed", { jobId: job.id, type: job.type, error: msg });
+    await failJob(job.id, msg);
     return true;
   }
 }
 
 async function run(): Promise<void> {
-  logger.info("Worker started");
+  logger.info("Worker started, polling for jobs...");
 
   while (running) {
-    const processed = await processNextJob();
-    if (!processed) {
+    try {
+      const processed = await processNextJob();
+      if (!processed) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+      }
+    } catch (err) {
+      logger.error("Unexpected error in job loop", { error: String(err) });
       await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
     }
   }

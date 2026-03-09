@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { db, schema } from "@/db";
+import { generateId } from "@/lib/id";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -8,16 +11,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "pageId is required" }, { status: 400 });
   }
 
-  // MVP: enqueue a render job (in-memory for now)
-  // In production, this would push to a job queue consumed by the worker
+  const [page] = await db
+    .select()
+    .from(schema.pages)
+    .where(eq(schema.pages.id, pageId))
+    .limit(1);
+
+  if (!page) {
+    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  }
+
+  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  const previewUrl = `${appUrl}/pages/${pageId}/preview?render=true`;
+
   const job = {
-    id: `render-${Date.now().toString(36)}`,
+    id: generateId(),
+    type: "render",
     pageId,
-    durationSec: durationSec ?? 30,
-    status: "queued" as const,
+    profileId: null,
+    payload: {
+      url: previewUrl,
+      durationSec: durationSec ?? page.defaultDurationSec ?? 30,
+      pageTitle: page.title,
+      pageSlug: page.slug,
+    },
+    status: "queued",
+    outputPath: null,
+    error: null,
     createdAt: new Date().toISOString(),
+    startedAt: null,
+    completedAt: null,
   };
 
-  // TODO: integrate with actual job queue / worker
+  await db.insert(schema.jobs).values(job);
+
   return NextResponse.json(job, { status: 202 });
 }

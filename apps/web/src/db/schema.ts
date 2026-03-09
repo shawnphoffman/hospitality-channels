@@ -76,6 +76,20 @@ export const publishedArtifacts = sqliteTable("published_artifacts", {
   publishedAt: text("published_at"),
 });
 
+export const jobs = sqliteTable("jobs", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  pageId: text("page_id").references(() => pages.id),
+  profileId: text("profile_id").references(() => publishProfiles.id),
+  payload: text("payload", { mode: "json" }).default({}),
+  status: text("status").notNull().default("queued"),
+  outputPath: text("output_path"),
+  error: text("error"),
+  createdAt: text("created_at").notNull(),
+  startedAt: text("started_at"),
+  completedAt: text("completed_at"),
+});
+
 export const channelDefinitions = sqliteTable("channel_definitions", {
   id: text("id").primaryKey(),
   channelNumber: integer("channel_number").notNull(),

@@ -1,71 +1,81 @@
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
+import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { PublishWorkflow } from "./publish-workflow";
 
 export default async function PublishPage() {
   const profiles = await db.select().from(schema.publishProfiles);
-  const artifacts = await db.select().from(schema.publishedArtifacts);
+  const artifacts = await db
+    .select()
+    .from(schema.publishedArtifacts)
+    .orderBy(desc(schema.publishedArtifacts.publishedAt));
+
+  const renderJobs = await db
+    .select()
+    .from(schema.jobs)
+    .where(eq(schema.jobs.type, "render"))
+    .orderBy(desc(schema.jobs.createdAt));
+
+  const completedRenders = renderJobs.filter(
+    (j) => j.status === "completed" && j.outputPath
+  );
+
+  const pages = await db.select().from(schema.pages);
+
+  const pagesWithRenders = completedRenders
+    .map((job) => {
+      const page = pages.find((p) => p.id === job.pageId);
+      if (!page) return null;
+      return {
+        pageId: page.id,
+        pageTitle: page.title,
+        pageSlug: page.slug,
+        renderJobId: job.id,
+        outputPath: job.outputPath!,
+        renderedAt: job.completedAt ?? job.createdAt,
+      };
+    })
+    .filter(Boolean) as Array<{
+      pageId: string;
+      pageTitle: string;
+      pageSlug: string;
+      renderJobId: string;
+      outputPath: string;
+      renderedAt: string;
+    }>;
+
+  const artifactsWithDetails = artifacts.map((a) => {
+    const page = pages.find((p) => p.id === a.pageId);
+    const profile = profiles.find((p) => p.id === a.publishProfileId);
+    return {
+      ...a,
+      pageTitle: page?.title ?? a.pageId,
+      profileName: profile?.name ?? a.publishProfileId,
+    };
+  });
 
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold text-white">Publish</h2>
-
-      <section className="mb-10">
-        <h3 className="mb-4 text-lg font-semibold text-slate-200">
-          Publish Profiles
-        </h3>
-        {profiles.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center">
-            <p className="text-slate-400">
-              No publish profiles configured. Add one in Settings.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {profiles.map((p) => (
-              <div
-                key={p.id}
-                className="rounded-xl border border-slate-800 bg-slate-900 p-5"
-              >
-                <h4 className="font-semibold text-white">{p.name}</h4>
-                <p className="mt-1 text-xs text-slate-400">{p.exportPath}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="mb-4 text-lg font-semibold text-slate-200">
-          Published Artifacts
-        </h3>
-        {artifacts.length === 0 ? (
-          <p className="text-slate-400">No artifacts published yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase text-slate-400">
-                <tr>
-                  <th className="px-3 py-2">Page</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Duration</th>
-                  <th className="px-3 py-2">Published</th>
-                </tr>
-              </thead>
-              <tbody>
-                {artifacts.map((a) => (
-                  <tr key={a.id} className="border-t border-slate-800">
-                    <td className="px-3 py-2 text-white">{a.pageId}</td>
-                    <td className="px-3 py-2 text-slate-300">{a.status}</td>
-                    <td className="px-3 py-2 text-slate-300">{a.durationSec}s</td>
-                    <td className="px-3 py-2 text-slate-400">{a.publishedAt}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <PublishWorkflow
+        profiles={profiles.map((p) => ({
+          id: p.id,
+          name: p.name,
+          exportPath: p.exportPath,
+          fileNamingPattern: p.fileNamingPattern,
+        }))}
+        renderedPages={pagesWithRenders}
+        artifacts={artifactsWithDetails.map((a) => ({
+          id: a.id,
+          pageTitle: a.pageTitle,
+          profileName: a.profileName,
+          outputPath: a.outputPath,
+          durationSec: a.durationSec,
+          status: a.status,
+          publishedAt: a.publishedAt,
+        }))}
+      />
     </div>
   );
 }

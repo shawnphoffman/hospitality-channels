@@ -64,6 +64,14 @@ async function seed() {
       render_version TEXT, status TEXT NOT NULL DEFAULT 'published',
       published_at TEXT
     )`,
+    `CREATE TABLE IF NOT EXISTS jobs (
+      id TEXT PRIMARY KEY, type TEXT NOT NULL,
+      page_id TEXT REFERENCES pages(id),
+      profile_id TEXT REFERENCES publish_profiles(id),
+      payload TEXT DEFAULT '{}', status TEXT NOT NULL DEFAULT 'queued',
+      output_path TEXT, error TEXT,
+      created_at TEXT NOT NULL, started_at TEXT, completed_at TEXT
+    )`,
     `CREATE TABLE IF NOT EXISTS channel_definitions (
       id TEXT PRIMARY KEY, channel_number INTEGER NOT NULL,
       channel_name TEXT NOT NULL, page_id TEXT REFERENCES pages(id),

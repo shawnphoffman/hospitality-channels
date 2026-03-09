@@ -2,6 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
+interface JobData {
+  id: string;
+  type: string;
+  status: string;
+  outputPath: string | null;
+  error: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 interface PreviewClientProps {
   page: {
     id: string;
@@ -30,6 +40,8 @@ export function PreviewClient({
   const [renderMode, setRenderMode] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
+  const [renderJob, setRenderJob] = useState<JobData | null>(null);
+  const [rendering, setRendering] = useState(false);
 
   const recalc = useCallback(() => {
     const el = wrapperRef.current;
@@ -45,6 +57,56 @@ export function PreviewClient({
     if (wrapperRef.current) ro.observe(wrapperRef.current);
     return () => ro.disconnect();
   }, [recalc]);
+
+  useEffect(() => {
+    if (!renderJob || renderJob.status === "completed" || renderJob.status === "failed") return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/jobs/${renderJob.id}`);
+        if (res.ok) {
+          const updated: JobData = await res.json();
+          setRenderJob(updated);
+          if (updated.status === "completed" || updated.status === "failed") {
+            setRendering(false);
+          }
+        }
+      } catch { /* poll will retry */ }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [renderJob]);
+
+  const handleRender = async () => {
+    setRendering(true);
+    setRenderJob(null);
+    try {
+      const res = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pageId: page.id,
+          durationSec: page.defaultDurationSec,
+        }),
+      });
+      if (res.ok) {
+        const job: JobData = await res.json();
+        setRenderJob(job);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setRenderJob({
+          id: "",
+          type: "render",
+          status: "failed",
+          outputPath: null,
+          error: err.error || "Failed to start render",
+          createdAt: new Date().toISOString(),
+          completedAt: null,
+        });
+        setRendering(false);
+      }
+    } catch {
+      setRendering(false);
+    }
+  };
 
   const scaledW = SCENE_W * scale;
   const scaledH = SCENE_H * scale;
@@ -77,6 +139,13 @@ export function PreviewClient({
           />
           Render mode
         </label>
+        <button
+          onClick={handleRender}
+          disabled={rendering}
+          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+        >
+          {rendering ? "Rendering..." : "Render Video"}
+        </button>
         <a
           href={`/pages/${page.id}/edit`}
           className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-slate-500 hover:bg-slate-800"
@@ -90,6 +159,38 @@ export function PreviewClient({
           Back
         </a>
       </div>
+
+      {/* Render job status */}
+      {renderJob && (
+        <div className={`mb-3 shrink-0 rounded-lg border px-4 py-3 text-sm ${
+          renderJob.status === "completed"
+            ? "border-green-800 bg-green-950 text-green-300"
+            : renderJob.status === "failed"
+              ? "border-red-800 bg-red-950 text-red-300"
+              : "border-blue-800 bg-blue-950 text-blue-300"
+        }`}>
+          {renderJob.status === "queued" && "Render job queued. Waiting for worker to pick it up..."}
+          {renderJob.status === "processing" && "Rendering video... This may take a minute."}
+          {renderJob.status === "completed" && (
+            <>
+              Render complete!
+              {renderJob.outputPath && (
+                <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>
+              )}
+              <span className="ml-3">
+                <a href="/publish" className="font-medium text-green-200 underline hover:text-white">
+                  Go to Publish
+                </a>
+              </span>
+            </>
+          )}
+          {renderJob.status === "failed" && (
+            <>
+              Render failed{renderJob.error ? `: ${renderJob.error}` : ""}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Preview area */}
       <div

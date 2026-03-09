@@ -14,7 +14,9 @@
     "@hospitality-channels/content-model": "workspace:*",
     "@hospitality-channels/render-core": "workspace:*",
     "@hospitality-channels/publish": "workspace:*",
-    "@hospitality-channels/storage": "workspace:*"
+    "@hospitality-channels/storage": "workspace:*",
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.36.4"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
