@@ -1,0 +1,23 @@
+export { SceneContainer } from "./SceneContainer.js";
+export type { SceneContainerProps } from "./SceneContainer.js";
+export const tokensCss = `
+:root {
+  --gfp-font-size-xs: 14px;
+  --gfp-font-size-sm: 18px;
+  --gfp-font-size-base: 24px;
+  --gfp-font-size-lg: 32px;
+  --gfp-font-size-xl: 48px;
+  --gfp-font-size-2xl: 64px;
+  --gfp-line-height-tight: 1.2;
+  --gfp-line-height-normal: 1.5;
+  --gfp-line-height-relaxed: 1.75;
+  --gfp-safe-margin: 5%;
+  --gfp-safe-inset: 96px;
+  --gfp-bg-primary: #0f172a;
+  --gfp-bg-secondary: #1e293b;
+  --gfp-text-primary: #f8fafc;
+  --gfp-text-secondary: #94a3b8;
+  --gfp-accent: #3b82f6;
+  --gfp-accent-hover: #60a5fa;
+}
+`;
