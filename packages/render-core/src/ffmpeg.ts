@@ -28,14 +28,20 @@ export async function normalizeVideo(options: FFmpegNormalizeOptions): Promise<{
   await import("node:fs/promises").then((fs) => fs.mkdir(outputDir, { recursive: true }));
 
   return new Promise((resolve) => {
+    const TRIM_SEC = 3;
+    const vf = [
+      `trim=start=${TRIM_SEC}`,
+      "setpts=PTS-STARTPTS",
+      `scale=${width}:${height}:force_original_aspect_ratio=decrease`,
+      `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
+    ].join(",");
+
     const args = [
       "-y",
-      "-ss",
-      "0.5",
       "-i",
       inputPath,
       "-vf",
-      `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
+      vf,
       "-c:v",
       "libx264",
       "-preset",

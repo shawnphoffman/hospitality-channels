@@ -77,13 +77,12 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 
     // Wait for a full paint frame before counting the capture duration
     await recordPage.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-
     await recordPage.evaluate(() => {
       window.dispatchEvent(new CustomEvent("render-start"));
     });
 
-    // Record slightly longer to compensate for FFmpeg's -ss 0.5 trim
-    const durationMs = (durationSec + 1) * 1000;
+    // Record extra to compensate for FFmpeg's 3s trim
+    const durationMs = (durationSec + 4) * 1000;
     await new Promise((resolve) => setTimeout(resolve, durationMs));
 
     const video = recordPage.video();
