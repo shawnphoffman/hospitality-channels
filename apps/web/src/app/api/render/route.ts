@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const appUrl = process.env.APP_URL || "http://localhost:3000";
-  const previewUrl = `${appUrl}/pages/${pageId}/preview?render=true`;
+  const previewUrl = `${appUrl}/pages/${pageId}/render`;
 
   const job = {
     id: generateId(),
