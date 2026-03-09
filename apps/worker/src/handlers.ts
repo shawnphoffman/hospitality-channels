@@ -33,9 +33,12 @@ export async function handleRenderJob(job: Job): Promise<string> {
   }
 
   const pageId = job.pageId ?? "unknown";
+  const slug = payload.pageSlug || pageId;
+  const now = new Date();
+  const ts = now.toISOString().replace(/[:T]/g, "-").replace(/\.\d+Z$/, "");
   const outputDir = path.resolve(RENDER_OUTPUT_DIR);
-  const rawPath = path.join(outputDir, `raw-${pageId}-${Date.now()}.webm`);
-  const finalPath = path.join(outputDir, `${pageId}.mp4`);
+  const rawPath = path.join(outputDir, `raw-${slug}-${Date.now()}.webm`);
+  const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`);
 
   logger.info("Starting render", { pageId, url: payload.url, durationSec: payload.durationSec });
 
