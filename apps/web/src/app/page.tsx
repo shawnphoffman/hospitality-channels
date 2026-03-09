@@ -1,12 +1,27 @@
-export default function DashboardPage() {
+export const dynamic = "force-dynamic";
+
+import { db, schema } from "@/db";
+import { count } from "drizzle-orm";
+
+export default async function DashboardPage() {
+  const [[pagesCount], [templatesCount], [roomsCount], [guestsCount], [publishedCount]] =
+    await Promise.all([
+      db.select({ value: count() }).from(schema.pages),
+      db.select({ value: count() }).from(schema.templates),
+      db.select({ value: count() }).from(schema.rooms),
+      db.select({ value: count() }).from(schema.guests),
+      db.select({ value: count() }).from(schema.publishedArtifacts),
+    ]);
+
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold text-white">Dashboard</h2>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Pages" value="0" description="Total page compositions" />
-        <StatCard title="Templates" value="2" description="Available templates" />
-        <StatCard title="Rooms" value="0" description="Configured rooms" />
-        <StatCard title="Published" value="0" description="Published artifacts" />
+        <StatCard title="Pages" value={String(pagesCount.value)} description="Total page compositions" href="/pages" />
+        <StatCard title="Templates" value={String(templatesCount.value)} description="Available templates" href="/templates" />
+        <StatCard title="Rooms" value={String(roomsCount.value)} description="Configured rooms" href="/rooms" />
+        <StatCard title="Guests" value={String(guestsCount.value)} description="Active guests" href="/guests" />
+        <StatCard title="Published" value={String(publishedCount.value)} description="Published artifacts" href="/publish" />
       </div>
       <div className="mt-10">
         <h3 className="mb-4 text-lg font-semibold text-slate-200">Quick Actions</h3>
@@ -39,16 +54,32 @@ function StatCard({
   title,
   value,
   description,
+  href,
 }: {
   title: string;
   value: string;
   description: string;
+  href?: string;
 }) {
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+  const content = (
+    <>
       <p className="text-sm text-slate-400">{title}</p>
       <p className="mt-1 text-3xl font-bold text-white">{value}</p>
       <p className="mt-1 text-xs text-slate-500">{description}</p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a href={href} className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition-colors hover:border-slate-700 hover:bg-slate-800/80">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+      {content}
     </div>
   );
 }
