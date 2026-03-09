@@ -8,6 +8,7 @@ const logger = createLogger("render-core:ffmpeg");
 export interface FFmpegNormalizeOptions {
   inputPath: string;
   outputPath: string;
+  trimSec?: number;
   durationSec?: number;
   fps?: number;
   width?: number;
@@ -18,6 +19,7 @@ export async function normalizeVideo(options: FFmpegNormalizeOptions): Promise<{
   const {
     inputPath,
     outputPath,
+    trimSec = 3,
     durationSec = RENDER_DEFAULTS.durationSec,
     fps = RENDER_DEFAULTS.fps,
     width = RENDER_RESOLUTION.width,
@@ -27,10 +29,11 @@ export async function normalizeVideo(options: FFmpegNormalizeOptions): Promise<{
   const outputDir = path.dirname(outputPath);
   await import("node:fs/promises").then((fs) => fs.mkdir(outputDir, { recursive: true }));
 
+  logger.info("Trimming video", { trimSec, durationSec });
+
   return new Promise((resolve) => {
-    const TRIM_SEC = 3;
     const vf = [
-      `trim=start=${TRIM_SEC}`,
+      `trim=start=${trimSec}`,
       "setpts=PTS-STARTPTS",
       `scale=${width}:${height}:force_original_aspect_ratio=decrease`,
       `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,

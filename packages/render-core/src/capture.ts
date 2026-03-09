@@ -16,6 +16,7 @@ export interface CaptureOptions {
 export interface CaptureResult {
   outputPath: string;
   durationSec: number;
+  trimSec: number;
   success: boolean;
   error?: string;
 }
@@ -58,6 +59,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
     await warmupCtx.close();
 
     // Phase 2: Record — the browser cache is warm so the page loads near-instantly.
+    const recordStartedAt = Date.now();
     const recordCtx = await browser.newContext({
       viewport: { width, height },
       deviceScaleFactor: 1,
@@ -81,28 +83,35 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
       window.dispatchEvent(new CustomEvent("render-start"));
     });
 
-    // Record extra to compensate for FFmpeg's 3s trim
-    const durationMs = (durationSec + 4) * 1000;
+    const loadTimeMs = Date.now() - recordStartedAt;
+    const SAFETY_MARGIN_SEC = 0.5;
+    const trimSec = Math.ceil(loadTimeMs / 1000) + SAFETY_MARGIN_SEC;
+
+    logger.info("Page ready for recording", { loadTimeMs, trimSec });
+
+    const bufferSec = Math.ceil(trimSec) + 1;
+    const durationMs = (durationSec + bufferSec) * 1000;
     await new Promise((resolve) => setTimeout(resolve, durationMs));
 
     const video = recordPage.video();
     if (!video) {
       await recordCtx.close();
-      return { outputPath: "", durationSec: 0, success: false, error: "No video recorded" };
+      return { outputPath: "", durationSec: 0, trimSec: 0, success: false, error: "No video recorded" };
     }
 
     const recordedPath = await video.path();
     await recordCtx.close();
 
     if (!recordedPath) {
-      return { outputPath: "", durationSec: 0, success: false, error: "Video path not available" };
+      return { outputPath: "", durationSec: 0, trimSec: 0, success: false, error: "Video path not available" };
     }
 
-    logger.info("Capture complete", { url, durationSec, recordedPath });
+    logger.info("Capture complete", { url, durationSec, trimSec, recordedPath });
 
     return {
       outputPath: recordedPath,
       durationSec,
+      trimSec,
       success: true,
     };
   } catch (err) {
@@ -110,6 +119,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
     return {
       outputPath: "",
       durationSec: 0,
+      trimSec: 0,
       success: false,
       error: err instanceof Error ? err.message : String(err),
     };

@@ -55,6 +55,7 @@ export async function handleRenderJob(job: Job): Promise<string> {
   const normalizeResult = await normalizeVideo({
     inputPath: captureResult.outputPath,
     outputPath: finalPath,
+    trimSec: captureResult.trimSec,
     durationSec: payload.durationSec,
   });
 
