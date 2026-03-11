@@ -1,7 +1,6 @@
 FROM node:20-bookworm AS base
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 
-# Install FFmpeg and Chromium dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -22,27 +21,33 @@ RUN apt-get update && \
 
 WORKDIR /app
 
+# --- Install dependencies ---
 FROM base AS deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/worker/package.json apps/worker/package.json
-COPY packages/common/package.json packages/common/package.json
-COPY packages/content-model/package.json packages/content-model/package.json
-COPY packages/storage/package.json packages/storage/package.json
-COPY packages/templates/package.json packages/templates/package.json
-COPY packages/render-core/package.json packages/render-core/package.json
-COPY packages/publish/package.json packages/publish/package.json
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+COPY apps/worker/package.json apps/worker/
+COPY packages/common/package.json packages/common/
+COPY packages/content-model/package.json packages/content-model/
+COPY packages/storage/package.json packages/storage/
+COPY packages/templates/package.json packages/templates/
+COPY packages/render-core/package.json packages/render-core/
+COPY packages/publish/package.json packages/publish/
 RUN pnpm install --frozen-lockfile
 
+# --- Build worker and all workspace deps ---
 FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app ./
 COPY . .
 RUN pnpm run build --filter=@hospitality-channels/worker
 
+# Remove source files and build cache to slim down the copy
+RUN rm -rf .turbo apps/worker/src packages/*/src apps/web docs
+
+# --- Production runner ---
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=builder /app/ ./
+
+COPY --from=builder /app ./
 RUN npx playwright install chromium
 
-EXPOSE 3001
 CMD ["node", "apps/worker/dist/index.js"]

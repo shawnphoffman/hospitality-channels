@@ -19,30 +19,27 @@ function generateId(): string {
 }
 
 const RENDER_OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || resolve(projectRoot, "renders");
+const WEB_URL = process.env.WEB_URL || "http://localhost:3000";
 
 export async function handleRenderJob(job: Job): Promise<string> {
   const payload = job.payload as {
-    url: string;
     durationSec: number;
     pageTitle: string;
     pageSlug: string;
   };
 
-  if (!payload.url) {
-    throw new Error("render job requires url in payload");
-  }
-
   const pageId = job.pageId ?? "unknown";
+  const url = `${WEB_URL}/pages/${pageId}/render`;
   const slug = payload.pageSlug || pageId;
   const now = new Date();
   const ts = now.toISOString().replace(/[:T]/g, "-").replace(/\.\d+Z$/, "");
   const outputDir = path.resolve(RENDER_OUTPUT_DIR);
   const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`);
 
-  logger.info("Starting render", { pageId, url: payload.url, durationSec: payload.durationSec });
+  logger.info("Starting render", { pageId, url, durationSec: payload.durationSec });
 
   const captureResult = await capturePageVideo({
-    url: payload.url,
+    url,
     outputPath: finalPath,
     durationSec: payload.durationSec,
   });

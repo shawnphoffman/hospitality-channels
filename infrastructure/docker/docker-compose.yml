@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   web:
     build:
@@ -16,6 +14,12 @@ services:
       - app-data:/data
       - exports:/data/exports
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
   worker:
     build:
@@ -26,12 +30,15 @@ services:
       - DATABASE_URL=/data/guest-tv-pages.db
       - ASSET_STORAGE_PATH=/data/assets
       - EXPORT_PATH=/data/exports
+      - RENDER_OUTPUT_DIR=/data/renders
+      - WEB_URL=http://web:3000
     volumes:
       - app-data:/data
       - exports:/data/exports
     restart: unless-stopped
     depends_on:
-      - web
+      web:
+        condition: service_healthy
 
 volumes:
   app-data:

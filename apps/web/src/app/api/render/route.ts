@@ -21,16 +21,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
 
-  const appUrl = process.env.APP_URL || "http://localhost:3000";
-  const previewUrl = `${appUrl}/pages/${pageId}/render`;
-
   const job = {
     id: generateId(),
     type: "render",
     pageId,
     profileId: null,
     payload: {
-      url: previewUrl,
       durationSec: durationSec ?? page.defaultDurationSec ?? 30,
       pageTitle: page.title,
       pageSlug: page.slug,
