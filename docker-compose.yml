@@ -1,7 +1,7 @@
 services:
   web:
     build:
-      context: ../..
+      context: .
       dockerfile: infrastructure/docker/Dockerfile.web
     ports:
       - "3000:3000"
@@ -17,7 +17,7 @@ services:
 
   worker:
     build:
-      context: ../..
+      context: .
       dockerfile: infrastructure/docker/Dockerfile.worker
     environment:
       - WEB_URL=http://web:3000
