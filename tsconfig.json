@@ -4,6 +4,16 @@
     "lib": ["ES2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@hospitality-channels/common": ["packages/common/src"],
+      "@hospitality-channels/content-model": ["packages/content-model/src"],
+      "@hospitality-channels/templates": ["packages/templates/src"],
+      "@hospitality-channels/storage": ["packages/storage/src"],
+      "@hospitality-channels/ui": ["packages/ui/src"],
+      "@hospitality-channels/render-core": ["packages/render-core/src"],
+      "@hospitality-channels/publish": ["packages/publish/src"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
