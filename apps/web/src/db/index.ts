@@ -1,7 +1,14 @@
+import { randomBytes } from "node:crypto";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
+import { count } from "drizzle-orm";
 import { PATHS } from "@hospitality-channels/common";
+import { getTemplateRegistry } from "@hospitality-channels/templates";
 import * as schema from "./schema";
+
+function generateId(): string {
+  return randomBytes(12).toString("hex");
+}
 
 const dbUrl = `file:${PATHS.database}`;
 
@@ -98,6 +105,59 @@ const CREATE_TABLES_SQL = [
 const client = createClient({ url: dbUrl });
 
 let initialized = false;
+let seeded = false;
+
+async function ensureSeeded() {
+  if (seeded) return;
+  const [{ value: templatesCount }] = await db
+    .select({ value: count() })
+    .from(schema.templates);
+  if (templatesCount > 0) {
+    seeded = true;
+    return;
+  }
+  const registry = getTemplateRegistry();
+  for (const tmpl of registry) {
+    try {
+      await db.insert(schema.templates).values({
+        id: generateId(),
+        slug: tmpl.slug,
+        name: tmpl.name,
+        description: tmpl.description ?? null,
+        category: tmpl.category ?? null,
+        schema: tmpl.schema ?? null,
+        previewImage: tmpl.previewImage ?? null,
+        version: tmpl.version ?? 1,
+        status: tmpl.status,
+      });
+    } catch {
+      /* already exists */
+    }
+  }
+  try {
+    await db.insert(schema.rooms).values({
+      id: generateId(),
+      name: "Guest Suite",
+      slug: "guest-suite",
+      notes: "Main guest room with lake view",
+    });
+  } catch {
+    /* already exists */
+  }
+  try {
+    await db.insert(schema.publishProfiles).values({
+      id: generateId(),
+      name: "Default Tunarr Export",
+      exportPath: PATHS.exports,
+      outputFormat: "mp4",
+      lineupType: "main",
+      fileNamingPattern: "{title}-{pageId}.mp4",
+    });
+  } catch {
+    /* already exists */
+  }
+  seeded = true;
+}
 
 async function ensureTables() {
   if (initialized) return;
@@ -105,6 +165,7 @@ async function ensureTables() {
     await client.execute(sql);
   }
   initialized = true;
+  await ensureSeeded();
 }
 
 // Eagerly create tables on module load

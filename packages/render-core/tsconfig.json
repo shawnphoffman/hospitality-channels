@@ -3,12 +3,12 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "../..",
     "noEmit": false,
     "declaration": true,
     "declarationMap": true,
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../common/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

@@ -3,11 +3,15 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "../..",
     "noEmit": false,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@hospitality-channels/content-model": ["../content-model/src"]
+    }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../content-model/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

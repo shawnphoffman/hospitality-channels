@@ -1,1 +1,1 @@
-export { welcomeTemplate } from "./metadata.js";
+export { welcomeTemplate } from "./metadata";

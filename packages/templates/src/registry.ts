@@ -1,6 +1,6 @@
 import type { Template } from "@hospitality-channels/content-model";
-import { welcomeTemplate } from "./welcome/index.js";
-import { houseGuideTemplate } from "./house-guide/index.js";
+import { welcomeTemplate } from "./welcome";
+import { houseGuideTemplate } from "./house-guide";
 
 const templates: (Template & { schema?: Record<string, unknown> })[] = [
   welcomeTemplate,
