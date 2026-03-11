@@ -1,0 +1,20 @@
+{
+  "name": "@hospitality-channels/infrastructure",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@hospitality-channels/common": "workspace:*",
+    "@hospitality-channels/templates": "workspace:*",
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.36.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
