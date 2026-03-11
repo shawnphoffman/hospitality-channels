@@ -231,18 +231,33 @@ export function CreatePageForm({
                       <span className="text-red-400"> *</span>
                     )}
                   </label>
-                  <input
-                    id={field.key}
-                    type="text"
-                    value={fieldValues[field.key] ?? ""}
-                    onChange={(e) =>
-                      handleFieldChange(field.key, e.target.value)
-                    }
-                    placeholder={
-                      field.default != null ? String(field.default) : ""
-                    }
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                  />
+                  {field.type === "textarea" ? (
+                    <textarea
+                      id={field.key}
+                      rows={4}
+                      value={fieldValues[field.key] ?? ""}
+                      onChange={(e) =>
+                        handleFieldChange(field.key, e.target.value)
+                      }
+                      placeholder={
+                        field.default != null ? String(field.default) : ""
+                      }
+                      className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <input
+                      id={field.key}
+                      type="text"
+                      value={fieldValues[field.key] ?? ""}
+                      onChange={(e) =>
+                        handleFieldChange(field.key, e.target.value)
+                      }
+                      placeholder={
+                        field.default != null ? String(field.default) : ""
+                      }
+                      className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                    />
+                  )}
                 </div>
               );
             })}
