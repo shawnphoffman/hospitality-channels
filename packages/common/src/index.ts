@@ -1,3 +1,5 @@
+import { join } from "node:path";
+
 export const RENDER_RESOLUTION = {
   width: 1920,
   height: 1080,
@@ -20,8 +22,11 @@ export function getEnvConfig(): EnvConfig {
 
 const isProduction = (process.env.NODE_ENV ?? "development") === "production";
 
+/** In development, use repo-root/data so web and worker (running from apps/*) share one DB. */
+const devDatabase = join(process.cwd(), "..", "data", "guest-tv-pages.db");
+
 export const PATHS = {
-  database: isProduction ? "/data/guest-tv-pages.db" : "data/guest-tv-pages.db",
+  database: isProduction ? "/data/guest-tv-pages.db" : devDatabase,
   assets: isProduction ? "/data/assets" : "./data/assets",
   renders: isProduction ? "/data/renders" : "./renders",
   exports: isProduction ? "/exports" : "./exports",

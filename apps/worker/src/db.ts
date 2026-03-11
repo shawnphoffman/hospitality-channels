@@ -1,10 +1,12 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { PATHS } from "@hospitality-channels/common";
 
+mkdirSync(dirname(PATHS.database), { recursive: true });
 const dbUrl = `file:${PATHS.database}`;
-
 const client = createClient({ url: dbUrl });
 
 export const jobs = sqliteTable("jobs", {

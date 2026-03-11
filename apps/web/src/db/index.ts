@@ -1,19 +1,22 @@
-import { randomBytes } from "node:crypto";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import { count } from "drizzle-orm";
-import { PATHS } from "@hospitality-channels/common";
-import { getTemplateRegistry } from "@hospitality-channels/templates";
-import * as schema from "./schema";
+import { randomBytes } from 'node:crypto'
+import { mkdirSync } from 'node:fs'
+import { dirname } from 'node:path'
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
+import { count } from 'drizzle-orm'
+import { PATHS } from '@hospitality-channels/common'
+import { getTemplateRegistry } from '@hospitality-channels/templates'
+import * as schema from './schema'
 
 function generateId(): string {
-  return randomBytes(12).toString("hex");
+	return randomBytes(12).toString('hex')
 }
 
-const dbUrl = `file:${PATHS.database}`;
+mkdirSync(dirname(PATHS.database), { recursive: true })
+const dbUrl = `file:${PATHS.database}`
 
 const CREATE_TABLES_SQL = [
-  `CREATE TABLE IF NOT EXISTS templates (
+	`CREATE TABLE IF NOT EXISTS templates (
     id TEXT PRIMARY KEY,
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
@@ -24,7 +27,7 @@ const CREATE_TABLES_SQL = [
     version INTEGER DEFAULT 1,
     status TEXT NOT NULL DEFAULT 'active'
   )`,
-  `CREATE TABLE IF NOT EXISTS rooms (
+	`CREATE TABLE IF NOT EXISTS rooms (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
@@ -32,7 +35,7 @@ const CREATE_TABLES_SQL = [
     default_theme_id TEXT,
     notes TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS pages (
+	`CREATE TABLE IF NOT EXISTS pages (
     id TEXT PRIMARY KEY,
     template_id TEXT NOT NULL REFERENCES templates(id),
     slug TEXT NOT NULL,
@@ -46,7 +49,7 @@ const CREATE_TABLES_SQL = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
-  `CREATE TABLE IF NOT EXISTS assets (
+	`CREATE TABLE IF NOT EXISTS assets (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
     original_path TEXT NOT NULL,
@@ -57,7 +60,7 @@ const CREATE_TABLES_SQL = [
     tags TEXT,
     checksum TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS publish_profiles (
+	`CREATE TABLE IF NOT EXISTS publish_profiles (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     export_path TEXT NOT NULL,
@@ -66,7 +69,7 @@ const CREATE_TABLES_SQL = [
     room_scope TEXT,
     file_naming_pattern TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS published_artifacts (
+	`CREATE TABLE IF NOT EXISTS published_artifacts (
     id TEXT PRIMARY KEY,
     page_id TEXT NOT NULL REFERENCES pages(id),
     publish_profile_id TEXT NOT NULL REFERENCES publish_profiles(id),
@@ -77,7 +80,7 @@ const CREATE_TABLES_SQL = [
     status TEXT NOT NULL DEFAULT 'published',
     published_at TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS jobs (
+	`CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
     page_id TEXT REFERENCES pages(id),
@@ -90,7 +93,7 @@ const CREATE_TABLES_SQL = [
     started_at TEXT,
     completed_at TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS channel_definitions (
+	`CREATE TABLE IF NOT EXISTS channel_definitions (
     id TEXT PRIMARY KEY,
     channel_number INTEGER NOT NULL,
     channel_name TEXT NOT NULL,
@@ -100,78 +103,76 @@ const CREATE_TABLES_SQL = [
     poster_asset_id TEXT REFERENCES assets(id),
     enabled INTEGER NOT NULL DEFAULT 1
   )`,
-];
+]
 
-const client = createClient({ url: dbUrl });
+const client = createClient({ url: dbUrl })
 
-let initialized = false;
-let seeded = false;
+let initialized = false
+let seeded = false
 
 async function ensureSeeded() {
-  if (seeded) return;
-  const [{ value: templatesCount }] = await db
-    .select({ value: count() })
-    .from(schema.templates);
-  if (templatesCount > 0) {
-    seeded = true;
-    return;
-  }
-  const registry = getTemplateRegistry();
-  for (const tmpl of registry) {
-    try {
-      await db.insert(schema.templates).values({
-        id: generateId(),
-        slug: tmpl.slug,
-        name: tmpl.name,
-        description: tmpl.description ?? null,
-        category: tmpl.category ?? null,
-        schema: tmpl.schema ?? null,
-        previewImage: tmpl.previewImage ?? null,
-        version: tmpl.version ?? 1,
-        status: tmpl.status,
-      });
-    } catch {
-      /* already exists */
-    }
-  }
-  try {
-    await db.insert(schema.rooms).values({
-      id: generateId(),
-      name: "Guest Suite",
-      slug: "guest-suite",
-      notes: "Main guest room with lake view",
-    });
-  } catch {
-    /* already exists */
-  }
-  try {
-    await db.insert(schema.publishProfiles).values({
-      id: generateId(),
-      name: "Default Tunarr Export",
-      exportPath: PATHS.exports,
-      outputFormat: "mp4",
-      lineupType: "main",
-      fileNamingPattern: "{title}-{pageId}.mp4",
-    });
-  } catch {
-    /* already exists */
-  }
-  seeded = true;
+	if (seeded) return
+	const [{ value: templatesCount }] = await db.select({ value: count() }).from(schema.templates)
+	if (templatesCount > 0) {
+		seeded = true
+		return
+	}
+	const registry = getTemplateRegistry()
+	for (const tmpl of registry) {
+		try {
+			await db.insert(schema.templates).values({
+				id: generateId(),
+				slug: tmpl.slug,
+				name: tmpl.name,
+				description: tmpl.description ?? null,
+				category: tmpl.category ?? null,
+				schema: tmpl.schema ?? null,
+				previewImage: tmpl.previewImage ?? null,
+				version: tmpl.version ?? 1,
+				status: tmpl.status,
+			})
+		} catch {
+			/* already exists */
+		}
+	}
+	try {
+		await db.insert(schema.rooms).values({
+			id: generateId(),
+			name: 'Guest Room',
+			slug: 'guest-room',
+			notes: 'Main guest room',
+		})
+	} catch {
+		/* already exists */
+	}
+	try {
+		await db.insert(schema.publishProfiles).values({
+			id: generateId(),
+			name: 'Default Tunarr Export',
+			exportPath: PATHS.exports,
+			outputFormat: 'mp4',
+			lineupType: 'main',
+			fileNamingPattern: '{title}-{pageId}.mp4',
+		})
+	} catch {
+		/* already exists */
+	}
+	seeded = true
 }
 
 async function ensureTables() {
-  if (initialized) return;
-  for (const sql of CREATE_TABLES_SQL) {
-    await client.execute(sql);
-  }
-  initialized = true;
-  await ensureSeeded();
+	if (initialized) return
+	for (const sql of CREATE_TABLES_SQL) {
+		await client.execute(sql)
+	}
+	initialized = true
+	await ensureSeeded()
 }
 
 // Eagerly create tables on module load
-ensureTables().catch((err) => {
-  console.error("Failed to initialize database tables:", err);
-});
+ensureTables().catch(err => {
+	console.error('Failed to initialize database tables:', err)
+})
 
-export const db = drizzle(client, { schema });
-export { schema };
+export const db = drizzle(client, { schema })
+export { schema }
