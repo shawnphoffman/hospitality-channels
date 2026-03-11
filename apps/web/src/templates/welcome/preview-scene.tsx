@@ -49,7 +49,7 @@ export function WelcomePreviewScene({ data, room, renderMode }: PreviewTemplateS
               Wi-Fi
             </p>
             <p style={{ fontSize: 36 }} className="font-semibold">{wifiSsid}</p>
-            {wifiPassword && (
+            {!hasWifiQr && wifiPassword && (
               <p style={{ fontSize: 28 }} className="mt-2 font-light text-slate-300">
                 {wifiPassword}
               </p>

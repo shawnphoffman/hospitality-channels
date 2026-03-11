@@ -53,9 +53,6 @@ export function HouseGuidePreviewScene({ data, renderMode }: PreviewTemplateScen
                   <p style={{ fontSize: 36 }} className="mt-3 font-semibold leading-snug">
                     {data.wifiSsid}
                   </p>
-                  <p style={{ fontSize: 24 }} className="mt-1 font-light text-slate-300">
-                    {data.wifiPassword}
-                  </p>
                 </div>
               </div>
             )}
