@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { WifiQrCode } from "@/templates/wifi-qr-code";
 
 interface TemplateField {
   key: string;
@@ -214,59 +215,141 @@ export function EditPageForm({
         </div>
       </section>
 
-      {/* Template Content Fields */}
-      {fields.length > 0 && (
-        <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-          <h3 className="mb-4 text-lg font-semibold text-white">
-            {templateName} Content
-          </h3>
-          <div className="space-y-4">
-            {fields.map((field) => {
-              if (field.type === "asset") return null;
-              return (
-                <div key={field.key}>
-                  <label
-                    htmlFor={`field-${field.key}`}
-                    className="block text-sm text-slate-400"
-                  >
-                    {field.label}
-                    {field.required && (
-                      <span className="text-red-400"> *</span>
-                    )}
-                  </label>
-                  {field.type === "textarea" ? (
-                    <textarea
-                      id={`field-${field.key}`}
-                      rows={4}
-                      value={fieldValues[field.key] ?? ""}
-                      onChange={(e) =>
-                        handleFieldChange(field.key, e.target.value)
-                      }
-                      placeholder={
-                        field.default != null ? String(field.default) : ""
-                      }
-                      className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                    />
-                  ) : (
-                    <input
-                      id={`field-${field.key}`}
-                      type="text"
-                      value={fieldValues[field.key] ?? ""}
-                      onChange={(e) =>
-                        handleFieldChange(field.key, e.target.value)
-                      }
-                      placeholder={
-                        field.default != null ? String(field.default) : ""
-                      }
-                      className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {/* Template Content Fields — schema order: guest name, welcome message, then wifi block, then rest */}
+      {fields.length > 0 && (() => {
+        const wifiSsidField = fields.find((f) => f.key === "wifiSsid");
+        const wifiPasswordField = fields.find((f) => f.key === "wifiPassword");
+        const hasWifiFields = Boolean(wifiSsidField && wifiPasswordField);
+        const wifiSsid = (fieldValues.wifiSsid ?? "").trim();
+        const wifiPassword = (fieldValues.wifiPassword ?? "").trim();
+        const showWifiQr = hasWifiFields && wifiSsid.length > 0 && wifiPassword.length > 0;
+
+        function renderField(field: TemplateField) {
+          return (
+            <div key={field.key}>
+              <label
+                htmlFor={`field-${field.key}`}
+                className="block text-sm text-slate-400"
+              >
+                {field.label}
+                {field.required && (
+                  <span className="text-red-400"> *</span>
+                )}
+              </label>
+              {field.type === "textarea" ? (
+                <textarea
+                  id={`field-${field.key}`}
+                  rows={4}
+                  value={fieldValues[field.key] ?? ""}
+                  onChange={(e) =>
+                    handleFieldChange(field.key, e.target.value)
+                  }
+                  placeholder={
+                    field.default != null ? String(field.default) : ""
+                  }
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+              ) : (
+                <input
+                  id={`field-${field.key}`}
+                  type="text"
+                  value={fieldValues[field.key] ?? ""}
+                  onChange={(e) =>
+                    handleFieldChange(field.key, e.target.value)
+                  }
+                  placeholder={
+                    field.default != null ? String(field.default) : ""
+                  }
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+            <h3 className="mb-4 text-lg font-semibold text-white">
+              {templateName} Content
+            </h3>
+            <div className="space-y-4">
+              {fields.map((field) => {
+                if (field.type === "asset") return null;
+                if (field.key === "wifiPassword") return null;
+                if (field.key === "wifiSsid" && hasWifiFields && wifiSsidField && wifiPasswordField) {
+                  return (
+                    <div key="wifi-block" className="flex flex-wrap items-start gap-6">
+                      <div className="flex-1 space-y-4 min-w-0">
+                        <div>
+                          <label
+                            htmlFor="field-wifiSsid"
+                            className="block text-sm text-slate-400"
+                          >
+                            {wifiSsidField.label}
+                            {wifiSsidField.required && (
+                              <span className="text-red-400"> *</span>
+                            )}
+                          </label>
+                          <input
+                            id="field-wifiSsid"
+                            type="text"
+                            value={fieldValues.wifiSsid ?? ""}
+                            onChange={(e) =>
+                              handleFieldChange("wifiSsid", e.target.value)
+                            }
+                            placeholder={
+                              wifiSsidField.default != null
+                                ? String(wifiSsidField.default)
+                                : ""
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="field-wifiPassword"
+                            className="block text-sm text-slate-400"
+                          >
+                            {wifiPasswordField.label}
+                            {wifiPasswordField.required && (
+                              <span className="text-red-400"> *</span>
+                            )}
+                          </label>
+                          <input
+                            id="field-wifiPassword"
+                            type="text"
+                            value={fieldValues.wifiPassword ?? ""}
+                            onChange={(e) =>
+                              handleFieldChange("wifiPassword", e.target.value)
+                            }
+                            placeholder={
+                              wifiPasswordField.default != null
+                                ? String(wifiPasswordField.default)
+                                : ""
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      {showWifiQr && (
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="text-xs text-slate-500">QR preview</span>
+                          <WifiQrCode
+                            ssid={wifiSsid}
+                            password={wifiPassword}
+                            size={120}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return renderField(field);
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Actions */}
       <div className="flex items-center justify-between">
