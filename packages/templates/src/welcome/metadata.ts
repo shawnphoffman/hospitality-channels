@@ -3,7 +3,7 @@ import type { Template } from "@hospitality-channels/content-model";
 export const welcomeTemplate: Template & { schema: Record<string, unknown> } = {
   slug: "welcome",
   name: "Welcome",
-  description: "Personalized welcome screen with guest name, dates, and Wi-Fi info",
+  description: "Personalized welcome screen with guest name and Wi-Fi info",
   category: "welcome",
   status: "active",
   version: 1,
@@ -15,18 +15,6 @@ export const welcomeTemplate: Template & { schema: Record<string, unknown> } = {
         type: "string",
         default: "",
         required: true,
-      },
-      {
-        key: "arrivalDate",
-        label: "Arrival Date",
-        type: "string",
-        default: "",
-      },
-      {
-        key: "departureDate",
-        label: "Departure Date",
-        type: "string",
-        default: "",
       },
       {
         key: "welcomeMessage",
@@ -50,12 +38,6 @@ export const welcomeTemplate: Template & { schema: Record<string, unknown> } = {
       {
         key: "wifiPassword",
         label: "Wi-Fi Password",
-        type: "string",
-        default: "",
-      },
-      {
-        key: "qrCodeUrl",
-        label: "QR Code URL",
         type: "string",
         default: "",
       },

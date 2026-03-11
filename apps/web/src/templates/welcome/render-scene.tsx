@@ -8,8 +8,6 @@ export function WelcomeRenderScene({ data, room }: TemplateSceneProps) {
   const welcomeMessage = data.welcomeMessage || "Welcome to your home away from home!";
   const wifiSsid = data.wifiSsid;
   const wifiPassword = data.wifiPassword;
-  const arrivalDate = data.arrivalDate;
-  const departureDate = data.departureDate;
   const hasWifiQr = Boolean(wifiSsid && wifiPassword);
 
   return (
@@ -42,14 +40,6 @@ export function WelcomeRenderScene({ data, room }: TemplateSceneProps) {
       <p style={{ fontSize: 96 }} className="relative z-10 mb-10 text-center font-bold leading-none tracking-tight">
         {guestName}
       </p>
-
-      {(arrivalDate || departureDate) && (
-        <p style={{ fontSize: 28 }} className="relative z-10 mb-12 text-slate-400">
-          {arrivalDate}
-          {arrivalDate && departureDate ? "  —  " : ""}
-          {departureDate}
-        </p>
-      )}
 
       {wifiSsid && (
         <div

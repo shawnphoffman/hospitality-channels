@@ -8,8 +8,6 @@ export function WelcomePreviewScene({ data, room, renderMode }: PreviewTemplateS
   const welcomeMessage = data.welcomeMessage || "Welcome to your home away from home!";
   const wifiSsid = data.wifiSsid;
   const wifiPassword = data.wifiPassword;
-  const arrivalDate = data.arrivalDate;
-  const departureDate = data.departureDate;
   const hasWifiQr = Boolean(wifiSsid && wifiPassword);
 
   return (
@@ -32,14 +30,6 @@ export function WelcomePreviewScene({ data, room, renderMode }: PreviewTemplateS
       <p style={{ fontSize: 96 }} className="relative z-10 mb-10 text-center font-bold leading-none tracking-tight">
         {guestName}
       </p>
-
-      {(arrivalDate || departureDate) && (
-        <p style={{ fontSize: 28 }} className="relative z-10 mb-12 text-slate-400">
-          {arrivalDate}
-          {arrivalDate && departureDate ? "  —  " : ""}
-          {departureDate}
-        </p>
-      )}
 
       {wifiSsid && (
         <div className="relative z-10 flex items-center gap-8 rounded-2xl border border-slate-700/60 bg-slate-800/60 backdrop-blur-sm" style={{ padding: "32px 64px" }}>
