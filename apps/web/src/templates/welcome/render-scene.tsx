@@ -1,6 +1,7 @@
 "use client";
 
 import type { TemplateSceneProps } from "../types";
+import { WifiQrCode } from "../wifi-qr-code";
 
 export function WelcomeRenderScene({ data, room }: TemplateSceneProps) {
   const guestName = data.guestName || "Guest";
@@ -9,6 +10,7 @@ export function WelcomeRenderScene({ data, room }: TemplateSceneProps) {
   const wifiPassword = data.wifiPassword;
   const arrivalDate = data.arrivalDate;
   const departureDate = data.departureDate;
+  const hasWifiQr = Boolean(wifiSsid && wifiPassword);
 
   return (
     <div
@@ -51,18 +53,21 @@ export function WelcomeRenderScene({ data, room }: TemplateSceneProps) {
 
       {wifiSsid && (
         <div
-          className="relative z-10 rounded-2xl border border-slate-700/60 bg-slate-800/60 text-center backdrop-blur-sm"
+          className="relative z-10 flex items-center gap-8 rounded-2xl border border-slate-700/60 bg-slate-800/60 backdrop-blur-sm"
           style={{ padding: "32px 64px" }}
         >
-          <p style={{ fontSize: 20, letterSpacing: "0.2em" }} className="mb-2 uppercase text-slate-400">
-            Wi-Fi
-          </p>
-          <p style={{ fontSize: 36 }} className="font-semibold">{wifiSsid}</p>
-          {wifiPassword && (
-            <p style={{ fontSize: 28 }} className="mt-2 font-light text-slate-300">
-              {wifiPassword}
+          {hasWifiQr && <WifiQrCode ssid={wifiSsid} password={wifiPassword} size={140} />}
+          <div className={hasWifiQr ? "text-left" : "text-center"}>
+            <p style={{ fontSize: 20, letterSpacing: "0.2em" }} className="mb-2 uppercase text-slate-400">
+              Wi-Fi
             </p>
-          )}
+            <p style={{ fontSize: 36 }} className="font-semibold">{wifiSsid}</p>
+            {wifiPassword && (
+              <p style={{ fontSize: 28 }} className="mt-2 font-light text-slate-300">
+                {wifiPassword}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
