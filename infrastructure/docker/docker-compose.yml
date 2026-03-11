@@ -5,14 +5,8 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.web
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=/data/guest-tv-pages.db
-      - ASSET_STORAGE_PATH=/data/assets
-      - EXPORT_PATH=/data/exports
     volumes:
       - app-data:/data
-      - exports:/data/exports
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
@@ -26,15 +20,10 @@ services:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile.worker
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=/data/guest-tv-pages.db
-      - ASSET_STORAGE_PATH=/data/assets
-      - EXPORT_PATH=/data/exports
-      - RENDER_OUTPUT_DIR=/data/renders
       - WEB_URL=http://web:3000
     volumes:
       - app-data:/data
-      - exports:/data/exports
+      - exports:/exports
     restart: unless-stopped
     depends_on:
       web:

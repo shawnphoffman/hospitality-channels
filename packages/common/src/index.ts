@@ -10,19 +10,22 @@ export const RENDER_DEFAULTS = {
 
 export type EnvConfig = {
   NODE_ENV: "development" | "production" | "test";
-  DATABASE_URL?: string;
-  ASSET_STORAGE_PATH?: string;
-  EXPORT_PATH?: string;
 };
 
 export function getEnvConfig(): EnvConfig {
   return {
     NODE_ENV: (process.env.NODE_ENV ?? "development") as EnvConfig["NODE_ENV"],
-    DATABASE_URL: process.env.DATABASE_URL,
-    ASSET_STORAGE_PATH: process.env.ASSET_STORAGE_PATH,
-    EXPORT_PATH: process.env.EXPORT_PATH,
   };
 }
+
+const isProduction = (process.env.NODE_ENV ?? "development") === "production";
+
+export const PATHS = {
+  database: isProduction ? "/data/guest-tv-pages.db" : "data/guest-tv-pages.db",
+  assets: isProduction ? "/data/assets" : "./data/assets",
+  renders: isProduction ? "/data/renders" : "./renders",
+  exports: isProduction ? "/exports" : "./exports",
+} as const;
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 

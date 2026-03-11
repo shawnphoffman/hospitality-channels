@@ -1,10 +1,9 @@
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
+import { PATHS } from "@hospitality-channels/common";
 import * as schema from "./schema";
 
-const dbUrl = process.env.DATABASE_URL
-  ? `file:${process.env.DATABASE_URL}`
-  : "file:data/guest-tv-pages.db";
+const dbUrl = `file:${PATHS.database}`;
 
 const CREATE_TABLES_SQL = [
   `CREATE TABLE IF NOT EXISTS templates (

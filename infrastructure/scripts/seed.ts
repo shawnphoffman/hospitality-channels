@@ -1,26 +1,19 @@
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { getTemplateRegistry } from "@hospitality-channels/templates";
+import { PATHS } from "@hospitality-channels/common";
 import * as schema from "../../apps/web/src/db/schema";
 import { randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 function generateId(): string {
   return randomBytes(12).toString("hex");
 }
 
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+mkdirSync(dirname(PATHS.database), { recursive: true });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const projectRoot = resolve(__dirname, "../..");
-const dbDir = resolve(projectRoot, "apps/web/data");
-mkdirSync(dbDir, { recursive: true });
-
-const dbUrl = process.env.DATABASE_URL
-  ? `file:${process.env.DATABASE_URL}`
-  : `file:${dbDir}/guest-tv-pages.db`;
+const dbUrl = `file:${PATHS.database}`;
 
 const client = createClient({ url: dbUrl });
 const db = drizzle(client, { schema });
@@ -135,7 +128,7 @@ async function seed() {
       .values({
         id: profileId,
         name: "Default Tunarr Export",
-        exportPath: process.env.EXPORT_PATH ?? "./exports",
+        exportPath: PATHS.exports,
         outputFormat: "mp4",
         lineupType: "main",
         fileNamingPattern: "{title}-{pageId}.mp4",

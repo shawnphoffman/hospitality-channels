@@ -143,7 +143,7 @@ hospitality-channels/
 ### 12. Configuration and Tooling
 
 - ESLint + Prettier (shared config in `packages/common` or root)
-- `.env.example` with `DATABASE_URL`, `ASSET_STORAGE_PATH`, `EXPORT_PATH`, `NODE_ENV`
+- `.env.example` with `NODE_ENV`
 
 ## Key Files to Create
 

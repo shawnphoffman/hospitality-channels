@@ -1,16 +1,10 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
-import { createLogger } from "@hospitality-channels/common";
+import { createLogger, PATHS } from "@hospitality-channels/common";
 import { capturePageVideo } from "@hospitality-channels/render-core";
 import { publishArtifact } from "@hospitality-channels/publish";
 import { db, publishedArtifacts } from "./db.js";
 import type { Job } from "./queue.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const projectRoot = resolve(__dirname, "../../..");
 
 const logger = createLogger("worker:handlers");
 
@@ -18,7 +12,6 @@ function generateId(): string {
   return randomBytes(12).toString("hex");
 }
 
-const RENDER_OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || resolve(projectRoot, "renders");
 const WEB_URL = process.env.WEB_URL || "http://localhost:3000";
 
 export async function handleRenderJob(job: Job): Promise<string> {
@@ -33,7 +26,7 @@ export async function handleRenderJob(job: Job): Promise<string> {
   const slug = payload.pageSlug || pageId;
   const now = new Date();
   const ts = now.toISOString().replace(/[:T]/g, "-").replace(/\.\d+Z$/, "");
-  const outputDir = path.resolve(RENDER_OUTPUT_DIR);
+  const outputDir = path.resolve(PATHS.renders);
   const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`);
 
   logger.info("Starting render", { pageId, url, durationSec: payload.durationSec });

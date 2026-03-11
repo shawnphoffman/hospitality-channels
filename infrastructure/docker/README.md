@@ -15,12 +15,13 @@ Set in `docker-compose.yml` or override with a `.env` file alongside it.
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `/data/guest-tv-pages.db` | SQLite database path |
-| `ASSET_STORAGE_PATH` | `/data/assets` | Uploaded asset storage |
-| `EXPORT_PATH` | `/data/exports` | Published file output |
-| `RENDER_OUTPUT_DIR` | `/data/renders` | Rendered video storage |
 | `WEB_URL` | `http://web:3000` | Worker → web URL (set by compose) |
 | `POLL_INTERVAL_MS` | `2000` | Worker job poll interval |
+
+Data paths (`DATABASE_URL`, `ASSET_STORAGE_PATH`, renders, exports) are not configurable via environment variables. They are determined by `NODE_ENV`:
+
+- **production**: database at `/data/guest-tv-pages.db`, assets at `/data/assets`, renders at `/data/renders`, exports at `/exports`
+- **development**: relative paths under the project root
 
 ## Dockhand (Git Deploy)
 
@@ -35,5 +36,5 @@ If Dockhand expects the compose file at the repo root, set its config to point t
 
 ## Volumes
 
-- **app-data** — database, assets, and renders (persist across deploys)
-- **exports** — published output files
+- **app-data** (`/data`) — database, assets, and intermediate renders (persist across deploys)
+- **exports** (`/exports`) — published video output for external consumers (e.g. Tunarr)
