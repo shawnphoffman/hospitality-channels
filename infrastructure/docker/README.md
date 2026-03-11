@@ -3,7 +3,6 @@
 ## Quick Start
 
 ```bash
-cd infrastructure/docker
 docker compose up -d --build
 ```
 
@@ -25,14 +24,14 @@ Data paths (`DATABASE_URL`, `ASSET_STORAGE_PATH`, renders, exports) are not conf
 
 ## Dockhand (Git Deploy)
 
-Push this repo to your Dockhand remote. It will detect `infrastructure/docker/docker-compose.yml`.
+Push this repo to your Dockhand remote. It will detect `docker-compose.yml` at the repo root.
 
 ```bash
 git remote add dockhand ssh://deploy@<server>/hospitality-channels.git
 git push dockhand main
 ```
 
-If Dockhand expects the compose file at the repo root, set its config to point to `infrastructure/docker/docker-compose.yml`, or symlink it.
+If Dockhand expects the compose file at the repo root, no extra configuration is needed. If it expects a different path, set its config to point to `docker-compose.yml`, or symlink it.
 
 ## Volumes
 
