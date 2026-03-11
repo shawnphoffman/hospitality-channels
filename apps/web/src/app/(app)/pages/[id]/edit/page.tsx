@@ -52,7 +52,6 @@ export default async function EditPage({
           roomId: page.roomId,
           dataJson: (page.dataJson ?? {}) as Record<string, string>,
           defaultDurationSec: page.defaultDurationSec ?? 30,
-          status: page.status,
         }}
         templateName={dbTemplate.name ?? matchedTemplate?.name ?? "Unknown"}
         templateSlug={dbTemplate.slug}

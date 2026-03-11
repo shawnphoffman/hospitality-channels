@@ -37,7 +37,6 @@ async function seed() {
       theme_id TEXT,
       data_json TEXT DEFAULT '{}', animation_profile TEXT,
       default_duration_sec INTEGER DEFAULT 30,
-      status TEXT NOT NULL DEFAULT 'draft',
       created_at TEXT NOT NULL, updated_at TEXT NOT NULL
     )`,
 		`CREATE TABLE IF NOT EXISTS assets (

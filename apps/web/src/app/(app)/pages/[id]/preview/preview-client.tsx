@@ -18,7 +18,6 @@ interface PreviewClientProps {
     id: string;
     title: string;
     slug: string;
-    status: string;
     defaultDurationSec: number;
   };
   templateSlug: string;
@@ -119,7 +118,7 @@ export function PreviewClient({
         <div className="mr-auto">
           <h2 className="text-xl font-bold text-white">{page.title}</h2>
           <p className="text-xs text-slate-400">
-            {templateName} &middot; {page.status} &middot; {page.slug}
+            {templateName} &middot; {page.slug}
           </p>
         </div>
         <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">

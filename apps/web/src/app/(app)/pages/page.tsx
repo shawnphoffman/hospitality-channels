@@ -34,9 +34,7 @@ export default async function PagesListPage() {
               className="rounded-xl border border-slate-800 bg-slate-900 p-5"
             >
               <h3 className="font-semibold text-white">{page.title}</h3>
-              <p className="mt-1 text-xs text-slate-400">
-                {page.status} &middot; {page.slug}
-              </p>
+              <p className="mt-1 text-xs text-slate-400">{page.slug}</p>
               <div className="mt-4 flex gap-2">
                 <a
                   href={`/pages/${page.id}/edit`}

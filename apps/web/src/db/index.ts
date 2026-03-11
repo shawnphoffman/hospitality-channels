@@ -45,7 +45,6 @@ const CREATE_TABLES_SQL = [
     data_json TEXT DEFAULT '{}',
     animation_profile TEXT,
     default_duration_sec INTEGER DEFAULT 30,
-    status TEXT NOT NULL DEFAULT 'draft',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,

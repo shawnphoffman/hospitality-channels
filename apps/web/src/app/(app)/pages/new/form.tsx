@@ -97,7 +97,6 @@ export function CreatePageForm({
           roomId: roomId || null,
           dataJson: fieldValues,
           defaultDurationSec: 30,
-          status: "draft",
         }),
       });
 

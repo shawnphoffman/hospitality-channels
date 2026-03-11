@@ -33,7 +33,6 @@ export const pages = sqliteTable("pages", {
   dataJson: text("data_json", { mode: "json" }).default({}),
   animationProfile: text("animation_profile"),
   defaultDurationSec: integer("default_duration_sec").default(30),
-  status: text("status").notNull().default("draft"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

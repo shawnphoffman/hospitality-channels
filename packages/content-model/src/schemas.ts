@@ -22,7 +22,6 @@ export const pageSchema = z.object({
   dataJson: z.record(z.unknown()).default({}),
   animationProfile: z.string().optional(),
   defaultDurationSec: z.number().default(30),
-  status: z.enum(["draft", "ready", "archived"]).default("draft"),
   createdAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional(),
 });

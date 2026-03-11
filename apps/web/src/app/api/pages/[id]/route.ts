@@ -46,7 +46,6 @@ export async function PUT(
       dataJson: body.dataJson ?? existing.dataJson,
       animationProfile: body.animationProfile !== undefined ? body.animationProfile : existing.animationProfile,
       defaultDurationSec: body.defaultDurationSec ?? existing.defaultDurationSec,
-      status: body.status ?? existing.status,
       updatedAt: now,
     })
     .where(eq(schema.pages.id, params.id));

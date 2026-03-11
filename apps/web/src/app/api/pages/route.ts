@@ -23,7 +23,6 @@ export async function POST(request: Request) {
     dataJson: parsed.dataJson,
     animationProfile: parsed.animationProfile ?? null,
     defaultDurationSec: parsed.defaultDurationSec,
-    status: parsed.status,
     createdAt: now,
     updatedAt: now,
   };

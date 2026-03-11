@@ -20,7 +20,6 @@ interface PageData {
   roomId: string | null;
   dataJson: Record<string, string>;
   defaultDurationSec: number;
-  status: string;
 }
 
 interface EditPageFormProps {
@@ -43,7 +42,6 @@ export function EditPageForm({
   const [title, setTitle] = useState(page.title);
   const [slug, setSlug] = useState(page.slug);
   const [roomId, setRoomId] = useState(page.roomId ?? "");
-  const [status, setStatus] = useState(page.status);
   const [durationSec, setDurationSec] = useState(page.defaultDurationSec);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(
     page.dataJson
@@ -87,7 +85,6 @@ export function EditPageForm({
           roomId: roomId || null,
           dataJson: fieldValues,
           defaultDurationSec: durationSec,
-          status,
         }),
       });
 
@@ -195,25 +192,9 @@ export function EditPageForm({
               ))}
             </select>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="status" className="block text-sm text-slate-400">
-                Status
-              </label>
-              <select
-                id="status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="duration"
+          <div>
+            <label
+              htmlFor="duration"
                 className="block text-sm text-slate-400"
               >
                 Duration (seconds)
@@ -225,11 +206,10 @@ export function EditPageForm({
                 max={300}
                 value={durationSec}
                 onChange={(e) =>
-                  setDurationSec(parseInt(e.target.value, 10) || 30)
-                }
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
+                setDurationSec(parseInt(e.target.value, 10) || 30)
+              }
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+            />
           </div>
         </div>
       </section>

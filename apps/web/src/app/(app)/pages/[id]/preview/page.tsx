@@ -47,7 +47,6 @@ export default async function PreviewPage({
         id: page.id,
         title: page.title,
         slug: page.slug,
-        status: page.status,
         defaultDurationSec: page.defaultDurationSec ?? 30,
       }}
       templateSlug={dbTemplate.slug}
