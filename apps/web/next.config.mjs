@@ -21,6 +21,14 @@ const nextConfig = {
   },
   webpack: (config) => {
     config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias["@hospitality-channels/common"] = path.resolve(
+      __dirname,
+      "../../packages/common/src",
+    );
+    config.resolve.alias["@hospitality-channels/content-model"] = path.resolve(
+      __dirname,
+      "../../packages/content-model/src",
+    );
     config.resolve.alias["@hospitality-channels/templates"] = path.resolve(
       __dirname,
       "../../packages/templates/src",
