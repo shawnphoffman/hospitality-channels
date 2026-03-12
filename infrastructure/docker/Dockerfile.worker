@@ -1,3 +1,6 @@
+# Worker runs built JS from apps/worker/dist/apps/worker/src/ (tsconfig rootDir).
+# We copy real workspace packages into apps/worker/node_modules/@hospitality-channels/
+# because pnpm symlinks don't resolve correctly for ESM in the container.
 FROM node:20-bookworm AS base
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 
@@ -46,9 +49,8 @@ RUN rm -rf .turbo apps/worker/src packages/*/src apps/web docs
 # so Node ESM resolution finds dist/index.js (symlinks break resolution in the image)
 RUN rm -rf apps/worker/node_modules/@hospitality-channels && \
     mkdir -p apps/worker/node_modules/@hospitality-channels && \
-    for pkg in common content-model publish render-core storage; do \
-      cp -r packages/$$pkg apps/worker/node_modules/@hospitality-channels/$$pkg; \
-    done
+    cp -r packages/common packages/content-model packages/publish packages/render-core packages/storage \
+       apps/worker/node_modules/@hospitality-channels/
 
 # --- Production runner ---
 FROM base AS runner
