@@ -4,7 +4,7 @@ node_modules
 **/dist
 .turbo
 **/.turbo
-*.tsbuildinfo
+**/*.tsbuildinfo
 .git
 .claude
 .env
