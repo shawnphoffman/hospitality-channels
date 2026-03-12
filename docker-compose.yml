@@ -1,5 +1,32 @@
+x-common: &common
+  restart: unless-stopped
+  environment: &env
+    TZ: America/Los_Angeles
+    PUID: 1000
+    PGID: 1000
+  networks:
+    - proxy_net
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: 3
+
+x-health: &health
+  interval: 5m
+  timeout: 10s
+  retries: 5
+  start_period: 1m
+
+# =================================================================
+networks:
+  proxy_net:
+    external: true
+
+# =================================================================
 services:
   web:
+    <<: *common
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.web
@@ -7,24 +34,24 @@ services:
       - "${PORT:-3000}:3000"
     volumes:
       - app-data:/data
-    restart: unless-stopped
+    environment:
+      <<: *env
+    # ================================
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
+      <<: *health
 
   worker:
+    <<: *common
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.worker
     environment:
-      - WEB_URL=http://web:3000
+      <<: *env
+      WEB_URL: http://web:3000
     volumes:
       - app-data:/data
       - exports:/exports
-    restart: unless-stopped
     depends_on:
       web:
         condition: service_started
