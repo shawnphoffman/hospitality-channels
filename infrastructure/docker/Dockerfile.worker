@@ -42,6 +42,14 @@ RUN pnpm run build --filter=@hospitality-channels/worker
 # Remove source files and build cache to slim down the copy
 RUN rm -rf .turbo apps/worker/src packages/*/src apps/web docs
 
+# Replace workspace symlinks in apps/worker/node_modules with real package content
+# so Node ESM resolution finds dist/index.js (symlinks break resolution in the image)
+RUN rm -rf apps/worker/node_modules/@hospitality-channels && \
+    mkdir -p apps/worker/node_modules/@hospitality-channels && \
+    for pkg in common content-model publish render-core storage; do \
+      cp -r packages/$$pkg apps/worker/node_modules/@hospitality-channels/$$pkg; \
+    done
+
 # --- Production runner ---
 FROM base AS runner
 ENV NODE_ENV=production
