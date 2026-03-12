@@ -16,6 +16,8 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
+      "@hospitality-channels/common": ["../../packages/common/src"],
+      "@hospitality-channels/content-model": ["../../packages/content-model/src"],
       "@hospitality-channels/templates": ["../../packages/templates/src"]
     }
   },
