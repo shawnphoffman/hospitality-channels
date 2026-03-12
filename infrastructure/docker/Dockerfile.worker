@@ -50,5 +50,5 @@ WORKDIR /app
 # Copy full app (node_modules, built packages, worker dist, etc.)
 COPY --from=builder /app ./
 
-# Run the worker directly from its built output
-CMD ["node", "apps/worker/dist/index.js"]
+# With rootDir "../..", tsc emits to dist/apps/worker/src/ (no top-level dist/index.js in clean Docker build)
+CMD ["node", "apps/worker/dist/apps/worker/src/index.js"]
