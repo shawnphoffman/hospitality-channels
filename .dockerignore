@@ -4,7 +4,9 @@ node_modules
 **/dist
 .turbo
 **/.turbo
+*.tsbuildinfo
 .git
+.claude
 .env
 .env.local
 *.md
