@@ -9,9 +9,10 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {
+      "@hospitality-channels/common": ["../common/src"],
       "@hospitality-channels/content-model": ["../content-model/src"]
     }
   },
-  "include": ["src/**/*", "../content-model/src/**/*"],
+  "include": ["src/**/*", "../common/src/**/*", "../content-model/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
