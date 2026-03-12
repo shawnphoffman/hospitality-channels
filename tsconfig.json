@@ -2,18 +2,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "baseUrl": ".",
-    "paths": {
-      "@hospitality-channels/common": ["packages/common/src"],
-      "@hospitality-channels/content-model": ["packages/content-model/src"],
-      "@hospitality-channels/templates": ["packages/templates/src"],
-      "@hospitality-channels/storage": ["packages/storage/src"],
-      "@hospitality-channels/ui": ["packages/ui/src"],
-      "@hospitality-channels/render-core": ["packages/render-core/src"],
-      "@hospitality-channels/publish": ["packages/publish/src"]
-    },
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

@@ -2,10 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "../..",
-    "noEmit": false,
-    "lib": ["ES2022", "DOM"]
+    "rootDir": "./src",
+    "noEmit": false
   },
-  "include": ["src/**/*", "../..//packages/common/src/**/*", "../../packages/content-model/src/**/*", "../../packages/publish/src/**/*", "../../packages/render-core/src/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

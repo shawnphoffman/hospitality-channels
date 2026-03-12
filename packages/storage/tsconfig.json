@@ -3,11 +3,11 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "./dist",
-    "rootDir": "../..",
+    "rootDir": "./src",
     "noEmit": false,
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src/**/*", "../content-model/src/**/*", "../common/src/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

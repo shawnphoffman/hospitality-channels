@@ -1,1 +1,1 @@
-export { houseGuideTemplate } from "./metadata";
+export { houseGuideTemplate } from "./metadata.js";

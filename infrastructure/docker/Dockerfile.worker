@@ -1,6 +1,3 @@
-# Worker runs built JS from apps/worker/dist/apps/worker/src/ (tsconfig rootDir).
-# We copy real workspace packages into apps/worker/node_modules/@hospitality-channels/
-# because pnpm symlinks don't resolve correctly for ESM in the container.
 FROM node:20-bookworm AS base
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 
@@ -45,20 +42,12 @@ RUN pnpm run build --filter=@hospitality-channels/worker
 # Remove source files and build cache to slim down the copy
 RUN rm -rf .turbo apps/worker/src packages/*/src apps/web docs
 
-# Replace workspace symlinks in apps/worker/node_modules with real package content
-# so Node ESM resolution finds dist/index.js (symlinks break resolution in the image)
-RUN rm -rf apps/worker/node_modules/@hospitality-channels && \
-    mkdir -p apps/worker/node_modules/@hospitality-channels && \
-    cp -r packages/common packages/content-model packages/publish packages/render-core packages/storage \
-       apps/worker/node_modules/@hospitality-channels/
-
 # --- Production runner ---
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Copy full app (node_modules, built packages, worker dist, etc.)
 COPY --from=builder /app ./
+RUN npx playwright install chromium
 
-# With rootDir "../..", tsc emits to dist/apps/worker/src/ (no top-level dist/index.js in clean Docker build)
-CMD ["node", "apps/worker/dist/apps/worker/src/index.js"]
+CMD ["node", "apps/worker/dist/index.js"]

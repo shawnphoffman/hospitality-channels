@@ -6,7 +6,7 @@ export {
   publishProfileSchema,
   publishedArtifactSchema,
   channelDefinitionSchema,
-} from "./schemas";
+} from "./schemas.js";
 
 export type {
   Template,
@@ -16,4 +16,4 @@ export type {
   PublishProfile,
   PublishedArtifact,
   ChannelDefinition,
-} from "./schemas";
+} from "./schemas.js";
