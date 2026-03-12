@@ -48,6 +48,6 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY --from=builder /app ./
-RUN npx playwright install chromium
+RUN pnpm --filter @hospitality-channels/render-core exec playwright install chromium
 
 CMD ["node", "apps/worker/dist/index.js"]
