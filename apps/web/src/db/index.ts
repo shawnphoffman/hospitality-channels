@@ -1,19 +1,18 @@
 import { randomBytes } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { createClient } from '@libsql/client'
+import { createClient, type Client } from '@libsql/client'
 import { drizzle } from 'drizzle-orm/libsql'
 import { count } from 'drizzle-orm'
 import { PATHS } from '@hospitality-channels/common'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import * as schema from './schema'
 
+type Database = ReturnType<typeof drizzle<typeof schema>>
+
 function generateId(): string {
 	return randomBytes(12).toString('hex')
 }
-
-mkdirSync(dirname(PATHS.database), { recursive: true })
-const dbUrl = `file:${PATHS.database}`
 
 const CREATE_TABLES_SQL = [
 	`CREATE TABLE IF NOT EXISTS templates (
@@ -104,22 +103,27 @@ const CREATE_TABLES_SQL = [
   )`,
 ]
 
-const client = createClient({ url: dbUrl })
+let _client: Client | null = null
+let _db: Database | null = null
+let initPromise: Promise<void> | null = null
 
-let initialized = false
-let seeded = false
-
-async function ensureSeeded() {
-	if (seeded) return
-	const [{ value: templatesCount }] = await db.select({ value: count() }).from(schema.templates)
-	if (templatesCount > 0) {
-		seeded = true
-		return
+function getLazy(): { client: Client; db: Database } {
+	if (!_client || !_db) {
+		mkdirSync(dirname(PATHS.database), { recursive: true })
+		_client = createClient({ url: `file:${PATHS.database}` })
+		_db = drizzle(_client, { schema })
 	}
+	return { client: _client, db: _db }
+}
+
+async function ensureSeeded(database: Database) {
+	const [{ value: templatesCount }] = await database.select({ value: count() }).from(schema.templates)
+	if (templatesCount > 0) return
+
 	const registry = getTemplateRegistry()
 	for (const tmpl of registry) {
 		try {
-			await db.insert(schema.templates).values({
+			await database.insert(schema.templates).values({
 				id: generateId(),
 				slug: tmpl.slug,
 				name: tmpl.name,
@@ -135,7 +139,7 @@ async function ensureSeeded() {
 		}
 	}
 	try {
-		await db.insert(schema.rooms).values({
+		await database.insert(schema.rooms).values({
 			id: generateId(),
 			name: 'Guest Room',
 			slug: 'guest-room',
@@ -145,7 +149,7 @@ async function ensureSeeded() {
 		/* already exists */
 	}
 	try {
-		await db.insert(schema.publishProfiles).values({
+		await database.insert(schema.publishProfiles).values({
 			id: generateId(),
 			name: 'Default Tunarr Export',
 			exportPath: PATHS.exports,
@@ -156,22 +160,31 @@ async function ensureSeeded() {
 	} catch {
 		/* already exists */
 	}
-	seeded = true
 }
 
-async function ensureTables() {
-	if (initialized) return
+async function ensureTables(client: Client, database: Database) {
 	for (const sql of CREATE_TABLES_SQL) {
 		await client.execute(sql)
 	}
-	initialized = true
-	await ensureSeeded()
+	await ensureSeeded(database)
 }
 
-// Eagerly create tables on module load
-ensureTables().catch(err => {
-	console.error('Failed to initialize database tables:', err)
-})
+/**
+ * Returns the database instance, ensuring tables and seed data exist.
+ * All side effects (directory creation, table creation) are deferred
+ * until this function is called at runtime — not at module import time.
+ */
+export async function getDb() {
+	const { client, db } = getLazy()
+	if (!initPromise) {
+		initPromise = ensureTables(client, db).catch(err => {
+			console.error('Failed to initialize database tables:', err)
+			initPromise = null
+			throw err
+		})
+	}
+	await initPromise
+	return db
+}
 
-export const db = drizzle(client, { schema })
 export { schema }
