@@ -1,4 +1,4 @@
-name: Build and Publish Docker Images
+name: Build and Publish Docker Image
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -14,14 +14,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
-    strategy:
-      matrix:
-        include:
-          - image: web
-            dockerfile: infrastructure/docker/Dockerfile.web
-          - image: worker
-            dockerfile: infrastructure/docker/Dockerfile.worker
 
     steps:
       - name: Checkout
@@ -38,7 +30,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=sha
             type=raw,value=latest
@@ -50,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: infrastructure/docker/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

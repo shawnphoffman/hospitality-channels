@@ -10,7 +10,7 @@ x-common: &common
     driver: json-file
     options:
       max-size: 10m
-      max-file: 3
+      max-file: '3'
 
 x-health: &health
   interval: 5m
@@ -25,20 +25,21 @@ networks:
 
 # =================================================================
 services:
-  web:
+  app:
     <<: *common
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.web
+      dockerfile: infrastructure/docker/Dockerfile
     ports:
-      - "${PORT:-3000}:3000"
+      - '${PORT:-3000}:3000'
     volumes:
       - app-data:/data
+      - exports:/exports
     environment:
       <<: *env
     # ================================
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       <<: *health
     # ================================
     labels:
@@ -57,21 +58,6 @@ services:
       - traefik.http.routers.guest-http.rule=Host(`guest.lan.goober.house`)
       - traefik.http.routers.guest-http.middlewares=redir-https
       - traefik.http.middlewares.redir-https.redirectscheme.scheme=https
-
-  worker:
-    <<: *common
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.worker
-    environment:
-      <<: *env
-      WEB_URL: http://web:3000
-    volumes:
-      - app-data:/data
-      - exports:/exports
-    depends_on:
-      web:
-        condition: service_started
 
 volumes:
   app-data:
