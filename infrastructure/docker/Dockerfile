@@ -67,7 +67,8 @@ RUN mkdir -p /data /exports && chown -R appuser:nodejs /data /exports
 # Copy full built workspace (worker runtime deps via pnpm, plus standalone web server)
 COPY --from=builder --chown=appuser:nodejs /app ./
 
-# Install Playwright Chromium
+# Install Playwright Chromium to a shared path (appuser has HOME=/nonexistent)
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
 RUN pnpm --filter @hospitality-channels/render-core exec playwright install chromium
 
 # Copy the entrypoint
