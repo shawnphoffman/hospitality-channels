@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { eq, desc, and } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
 
@@ -26,9 +26,12 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: 'Publish profile not found' }, { status: 404 })
 	}
 
-	const renderJob = await db.select().from(schema.jobs).where(eq(schema.jobs.pageId, pageId)).orderBy(schema.jobs.createdAt).limit(1)
-
-	const latestRender = renderJob.find(j => j.type === 'render' && j.status === 'completed' && j.outputPath)
+	const [latestRender] = await db
+		.select()
+		.from(schema.jobs)
+		.where(and(eq(schema.jobs.pageId, pageId), eq(schema.jobs.type, 'render'), eq(schema.jobs.status, 'completed')))
+		.orderBy(desc(schema.jobs.createdAt))
+		.limit(1)
 
 	if (!latestRender?.outputPath) {
 		return NextResponse.json(
