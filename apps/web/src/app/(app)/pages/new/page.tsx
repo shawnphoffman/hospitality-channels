@@ -7,7 +7,6 @@ import { CreatePageForm } from './form'
 export default async function NewPagePage({ searchParams }: { searchParams: { template?: string } }) {
 	const db = await getDb()
 	const templates = getTemplateRegistry()
-	const rooms = await db.select().from(schema.rooms)
 	const dbTemplates = await db.select().from(schema.templates)
 
 	const templateOptions = templates.map(t => {
@@ -33,11 +32,7 @@ export default async function NewPagePage({ searchParams }: { searchParams: { te
 	return (
 		<div>
 			<h2 className="mb-6 text-2xl font-bold text-white">Create New Page</h2>
-			<CreatePageForm
-				templates={templateOptions}
-				rooms={rooms.map(r => ({ id: r.id, name: r.name, slug: r.slug }))}
-				preselectedTemplate={preselectedSlug}
-			/>
+			<CreatePageForm templates={templateOptions} preselectedTemplate={preselectedSlug} />
 		</div>
 	)
 }

@@ -27,13 +27,9 @@ async function seed() {
       description TEXT, category TEXT, schema TEXT, preview_image TEXT,
       version INTEGER DEFAULT 1, status TEXT NOT NULL DEFAULT 'active'
     )`,
-		`CREATE TABLE IF NOT EXISTS rooms (
-      id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE,
-      default_channel_profile_id TEXT, default_theme_id TEXT, notes TEXT
-    )`,
 		`CREATE TABLE IF NOT EXISTS pages (
       id TEXT PRIMARY KEY, template_id TEXT NOT NULL REFERENCES templates(id),
-      slug TEXT NOT NULL, title TEXT NOT NULL, room_id TEXT REFERENCES rooms(id),
+      slug TEXT NOT NULL, title TEXT NOT NULL,
       theme_id TEXT,
       data_json TEXT DEFAULT '{}', animation_profile TEXT,
       default_duration_sec INTEGER DEFAULT 30,
@@ -47,7 +43,7 @@ async function seed() {
 		`CREATE TABLE IF NOT EXISTS publish_profiles (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, export_path TEXT NOT NULL,
       output_format TEXT NOT NULL DEFAULT 'mp4', lineup_type TEXT,
-      room_scope TEXT, file_naming_pattern TEXT
+      file_naming_pattern TEXT
     )`,
 		`CREATE TABLE IF NOT EXISTS published_artifacts (
       id TEXT PRIMARY KEY, page_id TEXT NOT NULL REFERENCES pages(id),
@@ -100,23 +96,6 @@ async function seed() {
 		} catch {
 			console.log(`  Template already exists: ${tmpl.name}`)
 		}
-	}
-
-	console.log('Seeding sample room...')
-	const roomId = generateId()
-	try {
-		await db
-			.insert(schema.rooms)
-			.values({
-				id: roomId,
-				name: 'Guest Room',
-				slug: 'guest-room',
-				notes: 'Main guest room',
-			})
-			.run()
-		console.log('  Seeded room: Guest Room')
-	} catch {
-		console.log('  Room already exists')
 	}
 
 	console.log('Seeding default publish profile...')

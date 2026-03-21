@@ -15,13 +15,7 @@ export default async function RenderPage({ params }: { params: { id: string } })
 
 	if (!dbTemplate) notFound()
 
-	let room: { name: string } | null = null
-	if (page.roomId) {
-		const [r] = await db.select().from(schema.rooms).where(eq(schema.rooms.id, page.roomId)).limit(1)
-		if (r) room = r
-	}
-
 	const dataJson = (page.dataJson ?? {}) as Record<string, string>
 
-	return <RenderScene templateSlug={dbTemplate.slug} data={dataJson} room={room} />
+	return <RenderScene templateSlug={dbTemplate.slug} data={dataJson} />
 }

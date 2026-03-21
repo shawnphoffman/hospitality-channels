@@ -5,20 +5,18 @@ import { count } from 'drizzle-orm'
 
 export default async function DashboardPage() {
 	const db = await getDb()
-	const [[pagesCount], [templatesCount], [roomsCount], [publishedCount]] = await Promise.all([
+	const [[pagesCount], [templatesCount], [publishedCount]] = await Promise.all([
 		db.select({ value: count() }).from(schema.pages),
 		db.select({ value: count() }).from(schema.templates),
-		db.select({ value: count() }).from(schema.rooms),
 		db.select({ value: count() }).from(schema.publishedArtifacts),
 	])
 
 	return (
 		<div>
 			<h2 className="mb-6 text-2xl font-bold text-white">Dashboard</h2>
-			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 				<StatCard title="Pages" value={String(pagesCount.value)} description="Total page compositions" href="/pages" />
 				<StatCard title="Templates" value={String(templatesCount.value)} description="Available templates" href="/templates" />
-				<StatCard title="Rooms" value={String(roomsCount.value)} description="Configured rooms" href="/rooms" />
 				<StatCard title="Published" value={String(publishedCount.value)} description="Published artifacts" href="/publish" />
 			</div>
 			<div className="mt-10">

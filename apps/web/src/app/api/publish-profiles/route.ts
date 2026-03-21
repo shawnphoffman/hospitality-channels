@@ -24,7 +24,6 @@ export async function POST(request: Request) {
 		exportPath: body.exportPath,
 		outputFormat: body.outputFormat || 'mp4',
 		lineupType: body.lineupType || null,
-		roomScope: body.roomScope || null,
 		fileNamingPattern: body.fileNamingPattern || null,
 	}
 

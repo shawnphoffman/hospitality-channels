@@ -27,8 +27,6 @@ export default async function EditPage({ params }: { params: { id: string } }) {
 		required?: boolean
 	}>
 
-	const rooms = await db.select().from(schema.rooms)
-
 	return (
 		<div>
 			<h2 className="mb-6 text-2xl font-bold text-white">Edit Page</h2>
@@ -38,14 +36,12 @@ export default async function EditPage({ params }: { params: { id: string } }) {
 					title: page.title,
 					slug: page.slug,
 					templateId: page.templateId,
-					roomId: page.roomId,
 					dataJson: (page.dataJson ?? {}) as Record<string, string>,
 					defaultDurationSec: page.defaultDurationSec ?? 30,
 				}}
 				templateName={dbTemplate.name ?? matchedTemplate?.name ?? 'Unknown'}
 				templateSlug={dbTemplate.slug}
 				fields={fields}
-				rooms={rooms.map(r => ({ id: r.id, name: r.name }))}
 			/>
 		</div>
 	)

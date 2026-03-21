@@ -1,15 +1,14 @@
-import type { ComponentType } from "react";
+import type { ComponentType } from 'react'
 
 export interface TemplateSceneProps {
-  data: Record<string, string>;
-  room: { name: string } | null;
+	data: Record<string, string>
 }
 
 export interface PreviewTemplateSceneProps extends TemplateSceneProps {
-  renderMode: boolean;
+	renderMode: boolean
 }
 
 export interface TemplateSceneEntry {
-  renderScene: ComponentType<TemplateSceneProps>;
-  previewScene: ComponentType<PreviewTemplateSceneProps>;
+	renderScene: ComponentType<TemplateSceneProps>
+	previewScene: ComponentType<PreviewTemplateSceneProps>
 }

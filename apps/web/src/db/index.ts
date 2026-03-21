@@ -26,20 +26,11 @@ const CREATE_TABLES_SQL = [
     version INTEGER DEFAULT 1,
     status TEXT NOT NULL DEFAULT 'active'
   )`,
-	`CREATE TABLE IF NOT EXISTS rooms (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    slug TEXT NOT NULL UNIQUE,
-    default_channel_profile_id TEXT,
-    default_theme_id TEXT,
-    notes TEXT
-  )`,
 	`CREATE TABLE IF NOT EXISTS pages (
     id TEXT PRIMARY KEY,
     template_id TEXT NOT NULL REFERENCES templates(id),
     slug TEXT NOT NULL,
     title TEXT NOT NULL,
-    room_id TEXT REFERENCES rooms(id),
     theme_id TEXT,
     data_json TEXT DEFAULT '{}',
     animation_profile TEXT,
@@ -64,7 +55,6 @@ const CREATE_TABLES_SQL = [
     export_path TEXT NOT NULL,
     output_format TEXT NOT NULL DEFAULT 'mp4',
     lineup_type TEXT,
-    room_scope TEXT,
     file_naming_pattern TEXT
   )`,
 	`CREATE TABLE IF NOT EXISTS published_artifacts (
@@ -137,16 +127,6 @@ async function ensureSeeded(database: Database) {
 		} catch {
 			/* already exists */
 		}
-	}
-	try {
-		await database.insert(schema.rooms).values({
-			id: generateId(),
-			name: 'Guest Room',
-			slug: 'guest-room',
-			notes: 'Main guest room',
-		})
-	} catch {
-		/* already exists */
 	}
 	try {
 		await database.insert(schema.publishProfiles).values({

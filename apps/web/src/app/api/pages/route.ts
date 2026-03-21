@@ -22,7 +22,6 @@ export async function POST(request: Request) {
 		templateId: parsed.templateId,
 		slug: parsed.slug,
 		title: parsed.title,
-		roomId: parsed.roomId ?? null,
 		themeId: parsed.themeId ?? null,
 		dataJson: parsed.dataJson,
 		animationProfile: parsed.animationProfile ?? null,

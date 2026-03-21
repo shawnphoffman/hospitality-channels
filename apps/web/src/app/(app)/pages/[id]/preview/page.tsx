@@ -18,12 +18,6 @@ export default async function PreviewPage({ params }: { params: { id: string } }
 
 	const registryTemplate = getTemplateBySlug(dbTemplate.slug)
 
-	let room: { name: string } | null = null
-	if (page.roomId) {
-		const [r] = await db.select().from(schema.rooms).where(eq(schema.rooms.id, page.roomId)).limit(1)
-		if (r) room = r
-	}
-
 	const dataJson = (page.dataJson ?? {}) as Record<string, string>
 
 	return (
@@ -37,7 +31,6 @@ export default async function PreviewPage({ params }: { params: { id: string } }
 			templateSlug={dbTemplate.slug}
 			templateName={dbTemplate.name ?? registryTemplate?.name ?? 'Unknown'}
 			data={dataJson}
-			room={room}
 		/>
 	)
 }
