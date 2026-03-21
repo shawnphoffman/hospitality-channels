@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { ImageField } from '@/components/image-field'
 
 interface TemplateField {
 	key: string
@@ -179,6 +180,19 @@ export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFor
 					<div className="space-y-4">
 						{selectedTemplate.fields.map(field => {
 							if (field.type === 'asset') return null
+							if (field.type === 'image') {
+								return (
+									<ImageField
+										key={field.key}
+										id={field.key}
+										label={field.label}
+										value={fieldValues[field.key] ?? ''}
+										onChange={val => handleFieldChange(field.key, val)}
+										required={field.required}
+										placeholder={field.default != null ? String(field.default) : ''}
+									/>
+								)
+							}
 							return (
 								<div key={field.key}>
 									<label htmlFor={field.key} className="block text-sm text-slate-400">

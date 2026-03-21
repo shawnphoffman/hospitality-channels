@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { WifiQrCode } from '@/templates/wifi-qr-code'
+import { ImageField } from '@/components/image-field'
 
 interface TemplateField {
 	key: string
@@ -181,6 +182,19 @@ export function EditPageForm({ page, templateName, templateSlug, fields }: EditP
 					const showWifiQr = hasWifiFields && wifiSsid.length > 0 && wifiPassword.length > 0
 
 					function renderField(field: TemplateField) {
+						if (field.type === 'image') {
+							return (
+								<ImageField
+									key={field.key}
+									id={`field-${field.key}`}
+									label={field.label}
+									value={fieldValues[field.key] ?? ''}
+									onChange={val => handleFieldChange(field.key, val)}
+									required={field.required}
+									placeholder={field.default != null ? String(field.default) : ''}
+								/>
+							)
+						}
 						return (
 							<div key={field.key}>
 								<label htmlFor={`field-${field.key}`} className="block text-sm text-slate-400">

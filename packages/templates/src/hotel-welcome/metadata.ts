@@ -13,8 +13,8 @@ export const hotelWelcomeTemplate: Template & {
 		fields: [
 			{
 				key: 'backgroundImageUrl',
-				label: 'Background Image URL',
-				type: 'string',
+				label: 'Background Image',
+				type: 'image',
 				default: '',
 				required: true,
 			},
