@@ -37,6 +37,9 @@ export default async function PublishPage() {
 		renderedAt: string
 	}>
 
+	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
+	const tunarrConfigured = !!tunarrSetting?.value
+
 	const artifactsWithDetails = artifacts.map(a => {
 		const page = pages.find(p => p.id === a.pageId)
 		const profile = profiles.find(p => p.id === a.publishProfileId)
@@ -67,6 +70,7 @@ export default async function PublishPage() {
 					status: a.status,
 					publishedAt: a.publishedAt,
 				}))}
+				tunarrConfigured={tunarrConfigured}
 			/>
 		</div>
 	)
