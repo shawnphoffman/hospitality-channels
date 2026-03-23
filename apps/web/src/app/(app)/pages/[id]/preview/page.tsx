@@ -20,6 +20,9 @@ export default async function PreviewPage({ params }: { params: { id: string } }
 
 	const dataJson = (page.dataJson ?? {}) as Record<string, string>
 
+	const profiles = await db.select().from(schema.publishProfiles)
+	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
+
 	return (
 		<PreviewClient
 			page={{
@@ -31,6 +34,8 @@ export default async function PreviewPage({ params }: { params: { id: string } }
 			templateSlug={dbTemplate.slug}
 			templateName={dbTemplate.name ?? registryTemplate?.name ?? 'Unknown'}
 			data={dataJson}
+			profiles={profiles.map(p => ({ id: p.id, name: p.name }))}
+			tunarrConfigured={!!tunarrSetting?.value}
 		/>
 	)
 }

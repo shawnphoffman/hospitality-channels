@@ -13,6 +13,12 @@ interface JobData {
 	completedAt: string | null
 }
 
+interface TunarrChannel {
+	id: string
+	number: number
+	name: string
+}
+
 interface PreviewClientProps {
 	page: {
 		id: string
@@ -23,18 +29,29 @@ interface PreviewClientProps {
 	templateSlug: string
 	templateName: string
 	data: Record<string, string>
+	profiles: { id: string; name: string }[]
+	tunarrConfigured?: boolean
 }
 
 const SCENE_W = 1920
 const SCENE_H = 1080
 
-export function PreviewClient({ page, templateSlug, templateName, data }: PreviewClientProps) {
+export function PreviewClient({ page, templateSlug, templateName, data, profiles, tunarrConfigured }: PreviewClientProps) {
 	const [showSafeArea, setShowSafeArea] = useState(false)
 	const [renderMode, setRenderMode] = useState(false)
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [scale, setScale] = useState(0)
 	const [renderJob, setRenderJob] = useState<JobData | null>(null)
 	const [rendering, setRendering] = useState(false)
+	const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id ?? '')
+
+	// Tunarr push state
+	const [showPush, setShowPush] = useState(false)
+	const [tunarrChannels, setTunarrChannels] = useState<TunarrChannel[]>([])
+	const [selectedChannelId, setSelectedChannelId] = useState('')
+	const [pushMode, setPushMode] = useState<'append' | 'replace'>('append')
+	const [pushing, setPushing] = useState(false)
+	const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null)
 
 	const recalc = useCallback(() => {
 		const el = wrapperRef.current
@@ -73,6 +90,8 @@ export function PreviewClient({ page, templateSlug, templateName, data }: Previe
 	const handleRender = async () => {
 		setRendering(true)
 		setRenderJob(null)
+		setShowPush(false)
+		setPushResult(null)
 		try {
 			const res = await fetch('/api/render', {
 				method: 'POST',
@@ -103,8 +122,95 @@ export function PreviewClient({ page, templateSlug, templateName, data }: Previe
 		}
 	}
 
+	const handleRenderAndPublish = async () => {
+		if (!selectedProfileId) return
+		setRendering(true)
+		setRenderJob(null)
+		setShowPush(false)
+		setPushResult(null)
+		try {
+			const res = await fetch('/api/render-and-publish', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					pageId: page.id,
+					profileId: selectedProfileId,
+					durationSec: page.defaultDurationSec,
+				}),
+			})
+			if (res.ok) {
+				const job: JobData = await res.json()
+				setRenderJob(job)
+			} else {
+				const err = await res.json().catch(() => ({}))
+				setRenderJob({
+					id: '',
+					type: 'render-publish',
+					status: 'failed',
+					outputPath: null,
+					error: err.error || 'Failed to start render & publish',
+					createdAt: new Date().toISOString(),
+					completedAt: null,
+				})
+				setRendering(false)
+			}
+		} catch {
+			setRendering(false)
+		}
+	}
+
+	const handleOpenPush = async () => {
+		setShowPush(true)
+		setPushResult(null)
+		try {
+			const res = await fetch('/api/tunarr/channels')
+			if (res.ok) {
+				const channels: TunarrChannel[] = await res.json()
+				setTunarrChannels(channels)
+				if (channels.length > 0) setSelectedChannelId(channels[0].id)
+			}
+		} catch {
+			/* will show empty */
+		}
+	}
+
+	const handlePush = async () => {
+		if (!selectedChannelId || !renderJob?.outputPath) return
+		setPushing(true)
+		setPushResult(null)
+
+		// We need the artifact ID — for render-publish jobs the output path is the published path
+		// Use the jobs endpoint to find the matching artifact
+		try {
+			const res = await fetch('/api/tunarr/push', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					// Pass output path; the push endpoint will look up by path
+					artifactOutputPath: renderJob.outputPath,
+					channelId: selectedChannelId,
+					mode: pushMode,
+				}),
+			})
+			if (res.ok) {
+				const data = await res.json()
+				const channelName = tunarrChannels.find(c => c.id === selectedChannelId)?.name ?? 'channel'
+				setPushResult({ ok: true, message: `Pushed "${data.title}" to ${channelName}` })
+			} else {
+				const data = await res.json().catch(() => ({}))
+				setPushResult({ ok: false, message: data.error || 'Push failed' })
+			}
+		} catch {
+			setPushResult({ ok: false, message: 'Push failed' })
+		} finally {
+			setPushing(false)
+		}
+	}
+
 	const scaledW = SCENE_W * scale
 	const scaledH = SCENE_H * scale
+
+	const isRenderPublish = renderJob?.type === 'render-publish'
 
 	return (
 		<div className="flex h-[calc(100vh-4rem)] flex-col">
@@ -134,13 +240,42 @@ export function PreviewClient({ page, templateSlug, templateName, data }: Previe
 					/>
 					Render mode
 				</label>
-				<button
-					onClick={handleRender}
-					disabled={rendering}
-					className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
-				>
-					{rendering ? 'Rendering...' : 'Render Video'}
-				</button>
+
+				{/* Profile selector + Render & Publish */}
+				{profiles.length > 0 && (
+					<>
+						<select
+							value={selectedProfileId}
+							onChange={e => setSelectedProfileId(e.target.value)}
+							className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+						>
+							{profiles.map(p => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
+						</select>
+						<button
+							onClick={handleRenderAndPublish}
+							disabled={rendering || !selectedProfileId}
+							className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+						>
+							{rendering && isRenderPublish ? 'Working...' : 'Render & Publish'}
+						</button>
+					</>
+				)}
+
+				{/* Fallback render-only button when no profiles */}
+				{profiles.length === 0 && (
+					<button
+						onClick={handleRender}
+						disabled={rendering}
+						className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+					>
+						{rendering ? 'Rendering...' : 'Render Video'}
+					</button>
+				)}
+
 				<a
 					href={`/pages/${page.id}/edit`}
 					className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-slate-500 hover:bg-slate-800"
@@ -152,7 +287,7 @@ export function PreviewClient({ page, templateSlug, templateName, data }: Previe
 				</a>
 			</div>
 
-			{/* Render job status */}
+			{/* Job status */}
 			{renderJob && (
 				<div
 					className={`mb-3 shrink-0 rounded-lg border px-4 py-3 text-sm ${
@@ -163,20 +298,82 @@ export function PreviewClient({ page, templateSlug, templateName, data }: Previe
 								: 'border-blue-800 bg-blue-950 text-blue-300'
 					}`}
 				>
-					{renderJob.status === 'queued' && 'Render job queued. Waiting for worker to pick it up...'}
-					{renderJob.status === 'processing' && 'Rendering video... This may take a minute.'}
+					{renderJob.status === 'queued' && (isRenderPublish ? 'Render & publish job queued...' : 'Render job queued...')}
+					{renderJob.status === 'processing' &&
+						(isRenderPublish ? 'Rendering and publishing... This may take a minute.' : 'Rendering video...')}
 					{renderJob.status === 'completed' && (
-						<>
-							Render complete!
-							{renderJob.outputPath && <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>}
-							<span className="ml-3">
+						<div className="flex items-center gap-3">
+							<span>
+								{isRenderPublish ? 'Rendered and published!' : 'Render complete!'}
+								{renderJob.outputPath && <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>}
+							</span>
+							{!isRenderPublish && (
 								<a href="/publish" className="font-medium text-green-200 underline hover:text-white">
 									Go to Publish
 								</a>
-							</span>
-						</>
+							)}
+							{isRenderPublish && tunarrConfigured && !showPush && (
+								<button
+									onClick={handleOpenPush}
+									className="rounded border border-purple-700 px-3 py-1 text-xs font-medium text-purple-400 hover:bg-purple-950"
+								>
+									Push to Tunarr
+								</button>
+							)}
+						</div>
 					)}
-					{renderJob.status === 'failed' && <>Render failed{renderJob.error ? `: ${renderJob.error}` : ''}</>}
+					{renderJob.status === 'failed' && <>Failed{renderJob.error ? `: ${renderJob.error}` : ''}</>}
+				</div>
+			)}
+
+			{/* Tunarr push panel */}
+			{showPush && (
+				<div className="mb-3 shrink-0 rounded-lg border border-purple-800 bg-purple-950/30 p-4">
+					{tunarrChannels.length === 0 ? (
+						<p className="text-sm text-slate-400">No Tunarr channels found.</p>
+					) : (
+						<div className="flex flex-wrap items-center gap-3">
+							<select
+								value={selectedChannelId}
+								onChange={e => setSelectedChannelId(e.target.value)}
+								className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+							>
+								{tunarrChannels.map(ch => (
+									<option key={ch.id} value={ch.id}>
+										{ch.number}. {ch.name}
+									</option>
+								))}
+							</select>
+							<label className="flex items-center gap-2 text-sm text-slate-300">
+								<input
+									type="radio"
+									name="push-mode"
+									checked={pushMode === 'append'}
+									onChange={() => setPushMode('append')}
+									className="accent-purple-500"
+								/>
+								Add
+							</label>
+							<label className="flex items-center gap-2 text-sm text-slate-300">
+								<input
+									type="radio"
+									name="push-mode"
+									checked={pushMode === 'replace'}
+									onChange={() => setPushMode('replace')}
+									className="accent-purple-500"
+								/>
+								Replace
+							</label>
+							<button
+								onClick={handlePush}
+								disabled={pushing}
+								className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50"
+							>
+								{pushing ? 'Pushing...' : 'Push'}
+							</button>
+							{pushResult && <span className={`text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</span>}
+						</div>
+					)}
 				</div>
 			)}
 
