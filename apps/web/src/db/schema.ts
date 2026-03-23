@@ -78,6 +78,12 @@ export const jobs = sqliteTable('jobs', {
 	completedAt: text('completed_at'),
 })
 
+export const settings = sqliteTable('settings', {
+	key: text('key').primaryKey(),
+	value: text('value'),
+	updatedAt: text('updated_at').notNull(),
+})
+
 export const channelDefinitions = sqliteTable('channel_definitions', {
 	id: text('id').primaryKey(),
 	channelNumber: integer('channel_number').notNull(),
