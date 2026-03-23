@@ -34,6 +34,18 @@ export const welcomeTemplate: Template & { schema: Record<string, unknown> } = {
 				type: 'string',
 				default: '',
 			},
+			{
+				key: 'backgroundAudioUrl',
+				label: 'Background Audio',
+				type: 'audio',
+				default: '',
+			},
+			{
+				key: 'matchAudioDuration',
+				label: 'Match video duration to audio length',
+				type: 'boolean',
+				default: false,
+			},
 		],
 	},
 }

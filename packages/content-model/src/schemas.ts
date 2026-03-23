@@ -27,7 +27,7 @@ export const pageSchema = z.object({
 
 export const assetSchema = z.object({
 	id: z.string().optional(),
-	type: z.enum(['photo', 'logo', 'background', 'video', 'other']),
+	type: z.enum(['photo', 'logo', 'background', 'video', 'audio', 'other']),
 	originalPath: z.string(),
 	derivedPath: z.string().optional(),
 	width: z.number().optional(),

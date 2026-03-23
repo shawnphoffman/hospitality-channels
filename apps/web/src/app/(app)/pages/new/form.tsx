@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageField } from '@/components/image-field'
+import { AudioField } from '@/components/audio-field'
 
 interface TemplateField {
 	key: string
@@ -191,6 +192,33 @@ export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFor
 										required={field.required}
 										placeholder={field.default != null ? String(field.default) : ''}
 									/>
+								)
+							}
+							if (field.type === 'audio') {
+								return (
+									<AudioField
+										key={field.key}
+										id={field.key}
+										label={field.label}
+										value={fieldValues[field.key] ?? ''}
+										onChange={val => handleFieldChange(field.key, val)}
+										required={field.required}
+									/>
+								)
+							}
+							if (field.type === 'boolean') {
+								return (
+									<div key={field.key}>
+										<label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+											<input
+												type="checkbox"
+												checked={fieldValues[field.key] === 'true'}
+												onChange={e => handleFieldChange(field.key, e.target.checked ? 'true' : 'false')}
+												className="rounded border-slate-600 bg-slate-800"
+											/>
+											{field.label}
+										</label>
+									</div>
 								)
 							}
 							return (

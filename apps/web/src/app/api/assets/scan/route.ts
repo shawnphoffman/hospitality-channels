@@ -8,12 +8,15 @@ import { readdir, stat, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { eq } from 'drizzle-orm'
 
-const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif', '.mp4', '.webm', '.mov'])
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif'])
+const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.wma'])
+const SUPPORTED_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ...AUDIO_EXTENSIONS, '.mp4', '.webm', '.mov'])
 
-function classifyAssetType(filename: string): 'photo' | 'logo' | 'background' | 'video' | 'other' {
+function classifyAssetType(filename: string): 'photo' | 'logo' | 'background' | 'video' | 'audio' | 'other' {
 	const ext = path.extname(filename).toLowerCase()
 	if (['.mp4', '.webm', '.mov'].includes(ext)) return 'video'
-	if (SUPPORTED_EXTENSIONS.has(ext)) return 'photo'
+	if (AUDIO_EXTENSIONS.has(ext)) return 'audio'
+	if (IMAGE_EXTENSIONS.has(ext)) return 'photo'
 	return 'other'
 }
 
@@ -27,7 +30,10 @@ export async function POST() {
 	try {
 		entries = await readdir(assetsDir)
 	} catch {
-		return NextResponse.json({ added: 0, message: 'Assets directory not found' })
+		return NextResponse.json({
+			added: 0,
+			message: 'Assets directory not found',
+		})
 	}
 
 	const existing = await db.select({ originalPath: schema.assets.originalPath }).from(schema.assets)

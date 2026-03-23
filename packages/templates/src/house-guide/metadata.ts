@@ -33,6 +33,18 @@ export const houseGuideTemplate: Template & { schema: Record<string, unknown> } 
 				type: 'textarea',
 				default: '',
 			},
+			{
+				key: 'backgroundAudioUrl',
+				label: 'Background Audio',
+				type: 'audio',
+				default: '',
+			},
+			{
+				key: 'matchAudioDuration',
+				label: 'Match video duration to audio length',
+				type: 'boolean',
+				default: false,
+			},
 		],
 	},
 }

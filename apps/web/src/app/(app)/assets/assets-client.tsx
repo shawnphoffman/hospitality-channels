@@ -86,7 +86,7 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 					ref={fileInputRef}
 					type="file"
 					multiple
-					accept="image/*,video/*"
+					accept="image/*,video/*,audio/*"
 					className="hidden"
 					onChange={e => {
 						if (e.target.files?.length) handleUpload(e.target.files)
@@ -110,6 +110,17 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 							<div className="mb-2 overflow-hidden rounded-lg bg-slate-800">
 								{asset.type === 'video' ? (
 									<div className="flex aspect-video items-center justify-center text-sm text-slate-500">Video</div>
+								) : asset.type === 'audio' ? (
+									<div className="flex aspect-video flex-col items-center justify-center gap-2 text-slate-500">
+										<svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+											/>
+										</svg>
+										<audio src={assetUrl(asset)} controls className="w-full px-2" preload="none" />
+									</div>
 								) : (
 									/* eslint-disable-next-line @next/next/no-img-element */
 									<img src={assetUrl(asset)} alt="" className="aspect-video w-full object-cover" loading="lazy" />

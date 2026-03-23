@@ -14,10 +14,12 @@ export async function GET() {
 }
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif'])
+const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.wma'])
 
-function classifyAssetType(filename: string): 'photo' | 'logo' | 'background' | 'video' | 'other' {
+function classifyAssetType(filename: string): 'photo' | 'logo' | 'background' | 'video' | 'audio' | 'other' {
 	const ext = path.extname(filename).toLowerCase()
 	if (['.mp4', '.webm', '.mov'].includes(ext)) return 'video'
+	if (AUDIO_EXTENSIONS.has(ext)) return 'audio'
 	if (IMAGE_EXTENSIONS.has(ext)) return 'photo'
 	return 'other'
 }
