@@ -3,7 +3,6 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { createClient, type Client } from '@libsql/client'
 import { drizzle } from 'drizzle-orm/libsql'
-import { count } from 'drizzle-orm'
 import { PATHS } from '@hospitality-channels/common'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import * as schema from './schema'
@@ -81,6 +80,11 @@ const CREATE_TABLES_SQL = [
     started_at TEXT,
     completed_at TEXT
   )`,
+	`CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TEXT NOT NULL
+  )`,
 	`CREATE TABLE IF NOT EXISTS channel_definitions (
     id TEXT PRIMARY KEY,
     channel_number INTEGER NOT NULL,
@@ -107,11 +111,13 @@ function getLazy(): { client: Client; db: Database } {
 }
 
 async function ensureSeeded(database: Database) {
-	const [{ value: templatesCount }] = await database.select({ value: count() }).from(schema.templates)
-	if (templatesCount > 0) return
-
 	const registry = getTemplateRegistry()
+	const existingSlugs = new Set(
+		(await database.select({ slug: schema.templates.slug }).from(schema.templates)).map(r => r.slug)
+	)
+
 	for (const tmpl of registry) {
+		if (existingSlugs.has(tmpl.slug)) continue
 		try {
 			await database.insert(schema.templates).values({
 				id: generateId(),

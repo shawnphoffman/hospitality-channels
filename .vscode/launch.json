@@ -1,0 +1,55 @@
+{
+	"version": "0.2.0",
+	"compounds": [
+		{
+			"name": "Full Stack (Web + Worker)",
+			"configurations": ["Web: Next.js", "Worker"],
+			"stopAll": true
+		}
+	],
+	"configurations": [
+		{
+			"name": "Web: Next.js",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/apps/web",
+			"runtimeExecutable": "pnpm",
+			"runtimeArgs": ["dev"],
+			"console": "integratedTerminal",
+			"serverReadyAction": {
+				"pattern": "- Local:.+(https?://.+)",
+				"uriFormat": "%s",
+				"action": "debugWithChrome"
+			},
+			"env": {
+				"NODE_ENV": "development"
+			}
+		},
+		{
+			"name": "Worker",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/apps/worker",
+			"runtimeExecutable": "pnpm",
+			"runtimeArgs": ["dev"],
+			"console": "integratedTerminal",
+			"env": {
+				"NODE_ENV": "development",
+				"WEB_URL": "http://localhost:3000"
+			}
+		},
+		{
+			"name": "Web: Next.js (build + start)",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/apps/web",
+			"runtimeExecutable": "pnpm",
+			"runtimeArgs": ["start"],
+			"console": "integratedTerminal",
+			"preLaunchTask": "build",
+			"env": {
+				"NODE_ENV": "production"
+			}
+		}
+	]
+}
