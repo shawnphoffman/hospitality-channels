@@ -181,7 +181,11 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 				const res = await fetch(`/api/tunarr/channels/${ch.tunarrChannelId}/programming`)
 				if (res.ok) {
 					const data = await res.json()
-					const programs: ProgramInfo[] = (data.programs ?? []).map((p: { title?: string; duration?: number }) => ({
+					// Tunarr returns programs as an object keyed by ID, not an array
+					const programList = Array.isArray(data.programs)
+						? data.programs
+						: Object.values(data.programs ?? {})
+					const programs: ProgramInfo[] = (programList as Array<{ title?: string; duration?: number }>).map(p => ({
 						title: p.title ?? 'Untitled',
 						duration: p.duration ?? 0,
 					}))
