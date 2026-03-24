@@ -30,6 +30,7 @@ async function tunarrFetch<T>(tunarrUrl: string, path: string, init?: RequestIni
 	const url = `${tunarrUrl.replace(/\/+$/, '')}/api${path}`
 	const res = await fetch(url, {
 		...init,
+		cache: 'no-store',
 		headers: {
 			'Content-Type': 'application/json',
 			...init?.headers,

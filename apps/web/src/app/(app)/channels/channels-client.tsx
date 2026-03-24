@@ -77,15 +77,10 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 	const [pushingId, setPushingId] = useState<string | null>(null)
 	const [pushResult, setPushResult] = useState<{ id: string; ok: boolean; message: string } | null>(null)
 
-	const handleOpenAdd = async () => {
-		if (showAdd) {
-			setShowAdd(false)
-			return
-		}
-		setShowAdd(true)
+	const fetchTunarrChannels = async () => {
 		setLoadingTunarr(true)
 		try {
-			const res = await fetch('/api/tunarr/channels')
+			const res = await fetch('/api/tunarr/channels', { cache: 'no-store' })
 			if (res.ok) {
 				const all: TunarrChannel[] = await res.json()
 				const managedIds = new Set(channels.map(c => c.tunarrChannelId))
@@ -98,6 +93,15 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 		} finally {
 			setLoadingTunarr(false)
 		}
+	}
+
+	const handleOpenAdd = async () => {
+		if (showAdd) {
+			setShowAdd(false)
+			return
+		}
+		setShowAdd(true)
+		await fetchTunarrChannels()
 	}
 
 	const handleAdd = async () => {
@@ -257,11 +261,21 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 						{loadingTunarr ? (
 							<p className="text-sm text-slate-400">Loading Tunarr channels...</p>
 						) : tunarrChannels.length === 0 ? (
-							<p className="text-sm text-slate-400">No unmanaged Tunarr channels available.</p>
+							<div className="flex items-center justify-between">
+								<p className="text-sm text-slate-400">No unmanaged Tunarr channels available.</p>
+								<button onClick={fetchTunarrChannels} className="text-xs text-blue-400 hover:text-blue-300">
+									Refresh
+								</button>
+							</div>
 						) : (
 							<>
 								<div>
-									<label className="block text-sm text-slate-400">Tunarr Channel</label>
+									<div className="flex items-center justify-between">
+										<label className="block text-sm text-slate-400">Tunarr Channel</label>
+										<button onClick={fetchTunarrChannels} className="text-xs text-blue-400 hover:text-blue-300">
+											Refresh
+										</button>
+									</div>
 									<select
 										value={selectedTunarrId}
 										onChange={e => setSelectedTunarrId(e.target.value)}
