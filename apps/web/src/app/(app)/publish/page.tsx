@@ -49,7 +49,15 @@ export default async function PublishPage() {
 		}
 	}
 
-	const artifactsWithDetails = artifacts.map(a => {
+	// Dedupe artifacts by output path, keeping the most recent (already sorted by publishedAt desc)
+	const seenPaths = new Set<string>()
+	const dedupedArtifacts = artifacts.filter(a => {
+		if (seenPaths.has(a.outputPath)) return false
+		seenPaths.add(a.outputPath)
+		return true
+	})
+
+	const artifactsWithDetails = dedupedArtifacts.map(a => {
 		const page = pages.find(p => p.id === a.pageId)
 		const profile = profiles.find(p => p.id === a.publishProfileId)
 		return {
