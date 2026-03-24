@@ -28,7 +28,7 @@ export const hotelWelcomeTemplate: Template & {
 			{
 				key: 'subtitle',
 				label: 'Subtitle',
-				type: 'string',
+				type: 'textarea',
 				default: 'Welcome to your stay',
 			},
 			{
