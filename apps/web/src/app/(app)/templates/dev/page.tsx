@@ -4,6 +4,8 @@ import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'rea
 import { useSearchParams } from 'next/navigation'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import { getTemplateScenes } from '@/templates/registry'
+import { ImageField } from '@/components/image-field'
+import { AudioField } from '@/components/audio-field'
 
 interface SchemaField {
 	key: string
@@ -148,33 +150,55 @@ function TemplateDevContent() {
 			{/* Fields */}
 			<div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
 				<h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500">Fields</h3>
-				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
 					{fields.map(field => (
 						<div key={field.key}>
-							<label className="mb-1 block text-sm font-medium text-slate-300">{field.label}</label>
-							{field.type === 'boolean' ? (
-								<input
-									type="checkbox"
-									checked={data[field.key] === 'true'}
-									onChange={e => setData(prev => ({ ...prev, [field.key]: String(e.target.checked) }))}
-									className="rounded border-slate-600"
+							{field.type === 'image' ? (
+								<ImageField
+									id={field.key}
+									label={field.label}
+									value={data[field.key] ?? ''}
+									onChange={v => setData(prev => ({ ...prev, [field.key]: v }))}
 								/>
+							) : field.type === 'audio' ? (
+								<AudioField
+									id={field.key}
+									label={field.label}
+									value={data[field.key] ?? ''}
+									onChange={v => setData(prev => ({ ...prev, [field.key]: v }))}
+								/>
+							) : field.type === 'boolean' ? (
+								<>
+									<label className="mb-1 block text-sm font-medium text-slate-300">{field.label}</label>
+									<input
+										type="checkbox"
+										checked={data[field.key] === 'true'}
+										onChange={e => setData(prev => ({ ...prev, [field.key]: String(e.target.checked) }))}
+										className="rounded border-slate-600"
+									/>
+								</>
 							) : field.type === 'textarea' ? (
-								<textarea
-									value={data[field.key] ?? ''}
-									onChange={e => setData(prev => ({ ...prev, [field.key]: e.target.value }))}
-									rows={2}
-									className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500"
-									placeholder={field.label}
-								/>
+								<>
+									<label className="mb-1 block text-sm font-medium text-slate-300">{field.label}</label>
+									<textarea
+										value={data[field.key] ?? ''}
+										onChange={e => setData(prev => ({ ...prev, [field.key]: e.target.value }))}
+										rows={2}
+										className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500"
+										placeholder={field.label}
+									/>
+								</>
 							) : (
-								<input
-									type="text"
-									value={data[field.key] ?? ''}
-									onChange={e => setData(prev => ({ ...prev, [field.key]: e.target.value }))}
-									className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500"
-									placeholder={field.type === 'image' || field.type === 'audio' ? `${field.label} URL` : field.label}
-								/>
+								<>
+									<label className="mb-1 block text-sm font-medium text-slate-300">{field.label}</label>
+									<input
+										type="text"
+										value={data[field.key] ?? ''}
+										onChange={e => setData(prev => ({ ...prev, [field.key]: e.target.value }))}
+										className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500"
+										placeholder={field.label}
+									/>
+								</>
 							)}
 						</div>
 					))}

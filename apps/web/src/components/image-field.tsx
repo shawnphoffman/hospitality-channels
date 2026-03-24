@@ -118,7 +118,7 @@ export function ImageField({ id, label, value, onChange, required, placeholder }
 								onClick={openPicker}
 								className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300 transition-colors hover:border-slate-500"
 							>
-								{value ? 'Change Asset' : 'Select Asset'}
+								{value ? 'Asset' : 'Select Asset'}
 							</button>
 							{value && (
 								<span className="truncate text-xs text-slate-500">
