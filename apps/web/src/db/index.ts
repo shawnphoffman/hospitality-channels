@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { createClient, type Client } from '@libsql/client'
 import { drizzle } from 'drizzle-orm/libsql'
+import { eq } from 'drizzle-orm'
 import { PATHS } from '@hospitality-channels/common'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import * as schema from './schema'
@@ -155,6 +156,41 @@ const MIGRATIONS_SQL = [
 	"ALTER TABLE channel_definitions ADD COLUMN push_mode TEXT DEFAULT 'replace'",
 ]
 
+/**
+ * Data migrations that clean up legacy data. Each migration is idempotent
+ * and safe to run on every startup.
+ */
+async function runDataMigrations(database: Database) {
+	// Migration: Clean up duplicate "Default Tunarr Export" profiles
+	// Legacy seed code created a new profile on every restart. Keep the one
+	// referenced by published artifacts, rename it to "Default Export", delete the rest.
+	const oldProfiles = await database
+		.select()
+		.from(schema.publishProfiles)
+		.where(eq(schema.publishProfiles.name, 'Default Tunarr Export'))
+	if (oldProfiles.length > 0) {
+		// Find which ones are referenced by artifacts
+		const referencedIds = new Set(
+			(await database.select({ pid: schema.publishedArtifacts.publishProfileId }).from(schema.publishedArtifacts)).map(
+				r => r.pid
+			)
+		)
+		const toKeep = oldProfiles.find(p => referencedIds.has(p.id)) ?? oldProfiles[0]
+		// Rename the kept one
+		await database
+			.update(schema.publishProfiles)
+			.set({ name: 'Default Export' })
+			.where(eq(schema.publishProfiles.id, toKeep.id))
+		// Delete the rest
+		const toDeleteIds = oldProfiles.filter(p => p.id !== toKeep.id).map(p => p.id)
+		if (toDeleteIds.length > 0) {
+			for (const id of toDeleteIds) {
+				await database.delete(schema.publishProfiles).where(eq(schema.publishProfiles.id, id))
+			}
+		}
+	}
+}
+
 async function ensureTables(client: Client, database: Database) {
 	for (const sql of CREATE_TABLES_SQL) {
 		await client.execute(sql)
@@ -167,6 +203,7 @@ async function ensureTables(client: Client, database: Database) {
 		}
 	}
 	await ensureSeeded(database)
+	await runDataMigrations(database)
 }
 
 /**
