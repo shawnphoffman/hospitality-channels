@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+# Match PUID/PGID from environment so the app user can access host-mounted volumes
+PUID=${PUID:-1001}
+PGID=${PGID:-1001}
+
+if [ "$(id -u appuser)" != "$PUID" ]; then
+  usermod -u "$PUID" appuser 2>/dev/null || true
+fi
+if [ "$(getent group nodejs | cut -d: -f3)" != "$PGID" ]; then
+  groupmod -g "$PGID" nodejs 2>/dev/null || true
+fi
+
 # Ensure data directories are writable
 chown -R appuser:nodejs /data 2>/dev/null || true
 chown -R appuser:nodejs /exports 2>/dev/null || true

@@ -181,18 +181,29 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 				const res = await fetch(`/api/tunarr/channels/${ch.tunarrChannelId}/programming`)
 				if (res.ok) {
 					const data = await res.json()
-					// Tunarr returns programs as an object keyed by ID, not an array
-					const programList = Array.isArray(data.programs)
-						? data.programs
-						: Object.values(data.programs ?? {})
-					const programs: ProgramInfo[] = (programList as Array<{ title?: string; duration?: number }>).map(p => ({
+					// Handle multiple possible Tunarr response shapes
+					let programList: Array<{ title?: string; duration?: number }>
+					if (Array.isArray(data)) {
+						programList = data
+					} else if (Array.isArray(data.programs)) {
+						programList = data.programs
+					} else if (data.programs && typeof data.programs === 'object') {
+						programList = Object.values(data.programs)
+					} else {
+						programList = []
+					}
+					const programs: ProgramInfo[] = programList.map(p => ({
 						title: p.title ?? 'Untitled',
 						duration: p.duration ?? 0,
 					}))
 					setProgramming(prev => ({ ...prev, [ch.id]: programs }))
+				} else {
+					console.error('Programming fetch failed:', res.status)
+					setProgramming(prev => ({ ...prev, [ch.id]: [] }))
 				}
-			} catch {
-				/* empty */
+			} catch (err) {
+				console.error('Failed to load programming:', err)
+				setProgramming(prev => ({ ...prev, [ch.id]: [] }))
 			} finally {
 				setLoadingProgramming(null)
 			}
