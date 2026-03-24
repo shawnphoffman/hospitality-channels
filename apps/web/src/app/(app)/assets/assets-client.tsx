@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface AssetData {
@@ -15,6 +15,22 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 	const [scanning, setScanning] = useState(false)
 	const [uploading, setUploading] = useState(false)
 	const [message, setMessage] = useState<string | null>(null)
+	const [dimensions, setDimensions] = useState<Record<string, { w: number; h: number }>>({})
+
+	const imageAssets = initialAssets.filter(a => a.type !== 'audio' && a.type !== 'video')
+	const audioAssets = initialAssets.filter(a => a.type === 'audio')
+
+	// Load image dimensions client-side
+	useEffect(() => {
+		for (const asset of imageAssets) {
+			if (dimensions[asset.id]) continue
+			const img = new Image()
+			img.onload = () => {
+				setDimensions(prev => ({ ...prev, [asset.id]: { w: img.naturalWidth, h: img.naturalHeight } }))
+			}
+			img.src = assetUrl(asset)
+		}
+	}, [initialAssets]) // eslint-disable-line react-hooks/exhaustive-deps
 
 	const handleScan = async () => {
 		setScanning(true)
@@ -62,8 +78,6 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 		}
 	}
 
-	const assetUrl = (asset: AssetData) => `/api/assets/serve?path=${encodeURIComponent(asset.originalPath)}`
-
 	return (
 		<>
 			{/* Actions */}
@@ -96,7 +110,6 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 				{message && <span className="text-sm text-slate-400">{message}</span>}
 			</div>
 
-			{/* Grid */}
 			{initialAssets.length === 0 ? (
 				<div className="rounded-xl border border-dashed border-slate-700 p-12 text-center">
 					<p className="text-slate-400">
@@ -104,40 +117,79 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 					</p>
 				</div>
 			) : (
-				<div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-					{initialAssets.map(asset => (
-						<div key={asset.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-3">
-							<div className="mb-2 overflow-hidden rounded-lg bg-slate-800">
-								{asset.type === 'video' ? (
-									<div className="flex aspect-video items-center justify-center text-sm text-slate-500">Video</div>
-								) : asset.type === 'audio' ? (
-									<div className="flex aspect-video flex-col items-center justify-center gap-2 text-slate-500">
-										<svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-											/>
-										</svg>
-										<audio src={assetUrl(asset)} controls className="w-full px-2" preload="none" />
+				<div className="space-y-8">
+					{/* Images */}
+					{imageAssets.length > 0 && (
+						<section>
+							<h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
+								Images ({imageAssets.length})
+							</h3>
+							<div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+								{imageAssets.map(asset => (
+									<div key={asset.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-3">
+										<div className="mb-2 overflow-hidden rounded-lg bg-slate-800">
+											{/* eslint-disable-next-line @next/next/no-img-element */}
+											<img src={assetUrl(asset)} alt="" className="aspect-video w-full object-cover" loading="lazy" />
+										</div>
+										<p className="truncate text-sm text-white">{asset.originalPath.split('/').pop()}</p>
+										<p className="text-xs text-slate-500">
+											{asset.type}
+											{dimensions[asset.id] && (
+												<span className="ml-1">
+													&middot; {dimensions[asset.id].w}&times;{dimensions[asset.id].h}
+												</span>
+											)}
+										</p>
+										<button
+											onClick={() => handleDelete(asset.id)}
+											className="absolute right-2 top-2 rounded bg-red-900/80 px-2 py-1 text-xs text-red-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-800"
+										>
+											Delete
+										</button>
 									</div>
-								) : (
-									/* eslint-disable-next-line @next/next/no-img-element */
-									<img src={assetUrl(asset)} alt="" className="aspect-video w-full object-cover" loading="lazy" />
-								)}
+								))}
 							</div>
-							<p className="truncate text-sm text-white">{asset.originalPath.split('/').pop()}</p>
-							<p className="text-xs text-slate-500">{asset.type}</p>
-							<button
-								onClick={() => handleDelete(asset.id)}
-								className="absolute right-2 top-2 rounded bg-red-900/80 px-2 py-1 text-xs text-red-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-800"
-							>
-								Delete
-							</button>
-						</div>
-					))}
+						</section>
+					)}
+
+					{/* Audio */}
+					{audioAssets.length > 0 && (
+						<section>
+							<h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
+								Audio ({audioAssets.length})
+							</h3>
+							<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+								{audioAssets.map(asset => (
+									<div key={asset.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-3">
+										<div className="mb-2 flex items-center gap-3 rounded-lg bg-slate-800 p-3">
+											<svg className="h-6 w-6 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+												/>
+											</svg>
+											<audio src={assetUrl(asset)} controls className="h-8 flex-1" preload="none" />
+										</div>
+										<p className="truncate text-sm text-white">{asset.originalPath.split('/').pop()}</p>
+										<p className="text-xs text-slate-500">{asset.type}</p>
+										<button
+											onClick={() => handleDelete(asset.id)}
+											className="absolute right-2 top-2 rounded bg-red-900/80 px-2 py-1 text-xs text-red-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-800"
+										>
+											Delete
+										</button>
+									</div>
+								))}
+							</div>
+						</section>
+					)}
 				</div>
 			)}
 		</>
 	)
+}
+
+function assetUrl(asset: AssetData) {
+	return `/api/assets/serve?path=${encodeURIComponent(asset.originalPath)}`
 }
