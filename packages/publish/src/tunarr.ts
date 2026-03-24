@@ -28,9 +28,10 @@ interface CondensedProgramming {
 
 async function tunarrFetch<T>(tunarrUrl: string, path: string, init?: RequestInit): Promise<T> {
 	const url = `${tunarrUrl.replace(/\/+$/, '')}/api${path}`
-	const res = await fetch(url, {
+	const separator = url.includes('?') ? '&' : '?'
+	const uncachedUrl = `${url}${separator}_t=${Date.now()}`
+	const res = await fetch(uncachedUrl, {
 		...init,
-		cache: 'no-store',
 		headers: {
 			'Content-Type': 'application/json',
 			...init?.headers,
