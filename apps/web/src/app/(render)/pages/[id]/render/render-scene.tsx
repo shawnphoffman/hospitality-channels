@@ -17,7 +17,7 @@ export function RenderScene({ templateSlug, data }: RenderSceneProps) {
 		)
 	}
 
-	const Scene = entry.renderScene
+	const Scene = entry.scene
 
 	return (
 		<div style={{ width: 1920, height: 1080, overflow: 'hidden' }}>

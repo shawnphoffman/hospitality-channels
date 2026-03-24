@@ -2,10 +2,9 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ImageField } from '@/components/image-field'
-import { AudioField } from '@/components/audio-field'
+import { TemplateField } from '@/components/template-field'
 
-interface TemplateField {
+interface TemplateFieldDef {
 	key: string
 	label: string
 	type: string
@@ -19,7 +18,7 @@ interface TemplateOption {
 	description: string
 	category: string
 	id: string
-	fields: TemplateField[]
+	fields: TemplateFieldDef[]
 }
 
 interface CreatePageFormProps {
@@ -181,72 +180,13 @@ export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFor
 					<div className="space-y-4">
 						{selectedTemplate.fields.map(field => {
 							if (field.type === 'asset') return null
-							if (field.type === 'image') {
-								return (
-									<ImageField
-										key={field.key}
-										id={field.key}
-										label={field.label}
-										value={fieldValues[field.key] ?? ''}
-										onChange={val => handleFieldChange(field.key, val)}
-										required={field.required}
-										placeholder={field.default != null ? String(field.default) : ''}
-									/>
-								)
-							}
-							if (field.type === 'audio') {
-								return (
-									<AudioField
-										key={field.key}
-										id={field.key}
-										label={field.label}
-										value={fieldValues[field.key] ?? ''}
-										onChange={val => handleFieldChange(field.key, val)}
-										required={field.required}
-									/>
-								)
-							}
-							if (field.type === 'boolean') {
-								return (
-									<div key={field.key}>
-										<label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-											<input
-												type="checkbox"
-												checked={fieldValues[field.key] === 'true'}
-												onChange={e => handleFieldChange(field.key, e.target.checked ? 'true' : 'false')}
-												className="rounded border-slate-600 bg-slate-800"
-											/>
-											{field.label}
-										</label>
-									</div>
-								)
-							}
 							return (
-								<div key={field.key}>
-									<label htmlFor={field.key} className="block text-sm text-slate-400">
-										{field.label}
-										{field.required && <span className="text-red-400"> *</span>}
-									</label>
-									{field.type === 'textarea' ? (
-										<textarea
-											id={field.key}
-											rows={4}
-											value={fieldValues[field.key] ?? ''}
-											onChange={e => handleFieldChange(field.key, e.target.value)}
-											placeholder={field.default != null ? String(field.default) : ''}
-											className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-										/>
-									) : (
-										<input
-											id={field.key}
-											type="text"
-											value={fieldValues[field.key] ?? ''}
-											onChange={e => handleFieldChange(field.key, e.target.value)}
-											placeholder={field.default != null ? String(field.default) : ''}
-											className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-										/>
-									)}
-								</div>
+								<TemplateField
+									key={field.key}
+									field={field}
+									value={fieldValues[field.key] ?? ''}
+									onChange={val => handleFieldChange(field.key, val)}
+								/>
 							)
 						})}
 					</div>

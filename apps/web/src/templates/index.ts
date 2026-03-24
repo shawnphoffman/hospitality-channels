@@ -1,2 +1,2 @@
-export type { TemplateSceneProps, PreviewTemplateSceneProps, TemplateSceneEntry } from "./types";
-export { getTemplateScenes, getRegisteredTemplateSlugs } from "./registry";
+export type { TemplateSceneProps, TemplateSceneEntry } from './types'
+export { getTemplateScenes, getRegisteredTemplateSlugs } from './registry'

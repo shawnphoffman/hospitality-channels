@@ -1,9 +1,9 @@
 'use client'
 
-import type { PreviewTemplateSceneProps } from '../types'
+import type { TemplateSceneProps } from '../types'
 import { WifiQrCode } from '../wifi-qr-code'
 
-export function WelcomePreviewScene({ data, renderMode }: PreviewTemplateSceneProps) {
+export function WelcomeScene({ data, renderMode }: TemplateSceneProps) {
 	const guestName = data.guestName || 'Guest'
 	const welcomeMessage = data.welcomeMessage || 'Welcome to your home away from home!'
 	const wifiSsid = data.wifiSsid
@@ -11,10 +11,20 @@ export function WelcomePreviewScene({ data, renderMode }: PreviewTemplateScenePr
 	const hasWifiQr = Boolean(wifiSsid && wifiPassword)
 
 	return (
-		<div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white">
+		<div
+			className="flex h-full w-full flex-col items-center justify-center text-white"
+			style={{ background: 'linear-gradient(to bottom right, #0f172a, #1e293b, #1e1b4b)' }}
+		>
 			<div
-				className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full opacity-20 blur-[120px]"
-				style={{ top: -160, height: 600, width: 800, background: 'radial-gradient(circle, #6366f1 0%, transparent 70%)' }}
+				className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full"
+				style={{
+					top: -160,
+					height: 600,
+					width: 800,
+					opacity: 0.2,
+					filter: 'blur(120px)',
+					background: 'radial-gradient(circle, #6366f1 0%, transparent 70%)',
+				}}
 			/>
 
 			<h1 style={{ fontSize: 42 }} className="relative z-10 mb-6 text-center font-light leading-tight text-slate-300">

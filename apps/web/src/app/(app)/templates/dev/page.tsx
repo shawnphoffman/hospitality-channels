@@ -4,8 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'rea
 import { useSearchParams } from 'next/navigation'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import { getTemplateScenes } from '@/templates/registry'
-import { ImageField } from '@/components/image-field'
-import { AudioField } from '@/components/audio-field'
+import { TemplateField } from '@/components/template-field'
 
 interface SchemaField {
 	key: string
@@ -39,10 +38,7 @@ function TemplateDevContent() {
 	const [scale, setScale] = useState(0)
 
 	const selectedTemplate = useMemo(() => templates.find(t => t.slug === selectedSlug), [templates, selectedSlug])
-	const fields: SchemaField[] = useMemo(
-		() => (selectedTemplate?.schema as { fields?: SchemaField[] })?.fields ?? [],
-		[selectedTemplate],
-	)
+	const fields: SchemaField[] = useMemo(() => (selectedTemplate?.schema as { fields?: SchemaField[] })?.fields ?? [], [selectedTemplate])
 	const scenes = useMemo(() => (selectedSlug ? getTemplateScenes(selectedSlug) : undefined), [selectedSlug])
 
 	// Initialize data from template defaults when template changes
@@ -73,7 +69,7 @@ function TemplateDevContent() {
 		return () => ro.disconnect()
 	}, [recalc])
 
-	const PreviewScene = scenes?.previewScene
+	const PreviewScene = scenes?.scene
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -120,7 +116,10 @@ function TemplateDevContent() {
 			</div>
 
 			{/* Preview */}
-			<div ref={wrapperRef} className="relative flex aspect-video max-h-[50vh] w-full items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+			<div
+				ref={wrapperRef}
+				className="relative flex aspect-video max-h-[50vh] w-full items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+			>
 				{PreviewScene && scale > 0 && (
 					<div
 						style={{
@@ -142,9 +141,7 @@ function TemplateDevContent() {
 					</div>
 				)}
 
-				{!PreviewScene && (
-					<p className="text-slate-500">No scene registered for &ldquo;{selectedSlug}&rdquo;</p>
-				)}
+				{!PreviewScene && <p className="text-slate-500">No scene registered for &ldquo;{selectedSlug}&rdquo;</p>}
 			</div>
 
 			{/* Fields */}
@@ -152,55 +149,12 @@ function TemplateDevContent() {
 				<h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500">Fields</h3>
 				<div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
 					{fields.map(field => (
-						<div key={field.key}>
-							{field.type === 'image' ? (
-								<ImageField
-									id={field.key}
-									label={field.label}
-									value={data[field.key] ?? ''}
-									onChange={v => setData(prev => ({ ...prev, [field.key]: v }))}
-								/>
-							) : field.type === 'audio' ? (
-								<AudioField
-									id={field.key}
-									label={field.label}
-									value={data[field.key] ?? ''}
-									onChange={v => setData(prev => ({ ...prev, [field.key]: v }))}
-								/>
-							) : field.type === 'boolean' ? (
-								<>
-									<label className="mb-1 block text-sm font-medium text-slate-300">{field.label}</label>
-									<input
-										type="checkbox"
-										checked={data[field.key] === 'true'}
-										onChange={e => setData(prev => ({ ...prev, [field.key]: String(e.target.checked) }))}
-										className="rounded border-slate-600"
-									/>
-								</>
-							) : field.type === 'textarea' ? (
-								<>
-									<label className="mb-1 block text-sm font-medium text-slate-300">{field.label}</label>
-									<textarea
-										value={data[field.key] ?? ''}
-										onChange={e => setData(prev => ({ ...prev, [field.key]: e.target.value }))}
-										rows={2}
-										className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500"
-										placeholder={field.label}
-									/>
-								</>
-							) : (
-								<>
-									<label className="mb-1 block text-sm font-medium text-slate-300">{field.label}</label>
-									<input
-										type="text"
-										value={data[field.key] ?? ''}
-										onChange={e => setData(prev => ({ ...prev, [field.key]: e.target.value }))}
-										className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500"
-										placeholder={field.label}
-									/>
-								</>
-							)}
-						</div>
+						<TemplateField
+							key={field.key}
+							field={field}
+							value={data[field.key] ?? ''}
+							onChange={v => setData(prev => ({ ...prev, [field.key]: v }))}
+						/>
 					))}
 					{fields.length === 0 && <p className="text-sm text-slate-500">No fields defined</p>}
 				</div>

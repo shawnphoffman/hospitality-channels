@@ -1,21 +1,12 @@
 import type { TemplateSceneEntry } from './types'
-import { WelcomeRenderScene, WelcomePreviewScene } from './welcome'
-import { HouseGuideRenderScene, HouseGuidePreviewScene } from './house-guide'
-import { HotelWelcomeRenderScene, HotelWelcomePreviewScene } from './hotel-welcome'
+import { WelcomeScene } from './welcome'
+import { HouseGuideScene } from './house-guide'
+import { HotelWelcomeScene } from './hotel-welcome'
 
 const sceneRegistry: Record<string, TemplateSceneEntry> = {
-	welcome: {
-		renderScene: WelcomeRenderScene,
-		previewScene: WelcomePreviewScene,
-	},
-	'house-guide': {
-		renderScene: HouseGuideRenderScene,
-		previewScene: HouseGuidePreviewScene,
-	},
-	'hotel-welcome': {
-		renderScene: HotelWelcomeRenderScene,
-		previewScene: HotelWelcomePreviewScene,
-	},
+	welcome: { scene: WelcomeScene },
+	'house-guide': { scene: HouseGuideScene },
+	'hotel-welcome': { scene: HotelWelcomeScene },
 }
 
 export function getTemplateScenes(slug: string): TemplateSceneEntry | undefined {

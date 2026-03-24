@@ -404,7 +404,7 @@ export function PreviewClient({ page, templateSlug, templateName, data, profiles
 											</div>
 										)
 									}
-									const Scene = entry.previewScene
+									const Scene = entry.scene
 									return <Scene data={data} renderMode={renderMode} />
 								})()}
 							</div>

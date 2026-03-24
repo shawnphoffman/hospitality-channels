@@ -1,2 +1,1 @@
-export { HotelWelcomeRenderScene } from './render-scene'
-export { HotelWelcomePreviewScene } from './preview-scene'
+export { HotelWelcomeScene } from "./scene";
