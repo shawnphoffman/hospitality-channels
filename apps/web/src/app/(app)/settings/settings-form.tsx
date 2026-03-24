@@ -39,6 +39,12 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
 		setTesting(true)
 		setTestResult(null)
 		try {
+			// Save settings first so the API can read the URL
+			await fetch('/api/settings', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(settings),
+			})
 			const res = await fetch('/api/tunarr/channels')
 			if (res.ok) {
 				const channels = await res.json()

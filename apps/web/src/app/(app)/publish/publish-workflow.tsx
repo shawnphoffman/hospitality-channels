@@ -58,7 +58,9 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 	const [newProfilePattern, setNewProfilePattern] = useState('{title}-{pageId}.mp4')
 	const [savingProfile, setSavingProfile] = useState(false)
 	const [publishingPageId, setPublishingPageId] = useState<string | null>(null)
-	const [selectedProfileId, setSelectedProfileId] = useState(initialProfiles[0]?.id ?? '')
+	const [selectedProfileId, setSelectedProfileId] = useState(
+		() => initialProfiles.find(p => p.name === 'Default Export')?.id ?? initialProfiles[0]?.id ?? ''
+	)
 	const [publishJob, setPublishJob] = useState<JobData | null>(null)
 	const [error, setError] = useState<string | null>(null)
 

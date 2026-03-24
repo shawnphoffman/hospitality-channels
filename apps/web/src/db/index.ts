@@ -134,17 +134,17 @@ async function ensureSeeded(database: Database) {
 			/* already exists */
 		}
 	}
-	try {
+	const existingProfiles = await database.select().from(schema.publishProfiles)
+	const hasDefaultExport = existingProfiles.some(p => p.name === 'Default Export')
+	if (!hasDefaultExport) {
 		await database.insert(schema.publishProfiles).values({
 			id: generateId(),
-			name: 'Default Tunarr Export',
+			name: 'Default Export',
 			exportPath: PATHS.exports,
 			outputFormat: 'mp4',
 			lineupType: 'main',
 			fileNamingPattern: '{title}-{pageId}.mp4',
 		})
-	} catch {
-		/* already exists */
 	}
 }
 
