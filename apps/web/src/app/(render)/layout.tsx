@@ -1,5 +1,5 @@
 export default function RenderLayout({
-  children,
+  children
 }: {
   children: React.ReactNode;
 }) {
@@ -9,7 +9,7 @@ export default function RenderLayout({
         width: "1920px",
         height: "1080px",
         overflow: "hidden",
-        background: "#0f172a",
+        background: "#0f172a"
       }}
     >
       {children}

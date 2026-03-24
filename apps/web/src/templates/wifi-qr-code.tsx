@@ -18,7 +18,9 @@ function escapeWifiField(value: string): string {
  * Uses the standard WIFI: URI scheme (WPA assumed).
  */
 export function WifiQrCode({ ssid, password, size = 160 }: WifiQrCodeProps) {
-  const wifiString = `WIFI:T:WPA;S:${escapeWifiField(ssid)};P:${escapeWifiField(password)};;`;
+  const wifiString = `WIFI:T:WPA;S:${escapeWifiField(ssid)};P:${escapeWifiField(
+    password
+  )};;`;
 
   return (
     <div className="rounded-xl bg-white p-3" style={{ lineHeight: 0 }}>

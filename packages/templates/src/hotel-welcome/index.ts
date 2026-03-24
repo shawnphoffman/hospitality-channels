@@ -1,1 +1,1 @@
-export { hotelWelcomeTemplate } from './metadata.js'
+export { hotelWelcomeTemplate } from "./metadata.js";

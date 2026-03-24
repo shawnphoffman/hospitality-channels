@@ -15,18 +15,24 @@ export default function TemplatesPage() {
         </a>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {templates.map((template) => (
+        {templates.map(template => (
           <div
             key={template.slug}
             className="rounded-xl border border-slate-800 bg-slate-900 p-6"
           >
-            <h3 className="text-lg font-semibold text-white">{template.name}</h3>
-            <p className="mt-2 text-sm text-slate-400">{template.description}</p>
+            <h3 className="text-lg font-semibold text-white">
+              {template.name}
+            </h3>
+            <p className="mt-2 text-sm text-slate-400">
+              {template.description}
+            </p>
             <div className="mt-1 flex items-center gap-2">
               <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
                 {template.category}
               </span>
-              <span className="text-xs text-slate-500">v{template.version}</span>
+              <span className="text-xs text-slate-500">
+                v{template.version}
+              </span>
             </div>
             <a
               href={`/pages/new?template=${template.slug}`}
