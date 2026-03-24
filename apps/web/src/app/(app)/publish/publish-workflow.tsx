@@ -21,6 +21,7 @@ interface RenderedPage {
 
 interface Artifact {
 	id: string
+	pageId: string
 	pageTitle: string
 	profileName: string
 	outputPath: string
@@ -42,14 +43,20 @@ interface TunarrChannel {
 	name: string
 }
 
+interface ChannelBinding {
+	tunarrChannelId: string
+	pushMode: string
+}
+
 interface PublishWorkflowProps {
 	profiles: Profile[]
 	renderedPages: RenderedPage[]
 	artifacts: Artifact[]
 	tunarrConfigured?: boolean
+	channelBindings?: Record<string, ChannelBinding>
 }
 
-export function PublishWorkflow({ profiles: initialProfiles, renderedPages, artifacts, tunarrConfigured }: PublishWorkflowProps) {
+export function PublishWorkflow({ profiles: initialProfiles, renderedPages, artifacts, tunarrConfigured, channelBindings = {} }: PublishWorkflowProps) {
 	const router = useRouter()
 	const [profiles, setProfiles] = useState(initialProfiles)
 	const [showNewProfile, setShowNewProfile] = useState(false)
@@ -151,7 +158,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 		}
 	}
 
-	const handleOpenPush = async (artifactId: string) => {
+	const handleOpenPush = async (artifactId: string, pageId?: string) => {
 		if (pushingArtifactId === artifactId) {
 			setPushingArtifactId(null)
 			return
@@ -160,6 +167,12 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 		setPushResult(null)
 		setSelectedChannelId('')
 
+		// Check for channel binding to pre-select
+		const binding = pageId ? channelBindings[pageId] : undefined
+		if (binding) {
+			setPushMode(binding.pushMode as 'append' | 'replace')
+		}
+
 		if (tunarrChannels.length === 0) {
 			setLoadingChannels(true)
 			try {
@@ -167,7 +180,12 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 				if (res.ok) {
 					const channels: TunarrChannel[] = await res.json()
 					setTunarrChannels(channels)
-					if (channels.length > 0) setSelectedChannelId(channels[0].id)
+					const boundId = binding?.tunarrChannelId
+					if (boundId && channels.some(c => c.id === boundId)) {
+						setSelectedChannelId(boundId)
+					} else if (channels.length > 0) {
+						setSelectedChannelId(channels[0].id)
+					}
 				}
 			} catch {
 				/* will show empty */
@@ -175,7 +193,12 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 				setLoadingChannels(false)
 			}
 		} else if (tunarrChannels.length > 0) {
-			setSelectedChannelId(tunarrChannels[0].id)
+			const boundId = binding?.tunarrChannelId
+			if (boundId && tunarrChannels.some(c => c.id === boundId)) {
+				setSelectedChannelId(boundId)
+			} else {
+				setSelectedChannelId(tunarrChannels[0].id)
+			}
 		}
 	}
 
@@ -388,7 +411,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 										</span>
 										{tunarrConfigured && a.status === 'published' && (
 											<button
-												onClick={() => handleOpenPush(a.id)}
+												onClick={() => handleOpenPush(a.id, a.pageId)}
 												className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
 													pushingArtifactId === a.id
 														? 'bg-purple-600 text-white'

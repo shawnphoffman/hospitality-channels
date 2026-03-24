@@ -87,12 +87,14 @@ const CREATE_TABLES_SQL = [
   )`,
 	`CREATE TABLE IF NOT EXISTS channel_definitions (
     id TEXT PRIMARY KEY,
+    tunarr_channel_id TEXT,
     channel_number INTEGER NOT NULL,
     channel_name TEXT NOT NULL,
     page_id TEXT REFERENCES pages(id),
     artifact_id TEXT REFERENCES published_artifacts(id),
     description TEXT,
     poster_asset_id TEXT REFERENCES assets(id),
+    push_mode TEXT DEFAULT 'replace',
     enabled INTEGER NOT NULL DEFAULT 1
   )`,
 ]
@@ -148,9 +150,21 @@ async function ensureSeeded(database: Database) {
 	}
 }
 
+const MIGRATIONS_SQL = [
+	'ALTER TABLE channel_definitions ADD COLUMN tunarr_channel_id TEXT',
+	"ALTER TABLE channel_definitions ADD COLUMN push_mode TEXT DEFAULT 'replace'",
+]
+
 async function ensureTables(client: Client, database: Database) {
 	for (const sql of CREATE_TABLES_SQL) {
 		await client.execute(sql)
+	}
+	for (const sql of MIGRATIONS_SQL) {
+		try {
+			await client.execute(sql)
+		} catch {
+			/* column already exists */
+		}
 	}
 	await ensureSeeded(database)
 }

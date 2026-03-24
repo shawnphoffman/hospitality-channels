@@ -96,12 +96,14 @@ export const settings = sqliteTable("settings", {
 
 export const channelDefinitions = sqliteTable("channel_definitions", {
   id: text("id").primaryKey(),
+  tunarrChannelId: text("tunarr_channel_id"),
   channelNumber: integer("channel_number").notNull(),
   channelName: text("channel_name").notNull(),
   pageId: text("page_id").references(() => pages.id),
   artifactId: text("artifact_id").references(() => publishedArtifacts.id),
   description: text("description"),
   posterAssetId: text("poster_asset_id").references(() => assets.id),
+  pushMode: text("push_mode").default("replace"),
   enabled: integer("enabled", { mode: "boolean" })
     .notNull()
     .default(true)

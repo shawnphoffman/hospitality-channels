@@ -40,6 +40,15 @@ export default async function PublishPage() {
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
 	const tunarrConfigured = !!tunarrSetting?.value
 
+	// Load channel bindings for pre-selecting push targets
+	const channelDefs = await db.select().from(schema.channelDefinitions)
+	const channelBindings: Record<string, { tunarrChannelId: string; pushMode: string }> = {}
+	for (const cd of channelDefs) {
+		if (cd.pageId && cd.tunarrChannelId) {
+			channelBindings[cd.pageId] = { tunarrChannelId: cd.tunarrChannelId, pushMode: cd.pushMode ?? 'replace' }
+		}
+	}
+
 	const artifactsWithDetails = artifacts.map(a => {
 		const page = pages.find(p => p.id === a.pageId)
 		const profile = profiles.find(p => p.id === a.publishProfileId)
@@ -63,6 +72,7 @@ export default async function PublishPage() {
 				renderedPages={pagesWithRenders}
 				artifacts={artifactsWithDetails.map(a => ({
 					id: a.id,
+					pageId: a.pageId,
 					pageTitle: a.pageTitle,
 					profileName: a.profileName,
 					outputPath: a.outputPath,
@@ -71,6 +81,7 @@ export default async function PublishPage() {
 					publishedAt: a.publishedAt,
 				}))}
 				tunarrConfigured={tunarrConfigured}
+				channelBindings={channelBindings}
 			/>
 		</div>
 	)
