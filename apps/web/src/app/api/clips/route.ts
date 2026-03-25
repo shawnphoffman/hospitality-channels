@@ -2,22 +2,22 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { getDb, schema } from '@/db'
-import { pageSchema } from '@hospitality-channels/content-model'
+import { clipSchema } from '@hospitality-channels/content-model'
 import { generateId } from '@/lib/id'
 
 export async function GET() {
 	const db = await getDb()
-	const pages = await db.select().from(schema.pages)
-	return NextResponse.json(pages)
+	const clips = await db.select().from(schema.clips)
+	return NextResponse.json(clips)
 }
 
 export async function POST(request: Request) {
 	const db = await getDb()
 	const body = await request.json()
-	const parsed = pageSchema.parse(body)
+	const parsed = clipSchema.parse(body)
 	const now = new Date().toISOString()
 
-	const page = {
+	const clip = {
 		id: generateId(),
 		templateId: parsed.templateId,
 		slug: parsed.slug,
@@ -30,6 +30,6 @@ export async function POST(request: Request) {
 		updatedAt: now,
 	}
 
-	await db.insert(schema.pages).values(page)
-	return NextResponse.json(page, { status: 201 })
+	await db.insert(schema.clips).values(clip)
+	return NextResponse.json(clip, { status: 201 })
 }

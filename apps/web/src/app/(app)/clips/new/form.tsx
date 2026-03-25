@@ -21,12 +21,12 @@ interface TemplateOption {
 	fields: TemplateFieldDef[]
 }
 
-interface CreatePageFormProps {
+interface CreateClipFormProps {
 	templates: TemplateOption[]
 	preselectedTemplate: string | null
 }
 
-export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFormProps) {
+export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFormProps) {
 	const router = useRouter()
 
 	const [selectedSlug, setSelectedSlug] = useState(preselectedTemplate ?? templates[0]?.slug ?? '')
@@ -79,7 +79,7 @@ export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFor
 		setError(null)
 
 		try {
-			const res = await fetch('/api/pages', {
+			const res = await fetch('/api/clips', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -93,10 +93,10 @@ export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFor
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => ({}))
-				throw new Error(data.error || `Failed to create page (${res.status})`)
+				throw new Error(data.error || `Failed to create clip (${res.status})`)
 			}
 
-			router.push('/pages')
+			router.push('/clips')
 			router.refresh()
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -139,9 +139,9 @@ export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFor
 				</div>
 			</section>
 
-			{/* Page Info */}
+			{/* Clip Info */}
 			<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-				<h3 className="mb-4 text-lg font-semibold text-white">Page Info</h3>
+				<h3 className="mb-4 text-lg font-semibold text-white">Clip Info</h3>
 				<div className="space-y-4">
 					<div>
 						<label htmlFor="title" className="block text-sm text-slate-400">
@@ -200,9 +200,9 @@ export function CreatePageForm({ templates, preselectedTemplate }: CreatePageFor
 					disabled={saving}
 					className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
 				>
-					{saving ? 'Creating...' : 'Create Page'}
+					{saving ? 'Creating...' : 'Create Clip'}
 				</button>
-				<a href="/pages" className="text-sm text-slate-400 hover:text-slate-300">
+				<a href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
 					Cancel
 				</a>
 			</div>

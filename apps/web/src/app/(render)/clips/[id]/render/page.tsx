@@ -7,15 +7,15 @@ import { RenderScene } from './render-scene'
 
 export default async function RenderPage({ params }: { params: { id: string } }) {
 	const db = await getDb()
-	const [page] = await db.select().from(schema.pages).where(eq(schema.pages.id, params.id)).limit(1)
+	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
 
-	if (!page) notFound()
+	if (!clip) notFound()
 
-	const [dbTemplate] = await db.select().from(schema.templates).where(eq(schema.templates.id, page.templateId)).limit(1)
+	const [dbTemplate] = await db.select().from(schema.templates).where(eq(schema.templates.id, clip.templateId)).limit(1)
 
 	if (!dbTemplate) notFound()
 
-	const dataJson = (page.dataJson ?? {}) as Record<string, string>
+	const dataJson = (clip.dataJson ?? {}) as Record<string, string>
 
 	return <RenderScene templateSlug={dbTemplate.slug} data={dataJson} />
 }

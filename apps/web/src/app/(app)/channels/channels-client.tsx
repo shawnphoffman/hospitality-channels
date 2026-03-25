@@ -8,11 +8,11 @@ interface ChannelDef {
 	tunarrChannelId: string | null
 	channelNumber: number
 	channelName: string
-	pageId: string | null
+	clipId: string | null
 	pushMode: string | null
 	enabled: boolean | null
 	description: string | null
-	pageTitle: string | null
+	clipTitle: string | null
 	latestArtifact: {
 		id: string
 		outputPath: string
@@ -21,7 +21,7 @@ interface ChannelDef {
 	} | null
 }
 
-interface PageInfo {
+interface ClipInfo {
 	id: string
 	title: string
 }
@@ -39,7 +39,7 @@ interface ProgramInfo {
 
 interface ChannelsClientProps {
 	initialChannels: ChannelDef[]
-	pages: PageInfo[]
+	clips: ClipInfo[]
 	tunarrConfigured: boolean
 }
 
@@ -50,7 +50,7 @@ function formatDuration(ms: number): string {
 	return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: ChannelsClientProps) {
+export function ChannelsClient({ initialChannels, clips, tunarrConfigured }: ChannelsClientProps) {
 	const router = useRouter()
 	const [channels, setChannels] = useState(initialChannels)
 
@@ -59,13 +59,13 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 	const [tunarrChannels, setTunarrChannels] = useState<TunarrChannel[]>([])
 	const [loadingTunarr, setLoadingTunarr] = useState(false)
 	const [selectedTunarrId, setSelectedTunarrId] = useState('')
-	const [bindPageId, setBindPageId] = useState('')
+	const [bindClipId, setBindClipId] = useState('')
 	const [addPushMode, setAddPushMode] = useState<'replace' | 'append'>('replace')
 	const [adding, setAdding] = useState(false)
 
 	// Edit state
 	const [editingId, setEditingId] = useState<string | null>(null)
-	const [editPageId, setEditPageId] = useState('')
+	const [editClipId, setEditClipId] = useState('')
 	const [editPushMode, setEditPushMode] = useState<'replace' | 'append'>('replace')
 
 	// Programming state
@@ -116,14 +116,14 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 					tunarrChannelId: ch.id,
 					channelNumber: ch.number,
 					channelName: ch.name,
-					pageId: bindPageId || null,
+					clipId: bindClipId || null,
 					pushMode: addPushMode,
 				}),
 			})
 			if (res.ok) {
 				setShowAdd(false)
 				setSelectedTunarrId('')
-				setBindPageId('')
+				setBindClipId('')
 				setAddPushMode('replace')
 				router.refresh()
 				// Optimistic: refetch
@@ -144,7 +144,7 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 
 	const handleStartEdit = (ch: ChannelDef) => {
 		setEditingId(ch.id)
-		setEditPageId(ch.pageId ?? '')
+		setEditClipId(ch.clipId ?? '')
 		setEditPushMode((ch.pushMode as 'replace' | 'append') ?? 'replace')
 	}
 
@@ -152,7 +152,7 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 		await fetch(`/api/channels/${id}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ pageId: editPageId || null, pushMode: editPushMode }),
+			body: JSON.stringify({ clipId: editClipId || null, pushMode: editPushMode }),
 		})
 		setEditingId(null)
 		router.refresh()
@@ -308,16 +308,16 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 									</select>
 								</div>
 								<div>
-									<label className="block text-sm text-slate-400">Bind to Page (optional)</label>
+									<label className="block text-sm text-slate-400">Bind to Clip (optional)</label>
 									<select
-										value={bindPageId}
-										onChange={e => setBindPageId(e.target.value)}
+										value={bindClipId}
+										onChange={e => setBindClipId(e.target.value)}
 										className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
 									>
 										<option value="">None</option>
-										{pages.map(p => (
-											<option key={p.id} value={p.id}>
-												{p.title}
+										{clips.map(c => (
+											<option key={c.id} value={c.id}>
+												{c.title}
 											</option>
 										))}
 									</select>
@@ -383,7 +383,7 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 											{!ch.enabled && <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-500">disabled</span>}
 										</div>
 										<p className="mt-1 text-xs text-slate-400">
-											{ch.pageTitle ? `Bound to: ${ch.pageTitle}` : 'Unbound'}
+											{ch.clipTitle ? `Bound to: ${ch.clipTitle}` : 'Unbound'}
 											{ch.latestArtifact && (
 												<span className="ml-2 text-slate-500">
 													&middot; Last published {ch.latestArtifact.publishedAt ? new Date(ch.latestArtifact.publishedAt).toLocaleDateString() : 'unknown'}
@@ -444,16 +444,16 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 								{editingId === ch.id && (
 									<div className="mt-3 space-y-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
 										<div>
-											<label className="block text-xs text-slate-400">Bound Page</label>
+											<label className="block text-xs text-slate-400">Bound Clip</label>
 											<select
-												value={editPageId}
-												onChange={e => setEditPageId(e.target.value)}
+												value={editClipId}
+												onChange={e => setEditClipId(e.target.value)}
 												className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
 											>
 												<option value="">None</option>
-												{pages.map(p => (
-													<option key={p.id} value={p.id}>
-														{p.title}
+												{clips.map(c => (
+													<option key={c.id} value={c.id}>
+														{c.title}
 													</option>
 												))}
 											</select>

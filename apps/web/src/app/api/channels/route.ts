@@ -12,13 +12,13 @@ function generateId(): string {
 export async function GET() {
 	const db = await getDb()
 	const channels = await db.select().from(schema.channelDefinitions)
-	const pages = await db.select({ id: schema.pages.id, title: schema.pages.title }).from(schema.pages)
+	const clips = await db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips)
 
 	const result = channels.map(ch => {
-		const page = ch.pageId ? pages.find(p => p.id === ch.pageId) : null
+		const clip = ch.clipId ? clips.find(p => p.id === ch.clipId) : null
 		return {
 			...ch,
-			pageTitle: page?.title ?? null,
+			clipTitle: clip?.title ?? null,
 		}
 	})
 
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
 		tunarrChannelId: string
 		channelNumber: number
 		channelName: string
+		clipId?: string
 		pageId?: string
 		pushMode?: 'append' | 'replace'
 	}
@@ -49,13 +50,15 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: 'Channel already managed' }, { status: 409 })
 	}
 
+	const clipId = body.clipId ?? body.pageId ?? null
+
 	const id = generateId()
 	await db.insert(schema.channelDefinitions).values({
 		id,
 		tunarrChannelId: body.tunarrChannelId,
 		channelNumber: body.channelNumber,
 		channelName: body.channelName,
-		pageId: body.pageId ?? null,
+		clipId,
 		pushMode: body.pushMode ?? 'replace',
 		enabled: true,
 	})

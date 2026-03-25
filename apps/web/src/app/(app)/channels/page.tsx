@@ -7,7 +7,7 @@ import { ChannelsClient } from './channels-client'
 export default async function ChannelsPage() {
 	const db = await getDb()
 	const channels = await db.select().from(schema.channelDefinitions)
-	const pages = await db.select({ id: schema.pages.id, title: schema.pages.title }).from(schema.pages)
+	const clips = await db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips)
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
 	const tunarrConfigured = !!tunarrSetting?.value
 
@@ -19,16 +19,16 @@ export default async function ChannelsPage() {
 		.limit(1)
 	const tunarrProfileId = tunarrProfile[0]?.id
 
-	let artifactsByPage: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
+	let artifactsByClip: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
 	if (tunarrProfileId) {
 		const artifacts = await db
 			.select()
 			.from(schema.publishedArtifacts)
 			.where(eq(schema.publishedArtifacts.publishProfileId, tunarrProfileId))
 		for (const a of artifacts) {
-			const existing = artifactsByPage[a.pageId]
+			const existing = artifactsByClip[a.clipId]
 			if (!existing || (a.publishedAt ?? '') > (existing.publishedAt ?? '')) {
-				artifactsByPage[a.pageId] = {
+				artifactsByClip[a.clipId] = {
 					id: a.id,
 					outputPath: a.outputPath,
 					durationSec: a.durationSec,
@@ -39,11 +39,11 @@ export default async function ChannelsPage() {
 	}
 
 	const channelsWithDetails = channels.map(ch => {
-		const page = ch.pageId ? pages.find(p => p.id === ch.pageId) : null
-		const artifact = ch.pageId ? artifactsByPage[ch.pageId] ?? null : null
+		const clip = ch.clipId ? clips.find(c => c.id === ch.clipId) : null
+		const artifact = ch.clipId ? artifactsByClip[ch.clipId] ?? null : null
 		return {
 			...ch,
-			pageTitle: page?.title ?? null,
+			clipTitle: clip?.title ?? null,
 			latestArtifact: artifact,
 		}
 	})
@@ -53,7 +53,7 @@ export default async function ChannelsPage() {
 			<h2 className="mb-6 text-2xl font-bold text-white">Channels</h2>
 			<ChannelsClient
 				initialChannels={channelsWithDetails}
-				pages={pages}
+				clips={clips}
 				tunarrConfigured={tunarrConfigured}
 			/>
 		</div>

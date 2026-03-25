@@ -16,7 +16,7 @@ export const templates = sqliteTable("templates", {
     .default("active")
 });
 
-export const pages = sqliteTable("pages", {
+export const clips = sqliteTable("pages", {
   id: text("id").primaryKey(),
   templateId: text("template_id")
     .notNull()
@@ -56,9 +56,9 @@ export const publishProfiles = sqliteTable("publish_profiles", {
 
 export const publishedArtifacts = sqliteTable("published_artifacts", {
   id: text("id").primaryKey(),
-  pageId: text("page_id")
+  clipId: text("page_id")
     .notNull()
-    .references(() => pages.id),
+    .references(() => clips.id),
   publishProfileId: text("publish_profile_id")
     .notNull()
     .references(() => publishProfiles.id),
@@ -75,7 +75,7 @@ export const publishedArtifacts = sqliteTable("published_artifacts", {
 export const jobs = sqliteTable("jobs", {
   id: text("id").primaryKey(),
   type: text("type").notNull(),
-  pageId: text("page_id").references(() => pages.id),
+  clipId: text("page_id").references(() => clips.id),
   profileId: text("profile_id").references(() => publishProfiles.id),
   payload: text("payload", { mode: "json" }).default({}),
   status: text("status")
@@ -99,7 +99,7 @@ export const channelDefinitions = sqliteTable("channel_definitions", {
   tunarrChannelId: text("tunarr_channel_id"),
   channelNumber: integer("channel_number").notNull(),
   channelName: text("channel_name").notNull(),
-  pageId: text("page_id").references(() => pages.id),
+  clipId: text("page_id").references(() => clips.id),
   artifactId: text("artifact_id").references(() => publishedArtifacts.id),
   description: text("description"),
   posterAssetId: text("poster_asset_id").references(() => assets.id),

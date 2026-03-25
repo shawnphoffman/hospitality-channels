@@ -5,7 +5,7 @@ import { createLogger, PATHS } from '@hospitality-channels/common'
 import { capturePageVideo } from '@hospitality-channels/render-core'
 import { publishArtifact } from '@hospitality-channels/publish'
 import { eq } from 'drizzle-orm'
-import { db, pages, publishedArtifacts } from './db.js'
+import { db, clips, publishedArtifacts } from './db.js'
 import type { Job } from './queue.js'
 
 const logger = createLogger('worker:handlers')
@@ -16,12 +16,12 @@ function generateId(): string {
 
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3000'
 
-async function resolveAudioForPage(pageId: string): Promise<{ audioPath?: string; matchAudioDuration?: boolean; tempFile?: string }> {
+async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string; matchAudioDuration?: boolean; tempFile?: string }> {
 	try {
-		const [page] = await db.select().from(pages).where(eq(pages.id, pageId)).limit(1)
-		if (!page) return {}
+		const [clip] = await db.select().from(clips).where(eq(clips.id, clipId)).limit(1)
+		if (!clip) return {}
 
-		const data = (page.dataJson ?? {}) as Record<string, string>
+		const data = (clip.dataJson ?? {}) as Record<string, string>
 		const audioUrl = data.backgroundAudioUrl
 		const matchDuration = data.matchAudioDuration === 'true'
 
@@ -58,7 +58,7 @@ async function resolveAudioForPage(pageId: string): Promise<{ audioPath?: string
 		// Otherwise treat as a filesystem path
 		return { audioPath: audioUrl, matchAudioDuration: matchDuration }
 	} catch (err) {
-		logger.warn('Failed to resolve audio for page', { pageId, error: String(err) })
+		logger.warn('Failed to resolve audio for clip', { clipId, error: String(err) })
 		return {}
 	}
 }
@@ -66,13 +66,13 @@ async function resolveAudioForPage(pageId: string): Promise<{ audioPath?: string
 export async function handleRenderJob(job: Job): Promise<string> {
 	const payload = job.payload as {
 		durationSec: number
-		pageTitle: string
-		pageSlug: string
+		clipTitle: string
+		clipSlug: string
 	}
 
-	const pageId = job.pageId ?? 'unknown'
-	const url = `${WEB_URL}/pages/${pageId}/render`
-	const slug = payload.pageSlug || pageId
+	const clipId = job.clipId ?? 'unknown'
+	const url = `${WEB_URL}/clips/${clipId}/render`
+	const slug = payload.clipSlug || clipId
 	const now = new Date()
 	const ts = now
 		.toISOString()
@@ -81,9 +81,9 @@ export async function handleRenderJob(job: Job): Promise<string> {
 	const outputDir = path.resolve(PATHS.renders)
 	const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`)
 
-	const audio = await resolveAudioForPage(pageId)
+	const audio = await resolveAudioForClip(clipId)
 
-	logger.info('Starting render', { pageId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath })
+	logger.info('Starting render', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath })
 
 	const captureResult = await capturePageVideo({
 		url,
@@ -100,34 +100,34 @@ export async function handleRenderJob(job: Job): Promise<string> {
 		throw new Error(`Capture failed: ${captureResult.error}`)
 	}
 
-	logger.info('Render complete', { pageId, outputPath: finalPath })
+	logger.info('Render complete', { clipId, outputPath: finalPath })
 	return finalPath
 }
 
 export async function handlePublishJob(job: Job): Promise<string> {
 	const payload = job.payload as {
 		sourcePath: string
-		pageTitle: string
-		pageSlug: string
+		clipTitle: string
+		clipSlug: string
 		durationSec: number
 		exportPath: string
 		fileNamingPattern: string | null
 		outputFormat: string
 	}
 
-	const pageId = job.pageId ?? 'unknown'
+	const clipId = job.clipId ?? 'unknown'
 	const profileId = job.profileId ?? 'unknown'
 
 	if (!payload.sourcePath) {
 		throw new Error('publish job requires sourcePath in payload')
 	}
 
-	logger.info('Starting publish', { pageId, exportPath: payload.exportPath })
+	logger.info('Starting publish', { clipId, exportPath: payload.exportPath })
 
 	const result = await publishArtifact({
 		sourcePath: payload.sourcePath,
-		pageId,
-		pageTitle: payload.pageTitle,
+		clipId,
+		clipTitle: payload.clipTitle,
 		profile: {
 			name: '',
 			exportPath: payload.exportPath,
@@ -144,7 +144,7 @@ export async function handlePublishJob(job: Job): Promise<string> {
 	const artifactId = generateId()
 	await db.insert(publishedArtifacts).values({
 		id: artifactId,
-		pageId,
+		clipId,
 		publishProfileId: profileId,
 		outputPath: result.outputPath,
 		posterPath: result.posterPath ?? null,
@@ -154,26 +154,26 @@ export async function handlePublishJob(job: Job): Promise<string> {
 		publishedAt: new Date().toISOString(),
 	})
 
-	logger.info('Publish complete', { pageId, outputPath: result.outputPath, artifactId })
+	logger.info('Publish complete', { clipId, outputPath: result.outputPath, artifactId })
 	return result.outputPath
 }
 
 export async function handleRenderPublishJob(job: Job): Promise<string> {
 	const payload = job.payload as {
 		durationSec: number
-		pageTitle: string
-		pageSlug: string
+		clipTitle: string
+		clipSlug: string
 		exportPath: string
 		fileNamingPattern: string | null
 		outputFormat: string
 	}
 
-	const pageId = job.pageId ?? 'unknown'
+	const clipId = job.clipId ?? 'unknown'
 	const profileId = job.profileId ?? 'unknown'
 
 	// Step 1: Render
-	const url = `${WEB_URL}/pages/${pageId}/render`
-	const slug = payload.pageSlug || pageId
+	const url = `${WEB_URL}/clips/${clipId}/render`
+	const slug = payload.clipSlug || clipId
 	const now = new Date()
 	const ts = now
 		.toISOString()
@@ -182,9 +182,9 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 	const outputDir = path.resolve(PATHS.renders)
 	const renderPath = path.join(outputDir, `${slug}_${ts}.mp4`)
 
-	const audio = await resolveAudioForPage(pageId)
+	const audio = await resolveAudioForClip(clipId)
 
-	logger.info('Starting render+publish', { pageId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath })
+	logger.info('Starting render+publish', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath })
 
 	const captureResult = await capturePageVideo({
 		url,
@@ -201,13 +201,13 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		throw new Error(`Capture failed: ${captureResult.error}`)
 	}
 
-	logger.info('Render complete, publishing...', { pageId, renderPath })
+	logger.info('Render complete, publishing...', { clipId, renderPath })
 
 	// Step 2: Publish
 	const result = await publishArtifact({
 		sourcePath: renderPath,
-		pageId,
-		pageTitle: payload.pageTitle,
+		clipId,
+		clipTitle: payload.clipTitle,
 		profile: {
 			name: '',
 			exportPath: payload.exportPath,
@@ -224,7 +224,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 	const artifactId = generateId()
 	await db.insert(publishedArtifacts).values({
 		id: artifactId,
-		pageId,
+		clipId,
 		publishProfileId: profileId,
 		outputPath: result.outputPath,
 		posterPath: result.posterPath ?? null,
@@ -234,6 +234,6 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		publishedAt: new Date().toISOString(),
 	})
 
-	logger.info('Render+publish complete', { pageId, outputPath: result.outputPath, artifactId })
+	logger.info('Render+publish complete', { clipId, outputPath: result.outputPath, artifactId })
 	return result.outputPath
 }

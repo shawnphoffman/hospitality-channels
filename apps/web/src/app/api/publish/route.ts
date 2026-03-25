@@ -8,16 +8,17 @@ import { generateId } from '@/lib/id'
 export async function POST(request: Request) {
 	const db = await getDb()
 	const body = await request.json()
-	const { pageId, profileId } = body as { pageId: string; profileId: string }
+	const clipId = body.clipId ?? body.pageId
+	const { profileId } = body as { profileId: string }
 
-	if (!pageId || !profileId) {
-		return NextResponse.json({ error: 'pageId and profileId are required' }, { status: 400 })
+	if (!clipId || !profileId) {
+		return NextResponse.json({ error: 'clipId and profileId are required' }, { status: 400 })
 	}
 
-	const [page] = await db.select().from(schema.pages).where(eq(schema.pages.id, pageId)).limit(1)
+	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, clipId)).limit(1)
 
-	if (!page) {
-		return NextResponse.json({ error: 'Page not found' }, { status: 404 })
+	if (!clip) {
+		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
 	const [profile] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, profileId)).limit(1)
@@ -29,14 +30,14 @@ export async function POST(request: Request) {
 	const [latestRender] = await db
 		.select()
 		.from(schema.jobs)
-		.where(and(eq(schema.jobs.pageId, pageId), eq(schema.jobs.type, 'render'), eq(schema.jobs.status, 'completed')))
+		.where(and(eq(schema.jobs.clipId, clipId), eq(schema.jobs.type, 'render'), eq(schema.jobs.status, 'completed')))
 		.orderBy(desc(schema.jobs.createdAt))
 		.limit(1)
 
 	if (!latestRender?.outputPath) {
 		return NextResponse.json(
 			{
-				error: 'No completed render found for this page. Render the page first.',
+				error: 'No completed render found for this clip. Render the clip first.',
 			},
 			{ status: 400 }
 		)
@@ -45,13 +46,13 @@ export async function POST(request: Request) {
 	const job = {
 		id: generateId(),
 		type: 'publish',
-		pageId,
+		clipId,
 		profileId,
 		payload: {
 			sourcePath: latestRender.outputPath,
-			pageTitle: page.title,
-			pageSlug: page.slug,
-			durationSec: page.defaultDurationSec ?? 30,
+			clipTitle: clip.title,
+			clipSlug: clip.slug,
+			durationSec: clip.defaultDurationSec ?? 30,
 			exportPath: profile.exportPath,
 			fileNamingPattern: profile.fileNamingPattern,
 			outputFormat: profile.outputFormat,

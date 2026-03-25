@@ -39,8 +39,8 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: 'Artifact not found' }, { status: 404 })
 	}
 
-	const [page] = await db.select().from(schema.pages).where(eq(schema.pages.id, artifact.pageId)).limit(1)
-	const title = page?.title ?? 'Untitled'
+	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, artifact.clipId)).limit(1)
+	const title = clip?.title ?? 'Untitled'
 
 	// The externalKey is the file path as Tunarr sees it.
 	// If the artifact is already in the Tunarr media path, use it directly.

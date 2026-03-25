@@ -5,8 +5,8 @@ import { count } from "drizzle-orm";
 
 export default async function DashboardPage() {
   const db = await getDb();
-  const [[pagesCount], [templatesCount], [publishedCount]] = await Promise.all([
-    db.select({ value: count() }).from(schema.pages),
+  const [[clipsCount], [templatesCount], [publishedCount]] = await Promise.all([
+    db.select({ value: count() }).from(schema.clips),
     db.select({ value: count() }).from(schema.templates),
     db.select({ value: count() }).from(schema.publishedArtifacts)
   ]);
@@ -16,10 +16,10 @@ export default async function DashboardPage() {
       <h2 className="mb-6 text-2xl font-bold text-white">Dashboard</h2>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         <StatCard
-          title="Pages"
-          value={String(pagesCount.value)}
-          description="Total page compositions"
-          href="/pages"
+          title="Clips"
+          value={String(clipsCount.value)}
+          description="Total clip compositions"
+          href="/clips"
         />
         <StatCard
           title="Templates"
@@ -40,10 +40,10 @@ export default async function DashboardPage() {
         </h3>
         <div className="flex flex-wrap gap-4">
           <a
-            href="/pages/new"
+            href="/clips/new"
             className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500"
           >
-            Create New Page
+            Create New Clip
           </a>
           <a
             href="/templates"

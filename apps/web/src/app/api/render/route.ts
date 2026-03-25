@@ -8,30 +8,30 @@ import { generateId } from '@/lib/id'
 export async function POST(request: Request) {
 	const db = await getDb()
 	const body = await request.json()
-	const { pageId, durationSec } = body as {
-		pageId: string
+	const clipId = body.clipId ?? body.pageId
+	const { durationSec } = body as {
 		durationSec?: number
 	}
 
-	if (!pageId) {
-		return NextResponse.json({ error: 'pageId is required' }, { status: 400 })
+	if (!clipId) {
+		return NextResponse.json({ error: 'clipId is required' }, { status: 400 })
 	}
 
-	const [page] = await db.select().from(schema.pages).where(eq(schema.pages.id, pageId)).limit(1)
+	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, clipId)).limit(1)
 
-	if (!page) {
-		return NextResponse.json({ error: 'Page not found' }, { status: 404 })
+	if (!clip) {
+		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
 	const job = {
 		id: generateId(),
 		type: 'render',
-		pageId,
+		clipId,
 		profileId: null,
 		payload: {
-			durationSec: durationSec ?? page.defaultDurationSec ?? 30,
-			pageTitle: page.title,
-			pageSlug: page.slug,
+			durationSec: durationSec ?? clip.defaultDurationSec ?? 30,
+			clipTitle: clip.title,
+			clipSlug: clip.slug,
 		},
 		status: 'queued',
 		outputPath: null,

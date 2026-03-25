@@ -1,10 +1,10 @@
 export {
 	templateSchema,
-	pageSchema,
+	clipSchema,
 	assetSchema,
 	publishProfileSchema,
 	publishedArtifactSchema,
 	channelDefinitionSchema,
 } from './schemas.js'
 
-export type { Template, Page, Asset, PublishProfile, PublishedArtifact, ChannelDefinition } from './schemas.js'
+export type { Template, Clip, Asset, PublishProfile, PublishedArtifact, ChannelDefinition } from './schemas.js'

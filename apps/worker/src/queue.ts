@@ -9,7 +9,7 @@ export type JobType = "render" | "publish";
 export interface Job {
   id: string;
   type: string;
-  pageId: string | null;
+  clipId: string | null;
   profileId: string | null;
   payload: Record<string, unknown>;
   status: string;

@@ -6,6 +6,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 	const { id } = await params
 	const db = await getDb()
 	const body = (await request.json()) as {
+		clipId?: string | null
 		pageId?: string | null
 		pushMode?: 'append' | 'replace'
 		enabled?: boolean
@@ -18,7 +19,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 	}
 
 	const updates: Record<string, unknown> = {}
-	if ('pageId' in body) updates.pageId = body.pageId
+	if ('clipId' in body) updates.clipId = body.clipId
+	else if ('pageId' in body) updates.clipId = body.pageId
 	if ('pushMode' in body) updates.pushMode = body.pushMode
 	if ('enabled' in body) updates.enabled = body.enabled
 	if ('description' in body) updates.description = body.description

@@ -10,10 +10,10 @@ interface Profile {
 	fileNamingPattern: string | null
 }
 
-interface RenderedPage {
-	pageId: string
-	pageTitle: string
-	pageSlug: string
+interface RenderedClip {
+	clipId: string
+	clipTitle: string
+	clipSlug: string
 	renderJobId: string
 	outputPath: string
 	renderedAt: string
@@ -21,8 +21,8 @@ interface RenderedPage {
 
 interface Artifact {
 	id: string
-	pageId: string
-	pageTitle: string
+	clipId: string
+	clipTitle: string
 	profileName: string
 	outputPath: string
 	durationSec: number
@@ -50,21 +50,21 @@ interface ChannelBinding {
 
 interface PublishWorkflowProps {
 	profiles: Profile[]
-	renderedPages: RenderedPage[]
+	renderedClips: RenderedClip[]
 	artifacts: Artifact[]
 	tunarrConfigured?: boolean
 	channelBindings?: Record<string, ChannelBinding>
 }
 
-export function PublishWorkflow({ profiles: initialProfiles, renderedPages, artifacts, tunarrConfigured, channelBindings = {} }: PublishWorkflowProps) {
+export function PublishWorkflow({ profiles: initialProfiles, renderedClips, artifacts, tunarrConfigured, channelBindings = {} }: PublishWorkflowProps) {
 	const router = useRouter()
 	const [profiles, setProfiles] = useState(initialProfiles)
 	const [showNewProfile, setShowNewProfile] = useState(false)
 	const [newProfileName, setNewProfileName] = useState('')
 	const [newProfilePath, setNewProfilePath] = useState('')
-	const [newProfilePattern, setNewProfilePattern] = useState('{title}-{pageId}.mp4')
+	const [newProfilePattern, setNewProfilePattern] = useState('{title}-{clipId}.mp4')
 	const [savingProfile, setSavingProfile] = useState(false)
-	const [publishingPageId, setPublishingPageId] = useState<string | null>(null)
+	const [publishingClipId, setPublishingClipId] = useState<string | null>(null)
 	const [selectedProfileId, setSelectedProfileId] = useState(
 		() => initialProfiles.find(p => p.name === 'Default Export')?.id ?? initialProfiles[0]?.id ?? ''
 	)
@@ -129,12 +129,12 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 		}
 	}
 
-	const handlePublish = async (pageId: string) => {
+	const handlePublish = async (clipId: string) => {
 		if (!selectedProfileId) {
 			setError('Select a publish profile first')
 			return
 		}
-		setPublishingPageId(pageId)
+		setPublishingClipId(clipId)
 		setPublishJob(null)
 		setError(null)
 
@@ -142,7 +142,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 			const res = await fetch('/api/publish', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ pageId, profileId: selectedProfileId }),
+				body: JSON.stringify({ clipId, profileId: selectedProfileId }),
 			})
 			if (res.ok) {
 				const job: JobData = await res.json()
@@ -150,15 +150,15 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 			} else {
 				const data = await res.json().catch(() => ({}))
 				setError(data.error || 'Failed to start publish')
-				setPublishingPageId(null)
+				setPublishingClipId(null)
 			}
 		} catch {
 			setError('Failed to start publish')
-			setPublishingPageId(null)
+			setPublishingClipId(null)
 		}
 	}
 
-	const handleOpenPush = async (artifactId: string, pageId?: string) => {
+	const handleOpenPush = async (artifactId: string, clipId?: string) => {
 		if (pushingArtifactId === artifactId) {
 			setPushingArtifactId(null)
 			return
@@ -168,7 +168,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 		setSelectedChannelId('')
 
 		// Check for channel binding to pre-select
-		const binding = pageId ? channelBindings[pageId] : undefined
+		const binding = clipId ? channelBindings[clipId] : undefined
 		if (binding) {
 			setPushMode(binding.pushMode as 'append' | 'replace')
 		}
@@ -295,7 +295,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 								type="text"
 								value={newProfilePath}
 								onChange={e => setNewProfilePath(e.target.value)}
-								placeholder="e.g. /media/tunarr/guest-pages"
+								placeholder="e.g. /media/tunarr/guest-clips"
 								className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 							/>
 						</div>
@@ -308,11 +308,11 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 								type="text"
 								value={newProfilePattern}
 								onChange={e => setNewProfilePattern(e.target.value)}
-								placeholder="{title}-{pageId}.mp4"
+								placeholder="{title}-{clipId}.mp4"
 								className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 							/>
 							<p className="mt-1 text-xs text-slate-500">
-								Available tokens: {'{title}'}, {'{pageId}'}, {'{timestamp}'}
+								Available tokens: {'{title}'}, {'{clipId}'}, {'{timestamp}'}
 							</p>
 						</div>
 						<button
@@ -352,31 +352,31 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 				)}
 			</section>
 
-			{/* Rendered Pages — ready to publish */}
+			{/* Rendered Clips — ready to publish */}
 			<section>
 				<h3 className="mb-4 text-lg font-semibold text-slate-200">Ready to Publish</h3>
-				{renderedPages.length === 0 ? (
+				{renderedClips.length === 0 ? (
 					<div className="rounded-xl border border-dashed border-slate-700 p-8 text-center">
-						<p className="text-slate-400">No rendered pages yet. Go to a page preview and click &quot;Render Video&quot; first.</p>
-						<a href="/pages" className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300">
-							Go to Pages
+						<p className="text-slate-400">No rendered clips yet. Go to a clip and click &quot;Save &amp; Publish&quot; first.</p>
+						<a href="/clips" className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300">
+							Go to Clips
 						</a>
 					</div>
 				) : (
 					<div className="space-y-3">
-						{renderedPages.map(rp => (
-							<div key={rp.renderJobId} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-4">
+						{renderedClips.map(rc => (
+							<div key={rc.renderJobId} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-4">
 								<div>
-									<p className="font-medium text-white">{rp.pageTitle}</p>
-									<p className="mt-0.5 text-xs text-slate-400">Rendered {new Date(rp.renderedAt).toLocaleString()}</p>
-									<p className="text-xs text-slate-500">{rp.outputPath}</p>
+									<p className="font-medium text-white">{rc.clipTitle}</p>
+									<p className="mt-0.5 text-xs text-slate-400">Rendered {new Date(rc.renderedAt).toLocaleString()}</p>
+									<p className="text-xs text-slate-500">{rc.outputPath}</p>
 								</div>
 								<button
-									onClick={() => handlePublish(rp.pageId)}
+									onClick={() => handlePublish(rc.clipId)}
 									disabled={!!isPublishing || profiles.length === 0}
 									className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
 								>
-									{publishingPageId === rp.pageId && isPublishing ? 'Publishing...' : 'Publish'}
+									{publishingClipId === rc.clipId && isPublishing ? 'Publishing...' : 'Publish'}
 								</button>
 							</div>
 						))}
@@ -395,7 +395,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 							<div key={a.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
 								<div className="flex items-center justify-between">
 									<div className="min-w-0 flex-1">
-										<p className="font-medium text-white">{a.pageTitle}</p>
+										<p className="font-medium text-white">{a.clipTitle}</p>
 										<p className="mt-0.5 text-xs text-slate-400">
 											{a.profileName} &middot; {a.durationSec}s &middot; {a.publishedAt ? new Date(a.publishedAt).toLocaleString() : ''}
 										</p>
@@ -411,7 +411,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedPages, arti
 										</span>
 										{tunarrConfigured && a.status === 'published' && (
 											<button
-												onClick={() => handleOpenPush(a.id, a.pageId)}
+												onClick={() => handleOpenPush(a.id, a.clipId)}
 												className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
 													pushingArtifactId === a.id
 														? 'bg-purple-600 text-white'

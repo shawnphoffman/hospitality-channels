@@ -13,25 +13,25 @@ export default async function PublishPage() {
 
 	const completedRenders = renderJobs.filter(j => j.status === 'completed' && j.outputPath)
 
-	const pages = await db.select().from(schema.pages)
+	const clips = await db.select().from(schema.clips)
 
-	const pagesWithRenders = completedRenders
+	const clipsWithRenders = completedRenders
 		.map(job => {
-			const page = pages.find(p => p.id === job.pageId)
-			if (!page) return null
+			const clip = clips.find(c => c.id === job.clipId)
+			if (!clip) return null
 			return {
-				pageId: page.id,
-				pageTitle: page.title,
-				pageSlug: page.slug,
+				clipId: clip.id,
+				clipTitle: clip.title,
+				clipSlug: clip.slug,
 				renderJobId: job.id,
 				outputPath: job.outputPath!,
 				renderedAt: job.completedAt ?? job.createdAt,
 			}
 		})
 		.filter(Boolean) as Array<{
-		pageId: string
-		pageTitle: string
-		pageSlug: string
+		clipId: string
+		clipTitle: string
+		clipSlug: string
 		renderJobId: string
 		outputPath: string
 		renderedAt: string
@@ -44,8 +44,8 @@ export default async function PublishPage() {
 	const channelDefs = await db.select().from(schema.channelDefinitions)
 	const channelBindings: Record<string, { tunarrChannelId: string; pushMode: string }> = {}
 	for (const cd of channelDefs) {
-		if (cd.pageId && cd.tunarrChannelId) {
-			channelBindings[cd.pageId] = { tunarrChannelId: cd.tunarrChannelId, pushMode: cd.pushMode ?? 'replace' }
+		if (cd.clipId && cd.tunarrChannelId) {
+			channelBindings[cd.clipId] = { tunarrChannelId: cd.tunarrChannelId, pushMode: cd.pushMode ?? 'replace' }
 		}
 	}
 
@@ -58,11 +58,11 @@ export default async function PublishPage() {
 	})
 
 	const artifactsWithDetails = dedupedArtifacts.map(a => {
-		const page = pages.find(p => p.id === a.pageId)
+		const clip = clips.find(c => c.id === a.clipId)
 		const profile = profiles.find(p => p.id === a.publishProfileId)
 		return {
 			...a,
-			pageTitle: page?.title ?? a.pageId,
+			clipTitle: clip?.title ?? a.clipId,
 			profileName: profile?.name ?? a.publishProfileId,
 		}
 	})
@@ -77,11 +77,11 @@ export default async function PublishPage() {
 					exportPath: p.exportPath,
 					fileNamingPattern: p.fileNamingPattern,
 				}))}
-				renderedPages={pagesWithRenders}
+				renderedClips={clipsWithRenders}
 				artifacts={artifactsWithDetails.map(a => ({
 					id: a.id,
-					pageId: a.pageId,
-					pageTitle: a.pageTitle,
+					clipId: a.clipId,
+					clipTitle: a.clipTitle,
 					profileName: a.profileName,
 					outputPath: a.outputPath,
 					durationSec: a.durationSec,

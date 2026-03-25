@@ -6,28 +6,28 @@ import { getDb, schema } from '@/db'
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
 	const db = await getDb()
-	const [page] = await db.select().from(schema.pages).where(eq(schema.pages.id, params.id)).limit(1)
+	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
 
-	if (!page) {
-		return NextResponse.json({ error: 'Page not found' }, { status: 404 })
+	if (!clip) {
+		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
-	return NextResponse.json(page)
+	return NextResponse.json(clip)
 }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
 	const db = await getDb()
-	const [existing] = await db.select().from(schema.pages).where(eq(schema.pages.id, params.id)).limit(1)
+	const [existing] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
 
 	if (!existing) {
-		return NextResponse.json({ error: 'Page not found' }, { status: 404 })
+		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
 	const body = await request.json()
 	const now = new Date().toISOString()
 
 	await db
-		.update(schema.pages)
+		.update(schema.clips)
 		.set({
 			title: body.title ?? existing.title,
 			slug: body.slug ?? existing.slug,
@@ -37,21 +37,21 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 			defaultDurationSec: body.defaultDurationSec ?? existing.defaultDurationSec,
 			updatedAt: now,
 		})
-		.where(eq(schema.pages.id, params.id))
+		.where(eq(schema.clips.id, params.id))
 
-	const [updated] = await db.select().from(schema.pages).where(eq(schema.pages.id, params.id)).limit(1)
+	const [updated] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
 
 	return NextResponse.json(updated)
 }
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
 	const db = await getDb()
-	const [existing] = await db.select().from(schema.pages).where(eq(schema.pages.id, params.id)).limit(1)
+	const [existing] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
 
 	if (!existing) {
-		return NextResponse.json({ error: 'Page not found' }, { status: 404 })
+		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
-	await db.delete(schema.pages).where(eq(schema.pages.id, params.id))
+	await db.delete(schema.clips).where(eq(schema.clips.id, params.id))
 	return NextResponse.json({ success: true })
 }

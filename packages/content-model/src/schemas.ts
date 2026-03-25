@@ -12,7 +12,7 @@ export const templateSchema = z.object({
   status: z.enum(["draft", "active", "archived"]).default("active")
 });
 
-export const pageSchema = z.object({
+export const clipSchema = z.object({
   id: z.string().optional(),
   templateId: z.string(),
   slug: z.string(),
@@ -57,7 +57,7 @@ export const publishProfileSchema = z.object({
 
 export const publishedArtifactSchema = z.object({
   id: z.string().optional(),
-  pageId: z.string(),
+  clipId: z.string(),
   publishProfileId: z.string(),
   outputPath: z.string(),
   posterPath: z.string().optional(),
@@ -74,7 +74,7 @@ export const channelDefinitionSchema = z.object({
   id: z.string().optional(),
   channelNumber: z.number(),
   channelName: z.string(),
-  pageId: z
+  clipId: z
     .string()
     .optional()
     .nullable(),
@@ -91,7 +91,7 @@ export const channelDefinitionSchema = z.object({
 });
 
 export type Template = z.infer<typeof templateSchema>;
-export type Page = z.infer<typeof pageSchema>;
+export type Clip = z.infer<typeof clipSchema>;
 export type Asset = z.infer<typeof assetSchema>;
 export type PublishProfile = z.infer<typeof publishProfileSchema>;
 export type PublishedArtifact = z.infer<typeof publishedArtifactSchema>;

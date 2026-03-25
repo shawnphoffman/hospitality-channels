@@ -2,9 +2,9 @@ export const dynamic = 'force-dynamic'
 
 import { getDb, schema } from '@/db'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
-import { CreatePageForm } from './form'
+import { CreateClipForm } from './form'
 
-export default async function NewPagePage({ searchParams }: { searchParams: { template?: string } }) {
+export default async function NewClipPage({ searchParams }: { searchParams: { template?: string } }) {
 	const db = await getDb()
 	const templates = getTemplateRegistry()
 	const dbTemplates = await db.select().from(schema.templates)
@@ -31,8 +31,8 @@ export default async function NewPagePage({ searchParams }: { searchParams: { te
 
 	return (
 		<div>
-			<h2 className="mb-6 text-2xl font-bold text-white">Create New Page</h2>
-			<CreatePageForm templates={templateOptions} preselectedTemplate={preselectedSlug} />
+			<h2 className="mb-6 text-2xl font-bold text-white">Create New Clip</h2>
+			<CreateClipForm templates={templateOptions} preselectedTemplate={preselectedSlug} />
 		</div>
 	)
 }

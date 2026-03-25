@@ -7,8 +7,8 @@ const logger = createLogger("publish");
 
 export interface PublishArtifactInput {
   sourcePath: string;
-  pageId: string;
-  pageTitle: string;
+  clipId: string;
+  clipTitle: string;
   profile: PublishProfile;
   posterPath?: string;
   durationSec: number;
@@ -27,14 +27,15 @@ function sanitizeFilename(str: string): string {
 }
 
 export async function publishArtifact(input: PublishArtifactInput): Promise<PublishArtifactResult> {
-  const { sourcePath, pageId, pageTitle, profile, posterPath, durationSec } = input;
+  const { sourcePath, clipId, clipTitle, profile, posterPath, durationSec } = input;
 
   const baseName = profile.fileNamingPattern
     ? profile.fileNamingPattern
-        .replace("{pageId}", pageId)
-        .replace("{title}", sanitizeFilename(pageTitle))
+        .replace("{clipId}", clipId)
+        .replace("{pageId}", clipId)
+        .replace("{title}", sanitizeFilename(clipTitle))
         .replace("{timestamp}", Date.now().toString())
-    : `${sanitizeFilename(pageTitle)}-${pageId.slice(0, 8)}.mp4`;
+    : `${sanitizeFilename(clipTitle)}-${clipId.slice(0, 8)}.mp4`;
 
   const outputPath = path.join(profile.exportPath, baseName);
 
@@ -54,14 +55,14 @@ export async function publishArtifact(input: PublishArtifactInput): Promise<Publ
     const nfoPath = path.join(profile.exportPath, `${path.basename(outputPath, ".mp4")}.nfo`);
     const nfoContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <episodedetails>
-  <title>${escapeXml(pageTitle)}</title>
+  <title>${escapeXml(clipTitle)}</title>
   <runtime>${Math.round(durationSec)}</runtime>
   <thumb>${resultPosterPath ? path.basename(resultPosterPath) : ""}</thumb>
 </episodedetails>`;
 
     await writeFile(nfoPath, nfoContent, "utf-8");
 
-    logger.info("Published artifact", { outputPath, pageId });
+    logger.info("Published artifact", { outputPath, clipId });
 
     return {
       outputPath,

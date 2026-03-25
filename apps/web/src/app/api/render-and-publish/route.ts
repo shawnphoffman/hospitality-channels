@@ -8,19 +8,19 @@ import { generateId } from '@/lib/id'
 export async function POST(request: Request) {
 	const db = await getDb()
 	const body = await request.json()
-	const { pageId, profileId, durationSec } = body as {
-		pageId: string
+	const clipId = body.clipId ?? body.pageId
+	const { profileId, durationSec } = body as {
 		profileId: string
 		durationSec?: number
 	}
 
-	if (!pageId || !profileId) {
-		return NextResponse.json({ error: 'pageId and profileId are required' }, { status: 400 })
+	if (!clipId || !profileId) {
+		return NextResponse.json({ error: 'clipId and profileId are required' }, { status: 400 })
 	}
 
-	const [page] = await db.select().from(schema.pages).where(eq(schema.pages.id, pageId)).limit(1)
-	if (!page) {
-		return NextResponse.json({ error: 'Page not found' }, { status: 404 })
+	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, clipId)).limit(1)
+	if (!clip) {
+		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
 	const [profile] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, profileId)).limit(1)
@@ -31,12 +31,12 @@ export async function POST(request: Request) {
 	const job = {
 		id: generateId(),
 		type: 'render-publish',
-		pageId,
+		clipId,
 		profileId,
 		payload: {
-			durationSec: durationSec ?? page.defaultDurationSec ?? 30,
-			pageTitle: page.title,
-			pageSlug: page.slug,
+			durationSec: durationSec ?? clip.defaultDurationSec ?? 30,
+			clipTitle: clip.title,
+			clipSlug: clip.slug,
 			exportPath: profile.exportPath,
 			fileNamingPattern: profile.fileNamingPattern,
 			outputFormat: profile.outputFormat,

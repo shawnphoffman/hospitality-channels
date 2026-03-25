@@ -12,7 +12,7 @@ const client = createClient({ url: dbUrl });
 export const jobs = sqliteTable("jobs", {
   id: text("id").primaryKey(),
   type: text("type").notNull(),
-  pageId: text("page_id"),
+  clipId: text("page_id"),
   profileId: text("profile_id"),
   payload: text("payload", { mode: "json" }).default({}),
   status: text("status")
@@ -25,7 +25,7 @@ export const jobs = sqliteTable("jobs", {
   completedAt: text("completed_at")
 });
 
-export const pages = sqliteTable("pages", {
+export const clips = sqliteTable("pages", {
   id: text("id").primaryKey(),
   templateId: text("template_id").notNull(),
   slug: text("slug").notNull(),
@@ -51,7 +51,7 @@ export const publishProfiles = sqliteTable("publish_profiles", {
 
 export const publishedArtifacts = sqliteTable("published_artifacts", {
   id: text("id").primaryKey(),
-  pageId: text("page_id").notNull(),
+  clipId: text("page_id").notNull(),
   publishProfileId: text("publish_profile_id").notNull(),
   outputPath: text("output_path").notNull(),
   posterPath: text("poster_path"),
@@ -63,5 +63,5 @@ export const publishedArtifacts = sqliteTable("published_artifacts", {
   publishedAt: text("published_at")
 });
 
-const schema = { jobs, pages, publishProfiles, publishedArtifacts };
+const schema = { jobs, clips, publishProfiles, publishedArtifacts };
 export const db = drizzle(client, { schema });
