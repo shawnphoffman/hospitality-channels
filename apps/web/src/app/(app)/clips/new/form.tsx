@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { TemplateField } from '@/components/template-field'
+import { AudioField } from '@/components/audio-field'
 
 interface TemplateFieldDef {
 	key: string
@@ -33,6 +34,7 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 	const [title, setTitle] = useState('')
 	const [slug, setSlug] = useState('')
 	const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
+	const [durationSec, setDurationSec] = useState(30)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -87,7 +89,7 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 					slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
 					title,
 					dataJson: fieldValues,
-					defaultDurationSec: 30,
+					defaultDurationSec: durationSec,
 				}),
 			})
 
@@ -170,6 +172,51 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 							className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 						/>
 					</div>
+
+					{/* Background Audio */}
+					<AudioField
+						id="new-clip-backgroundAudio"
+						label="Background Audio"
+						value={fieldValues.backgroundAudioUrl ?? ''}
+						onChange={val => handleFieldChange('backgroundAudioUrl', val)}
+					/>
+
+					{/* Duration mode */}
+					<div>
+						<label className="block text-sm text-slate-400 mb-1">Duration</label>
+						<div className="flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-0.5">
+							<button
+								type="button"
+								onClick={() => handleFieldChange('matchAudioDuration', 'true')}
+								className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+									fieldValues.matchAudioDuration === 'true'
+										? 'bg-blue-600 text-white'
+										: 'text-slate-400 hover:text-slate-300'
+								}`}
+							>
+								Match audio length
+							</button>
+							<button
+								type="button"
+								onClick={() => handleFieldChange('matchAudioDuration', 'false')}
+								className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+									fieldValues.matchAudioDuration !== 'true'
+										? 'bg-blue-600 text-white'
+										: 'text-slate-400 hover:text-slate-300'
+								}`}
+							>
+								Fixed duration
+							</button>
+						</div>
+						{fieldValues.matchAudioDuration !== 'true' && (
+							<input id="duration" type="number" min={1} max={3600} value={durationSec} onChange={e => setDurationSec(parseInt(e.target.value, 10) || 30)}
+								placeholder="Duration (seconds)"
+								className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+						)}
+						{fieldValues.matchAudioDuration === 'true' && !fieldValues.backgroundAudioUrl && (
+							<p className="mt-1 text-xs text-amber-400">Add audio above to use this mode</p>
+						)}
+					</div>
 				</div>
 			</section>
 
@@ -180,6 +227,8 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 					<div className="space-y-4">
 						{selectedTemplate.fields.map(field => {
 							if (field.type === 'asset') return null
+							if (field.key === 'backgroundAudioUrl') return null
+							if (field.key === 'matchAudioDuration') return null
 							return (
 								<TemplateField
 									key={field.key}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getTemplateScenes } from '@/templates/registry'
 import { WifiQrCode } from '@/templates/wifi-qr-code'
 import { TemplateField } from '@/components/template-field'
+import { AudioField } from '@/components/audio-field'
 
 interface TemplateFieldDef {
 	key: string
@@ -285,7 +286,7 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, profiles,
 	const showWifiQr = hasWifiFields && wifiSsid.length > 0 && wifiPassword.length > 0
 
 	return (
-		<div className="flex h-[calc(100vh-4rem)] flex-col">
+		<div className="flex min-h-[calc(100vh-4rem)] flex-col lg:h-[calc(100vh-4rem)]">
 			{/* Toolbar */}
 			<div className="mb-3 flex shrink-0 flex-wrap items-center gap-3">
 				<div className="mr-auto">
@@ -389,10 +390,10 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, profiles,
 				</div>
 			)}
 
-			{/* Main content: side-by-side editor + preview */}
-			<div className="flex min-h-0 flex-1 gap-4">
+			{/* Main content: stacked on mobile, side-by-side on desktop */}
+			<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:flex-row lg:overflow-y-hidden">
 				{/* Left panel: Edit form */}
-				<div className="w-80 shrink-0 overflow-y-auto space-y-4">
+				<div className="w-full shrink-0 space-y-4 lg:w-[26rem] lg:overflow-y-auto">
 					{/* Clip Info */}
 					<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
 						<h3 className="mb-3 text-sm font-semibold text-slate-300">Clip Info</h3>
@@ -407,10 +408,50 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, profiles,
 								<input id="slug" type="text" value={slug} onChange={e => setSlug(e.target.value)}
 									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
 							</div>
+
+							{/* Background Audio */}
+							<AudioField
+								id="clip-backgroundAudio"
+								label="Background Audio"
+								value={fieldValues.backgroundAudioUrl ?? ''}
+								onChange={val => handleFieldChange('backgroundAudioUrl', val)}
+							/>
+
+							{/* Duration mode */}
 							<div>
-								<label htmlFor="duration" className="block text-xs text-slate-400">Duration (sec)</label>
-								<input id="duration" type="number" min={1} max={300} value={durationSec} onChange={e => setDurationSec(parseInt(e.target.value, 10) || 30)}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label className="block text-xs text-slate-400 mb-1">Duration</label>
+								<div className="flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-0.5">
+									<button
+										type="button"
+										onClick={() => handleFieldChange('matchAudioDuration', 'true')}
+										className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+											fieldValues.matchAudioDuration === 'true'
+												? 'bg-blue-600 text-white'
+												: 'text-slate-400 hover:text-slate-300'
+										}`}
+									>
+										Match audio length
+									</button>
+									<button
+										type="button"
+										onClick={() => handleFieldChange('matchAudioDuration', 'false')}
+										className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+											fieldValues.matchAudioDuration !== 'true'
+												? 'bg-blue-600 text-white'
+												: 'text-slate-400 hover:text-slate-300'
+										}`}
+									>
+										Fixed duration
+									</button>
+								</div>
+								{fieldValues.matchAudioDuration !== 'true' && (
+									<input id="duration" type="number" min={1} max={3600} value={durationSec} onChange={e => setDurationSec(parseInt(e.target.value, 10) || 30)}
+										placeholder="Duration (seconds)"
+										className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								)}
+								{fieldValues.matchAudioDuration === 'true' && !fieldValues.backgroundAudioUrl && (
+									<p className="mt-1 text-xs text-amber-400">Add audio above to use this mode</p>
+								)}
 							</div>
 						</div>
 					</section>
@@ -428,6 +469,8 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, profiles,
 							<div className="space-y-3">
 								{fields.map(field => {
 									if (field.type === 'asset') return null
+									if (field.key === 'backgroundAudioUrl') return null
+									if (field.key === 'matchAudioDuration') return null
 									if (field.key === 'wifiPassword') return null
 									if (field.key === 'wifiSsid' && hasWifiFields && wifiSsidField && wifiPasswordField) {
 										return (
@@ -458,7 +501,7 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, profiles,
 				</div>
 
 				{/* Right panel: Live preview */}
-				<div ref={wrapperRef} className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-black">
+				<div ref={wrapperRef} className="flex aspect-video min-h-[240px] items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-black lg:aspect-auto lg:min-h-0 lg:flex-1">
 					{scale > 0 && (
 						<div style={{ width: scaledW, height: scaledH }} className="relative shrink-0 overflow-hidden rounded shadow-2xl shadow-black/60">
 							<div style={{ width: SCENE_W, height: SCENE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }} className="absolute left-0 top-0">
