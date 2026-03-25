@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { eq, desc } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
-import { updateChannelProgramming } from '@hospitality-channels/publish'
+import { updateChannelProgramming, scanMediaSourceForPath } from '@hospitality-channels/publish'
 import type { TunarrContentProgram } from '@hospitality-channels/publish'
 import { PATHS } from '@hospitality-channels/common'
 import path from 'node:path'
@@ -62,6 +62,8 @@ export async function POST(request: Request) {
 	}
 
 	try {
+		// Trigger a Tunarr library scan so the new file is discoverable
+		await scanMediaSourceForPath(tunarrUrlSetting.value, externalKey)
 		await updateChannelProgramming(tunarrUrlSetting.value, body.channelId, program, body.mode)
 		return NextResponse.json({ success: true, title, channelId: body.channelId, mode: body.mode })
 	} catch (err) {
