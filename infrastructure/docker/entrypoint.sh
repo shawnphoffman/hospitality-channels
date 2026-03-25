@@ -5,16 +5,27 @@ set -e
 PUID=${PUID:-1001}
 PGID=${PGID:-1001}
 
-if [ "$(id -u appuser)" != "$PUID" ]; then
-  usermod -u "$PUID" appuser 2>/dev/null || true
-fi
+echo "[entrypoint] Configuring user: PUID=$PUID PGID=$PGID (current: uid=$(id -u appuser) gid=$(getent group nodejs | cut -d: -f3))"
+
 if [ "$(getent group nodejs | cut -d: -f3)" != "$PGID" ]; then
-  groupmod -g "$PGID" nodejs 2>/dev/null || true
+  groupmod -g "$PGID" nodejs || echo "[entrypoint] WARNING: failed to set GID to $PGID"
 fi
+if [ "$(id -u appuser)" != "$PUID" ]; then
+  usermod -u "$PUID" appuser || echo "[entrypoint] WARNING: failed to set UID to $PUID"
+fi
+
+echo "[entrypoint] Running as: uid=$(id -u appuser) gid=$(id -g appuser) groups=$(id -G appuser)"
 
 # Ensure data directories are writable
 chown -R appuser:nodejs /data 2>/dev/null || true
 chown -R appuser:nodejs /exports 2>/dev/null || true
+
+# Ensure mounted media directories are writable
+for dir in /library-local /media /library; do
+  if [ -d "$dir" ]; then
+    chown -R appuser:nodejs "$dir" 2>/dev/null || echo "[entrypoint] WARNING: cannot chown $dir (may be owned by host)"
+  fi
+done
 
 echo "[entrypoint] Starting Next.js web server..."
 runuser -u appuser -- node apps/web/.next/standalone/apps/web/server.js &
