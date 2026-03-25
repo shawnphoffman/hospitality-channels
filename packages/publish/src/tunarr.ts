@@ -71,6 +71,6 @@ export async function updateChannelProgramming(
 
 	await tunarrFetch(tunarrUrl, `/channels/${channelId}/programming`, {
 		method: 'POST',
-		body: JSON.stringify({ programs, lineup: programs.map((_, i) => ({ type: 'content', index: i })) }),
+		body: JSON.stringify({ programs, lineup: programs.map((_, i) => ({ type: 'index', index: i })) }),
 	})
 }

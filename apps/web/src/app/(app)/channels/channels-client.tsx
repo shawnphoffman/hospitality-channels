@@ -181,20 +181,24 @@ export function ChannelsClient({ initialChannels, pages, tunarrConfigured }: Cha
 				const res = await fetch(`/api/tunarr/channels/${ch.tunarrChannelId}/programming`)
 				if (res.ok) {
 					const data = await res.json()
+					console.log('Programming response for channel', ch.tunarrChannelId, JSON.stringify(data).slice(0, 500))
 					// Handle multiple possible Tunarr response shapes
-					let programList: Array<{ title?: string; duration?: number }>
+					let programList: Array<{ title?: string; duration?: number; originalProgram?: { title?: string; duration?: number } }>
 					if (Array.isArray(data)) {
 						programList = data
 					} else if (Array.isArray(data.programs)) {
 						programList = data.programs
+					} else if (data.lineup && Array.isArray(data.lineup)) {
+						// Condensed format: lineup entries may contain program info directly
+						programList = data.lineup
 					} else if (data.programs && typeof data.programs === 'object') {
 						programList = Object.values(data.programs)
 					} else {
 						programList = []
 					}
 					const programs: ProgramInfo[] = programList.map(p => ({
-						title: p.title ?? 'Untitled',
-						duration: p.duration ?? 0,
+						title: p.title ?? p.originalProgram?.title ?? 'Untitled',
+						duration: p.duration ?? p.originalProgram?.duration ?? 0,
 					}))
 					setProgramming(prev => ({ ...prev, [ch.id]: programs }))
 				} else {
