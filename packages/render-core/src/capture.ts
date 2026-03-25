@@ -1,9 +1,33 @@
-import { spawn } from 'node:child_process'
+import { spawn, execFile } from 'node:child_process'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { RENDER_DEFAULTS, RENDER_RESOLUTION, createLogger } from '@hospitality-channels/common'
 
 const logger = createLogger('render-core:capture')
+
+function probeDuration(filePath: string): Promise<number> {
+	return new Promise((resolve) => {
+		execFile('ffprobe', [
+			'-v', 'quiet',
+			'-print_format', 'json',
+			'-show_format',
+			filePath,
+		], (err, stdout) => {
+			if (err) {
+				logger.warn('ffprobe failed, using fallback duration', { error: String(err) })
+				resolve(0)
+				return
+			}
+			try {
+				const info = JSON.parse(stdout)
+				const dur = parseFloat(info.format?.duration ?? '0')
+				resolve(dur)
+			} catch {
+				resolve(0)
+			}
+		})
+	})
+}
 
 export interface CaptureOptions {
 	url: string
@@ -96,6 +120,8 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 
 		ffmpegArgs.push('-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
 
+		logger.info('FFmpeg command', { args: ffmpegArgs.join(' '), hasAudio: !!options.audioPath, matchAudioDuration: options.matchAudioDuration })
+
 		const ffmpegResult = await new Promise<{ success: boolean; error?: string }>(resolve => {
 			const proc = spawn('ffmpeg', ffmpegArgs, {
 				stdio: ['ignore', 'pipe', 'pipe'],
@@ -132,11 +158,15 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 			}
 		}
 
-		logger.info('Capture complete', { url, durationSec, outputPath })
+		// Probe actual output duration (important when matchAudioDuration is used)
+		const actualDuration = await probeDuration(outputPath)
+		const finalDuration = actualDuration > 0 ? Math.round(actualDuration) : durationSec
+
+		logger.info('Capture complete', { url, requestedDuration: durationSec, actualDuration: finalDuration, hasAudio: !!options.audioPath, outputPath })
 
 		return {
 			outputPath,
-			durationSec,
+			durationSec: finalDuration,
 			trimSec: 0,
 			success: true,
 		}

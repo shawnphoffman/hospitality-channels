@@ -19,46 +19,69 @@ const WEB_URL = process.env.WEB_URL || 'http://localhost:3000'
 async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string; matchAudioDuration?: boolean; tempFile?: string }> {
 	try {
 		const [clip] = await db.select().from(clips).where(eq(clips.id, clipId)).limit(1)
-		if (!clip) return {}
+		if (!clip) {
+			logger.warn('resolveAudio: clip not found', { clipId })
+			return {}
+		}
 
 		const data = (clip.dataJson ?? {}) as Record<string, string>
 		const audioUrl = data.backgroundAudioUrl
 		const matchDuration = data.matchAudioDuration === 'true'
 
-		if (!audioUrl) return {}
+		logger.info('resolveAudio: clip data', { clipId, audioUrl: audioUrl ?? '(none)', matchDuration, dataKeys: Object.keys(data) })
+
+		if (!audioUrl) {
+			logger.info('resolveAudio: no backgroundAudioUrl set — rendering without audio')
+			return {}
+		}
+
+		const rendersDir = path.resolve(PATHS.renders)
+		await import('node:fs/promises').then(fs => fs.mkdir(rendersDir, { recursive: true }))
 
 		// If it's an internal asset serve URL, download via the web server
 		if (audioUrl.startsWith('/api/assets/serve')) {
 			const fullUrl = `${WEB_URL}${audioUrl}`
+			logger.info('resolveAudio: fetching internal asset', { fullUrl })
 			const res = await fetch(fullUrl)
 			if (!res.ok) {
-				logger.warn('Failed to fetch audio asset', { url: fullUrl, status: res.status })
+				logger.warn('resolveAudio: failed to fetch internal asset', { url: fullUrl, status: res.status, statusText: res.statusText })
 				return {}
 			}
 			const buffer = Buffer.from(await res.arrayBuffer())
+			logger.info('resolveAudio: downloaded internal asset', { bytes: buffer.length })
 			const ext = path.extname(new URL(fullUrl, 'http://localhost').searchParams.get('path') ?? '.mp3') || '.mp3'
-			const tempPath = path.join(path.resolve(PATHS.renders), `_audio-${Date.now()}${ext}`)
+			const tempPath = path.join(rendersDir, `_audio-${Date.now()}${ext}`)
 			await writeFile(tempPath, buffer)
 			return { audioPath: tempPath, matchAudioDuration: matchDuration, tempFile: tempPath }
 		}
 
 		// If it's an absolute URL, download it
 		if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
+			logger.info('resolveAudio: fetching external URL', { audioUrl })
 			const res = await fetch(audioUrl)
 			if (!res.ok) {
-				logger.warn('Failed to fetch audio URL', { url: audioUrl, status: res.status })
+				logger.warn('resolveAudio: failed to fetch external audio', { url: audioUrl, status: res.status, statusText: res.statusText })
 				return {}
 			}
 			const buffer = Buffer.from(await res.arrayBuffer())
-			const tempPath = path.join(path.resolve(PATHS.renders), `_audio-${Date.now()}.mp3`)
+			logger.info('resolveAudio: downloaded external audio', { bytes: buffer.length })
+			const tempPath = path.join(rendersDir, `_audio-${Date.now()}.mp3`)
 			await writeFile(tempPath, buffer)
 			return { audioPath: tempPath, matchAudioDuration: matchDuration, tempFile: tempPath }
 		}
 
-		// Otherwise treat as a filesystem path
+		// Otherwise treat as a filesystem path — verify it exists
+		logger.info('resolveAudio: using filesystem path', { audioUrl })
+		const { access } = await import('node:fs/promises')
+		try {
+			await access(audioUrl)
+		} catch {
+			logger.warn('resolveAudio: filesystem audio path not accessible', { audioUrl })
+			return {}
+		}
 		return { audioPath: audioUrl, matchAudioDuration: matchDuration }
 	} catch (err) {
-		logger.warn('Failed to resolve audio for clip', { clipId, error: String(err) })
+		logger.warn('resolveAudio: unexpected error', { clipId, error: String(err) })
 		return {}
 	}
 }
@@ -83,7 +106,7 @@ export async function handleRenderJob(job: Job): Promise<string> {
 
 	const audio = await resolveAudioForClip(clipId)
 
-	logger.info('Starting render', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath })
+	logger.info('Starting render', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath, audioPath: audio.audioPath, matchAudioDuration: audio.matchAudioDuration })
 
 	const captureResult = await capturePageVideo({
 		url,
@@ -184,7 +207,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 
 	const audio = await resolveAudioForClip(clipId)
 
-	logger.info('Starting render+publish', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath })
+	logger.info('Starting render+publish', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath, audioPath: audio.audioPath, matchAudioDuration: audio.matchAudioDuration })
 
 	const captureResult = await capturePageVideo({
 		url,
@@ -201,7 +224,9 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		throw new Error(`Capture failed: ${captureResult.error}`)
 	}
 
-	logger.info('Render complete, publishing...', { clipId, renderPath })
+	logger.info('Render complete, publishing...', { clipId, renderPath, actualDuration: captureResult.durationSec })
+
+	const actualDuration = captureResult.durationSec
 
 	// Step 2: Publish
 	const result = await publishArtifact({
@@ -214,7 +239,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 			outputFormat: payload.outputFormat as 'mp4',
 			fileNamingPattern: payload.fileNamingPattern ?? undefined,
 		},
-		durationSec: payload.durationSec,
+		durationSec: actualDuration,
 	})
 
 	if (!result.success) {
@@ -228,7 +253,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		publishProfileId: profileId,
 		outputPath: result.outputPath,
 		posterPath: result.posterPath ?? null,
-		durationSec: payload.durationSec,
+		durationSec: actualDuration,
 		renderVersion: '1',
 		status: 'published',
 		publishedAt: new Date().toISOString(),
