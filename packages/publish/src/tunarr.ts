@@ -98,19 +98,18 @@ export async function updateChannelProgramming(
 	program: TunarrContentProgram,
 	mode: 'append' | 'replace'
 ): Promise<void> {
-	let programs: TunarrContentProgram[]
-
-	if (mode === 'append') {
-		const current = await getChannelProgramming(tunarrUrl, channelId)
-		programs = [...(current.programs ?? []), program]
-	} else {
-		programs = [program]
-	}
+	const programs = [program]
+	const lineup = [{ type: 'index' as const, index: 0 }]
 
 	logger.info('Updating channel programming', { channelId, mode, programCount: programs.length })
 
 	await tunarrFetch(tunarrUrl, `/channels/${channelId}/programming`, {
 		method: 'POST',
-		body: JSON.stringify({ programs, lineup: programs.map((_, i) => ({ type: 'index', index: i })) }),
+		body: JSON.stringify({
+			type: 'manual',
+			programs,
+			lineup,
+			append: mode === 'append',
+		}),
 	})
 }
