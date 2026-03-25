@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server'
 import { eq, desc } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
-import { updateChannelProgramming, scanMediaSourceForPath, listMediaSources } from '@hospitality-channels/publish'
-import type { TunarrContentProgram } from '@hospitality-channels/publish'
+import { updateChannelProgramming, scanAndFindProgram } from '@hospitality-channels/publish'
 import { PATHS } from '@hospitality-channels/common'
 import path from 'node:path'
-import crypto from 'node:crypto'
 
 export async function POST(request: Request) {
 	const db = await getDb()
@@ -53,41 +51,19 @@ export async function POST(request: Request) {
 		externalKey = path.join(mediaPathSetting.value, relativePath)
 	}
 
-	// Find the matching Tunarr media source for this file path
-	let externalSourceId = ''
-	let externalSourceName = ''
 	try {
-		const sources = await listMediaSources(tunarrUrlSetting.value)
-		const matching = sources.find(
-			s =>
-				s.paths?.some(p => externalKey.startsWith(p)) ||
-				s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
-		)
-		if (matching) {
-			externalSourceId = matching.id
-			externalSourceName = matching.name
+		// Scan the media source and find the indexed program matching this file
+		const program = await scanAndFindProgram(tunarrUrlSetting.value, externalKey)
+		if (!program) {
+			return NextResponse.json(
+				{ error: `File not found in Tunarr library after scanning. Make sure "${externalKey}" exists and is accessible to Tunarr.` },
+				{ status: 404 }
+			)
 		}
-	} catch {
-		// Continue without source info — push may still work
-	}
 
-	const program: TunarrContentProgram = {
-		type: 'content',
-		subtype: 'other_video',
-		persisted: false,
-		uniqueId: crypto.randomUUID(),
-		externalKey,
-		externalSourceType: 'local',
-		externalSourceId,
-		externalSourceName,
-		externalIds: [],
-		duration: Math.round(artifact.durationSec * 1000),
-		title,
-	}
+		// Override the title with our page title
+		program.title = title
 
-	try {
-		// Trigger a Tunarr library scan so the new file is discoverable
-		await scanMediaSourceForPath(tunarrUrlSetting.value, externalKey)
 		await updateChannelProgramming(tunarrUrlSetting.value, body.channelId, program, body.mode)
 		return NextResponse.json({ success: true, title, channelId: body.channelId, mode: body.mode })
 	} catch (err) {

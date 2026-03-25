@@ -11,22 +11,25 @@ export interface TunarrChannel {
 	duration?: number
 }
 
-export interface TunarrContentProgram {
-	type: 'content'
-	subtype: 'other_video'
-	persisted: boolean
-	uniqueId: string
-	externalKey: string
-	externalSourceType: 'local'
-	externalSourceName: string
-	externalSourceId: string
-	externalIds: string[]
-	duration: number
-	title: string
+// Program as returned by Tunarr (flexible to handle various fields)
+export interface TunarrProgram {
+	type: string
+	subtype?: string
+	persisted?: boolean
+	uniqueId?: string
+	id?: string
+	externalKey?: string
+	externalSourceType?: string
+	externalSourceName?: string
+	externalSourceId?: string
+	externalIds?: unknown[]
+	duration?: number
+	title?: string
+	[key: string]: unknown
 }
 
 interface CondensedProgramming {
-	programs: TunarrContentProgram[]
+	programs: Record<string, TunarrProgram> | TunarrProgram[]
 	lineup: unknown[]
 	schedule?: unknown
 }
@@ -74,33 +77,67 @@ export async function scanMediaSource(tunarrUrl: string, sourceId: string): Prom
 	await tunarrFetch(tunarrUrl, `/media-sources/${sourceId}/scan`, { method: 'POST' })
 }
 
-export async function scanMediaSourceForPath(tunarrUrl: string, mediaPath: string): Promise<void> {
-	try {
-		const sources = await listMediaSources(tunarrUrl)
-		// Find a media source whose path matches the media path prefix
-		const matching = sources.find(
-			s =>
-				s.paths?.some(p => mediaPath.startsWith(p)) ||
-				s.libraries?.some(l => l.externalKey && mediaPath.startsWith(l.externalKey))
-		)
-		if (matching) {
-			await scanMediaSource(tunarrUrl, matching.id)
-			// Give Tunarr a moment to discover the new file
-			await new Promise(resolve => setTimeout(resolve, 3000))
-			logger.info('Media source scan completed', { sourceId: matching.id, sourceName: matching.name })
-		} else {
-			logger.warn('No matching media source found for path', { mediaPath, sourceCount: sources.length })
-		}
-	} catch (err) {
-		// Don't fail the push if scan fails — the file might already be indexed
-		logger.warn('Media source scan failed (continuing anyway)', { error: String(err) })
+export async function getLibraryPrograms(tunarrUrl: string, libraryId: string): Promise<TunarrProgram[]> {
+	return tunarrFetch<TunarrProgram[]>(tunarrUrl, `/media-libraries/${libraryId}/programs`)
+}
+
+/**
+ * Scan the media source that contains the given path, then search its library
+ * for the program matching the externalKey. Returns the persisted program if found.
+ */
+export async function scanAndFindProgram(
+	tunarrUrl: string,
+	externalKey: string
+): Promise<TunarrProgram | null> {
+	const sources = await listMediaSources(tunarrUrl)
+	const matching = sources.find(
+		s =>
+			s.paths?.some(p => externalKey.startsWith(p)) ||
+			s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
+	)
+
+	if (!matching) {
+		logger.warn('No matching media source found for path', { externalKey, sourceCount: sources.length })
+		return null
 	}
+
+	// Trigger scan
+	logger.info('Scanning media source', { sourceId: matching.id, sourceName: matching.name })
+	await scanMediaSource(tunarrUrl, matching.id)
+
+	// Poll for the program to appear (scan may take a moment)
+	const matchingLibrary = matching.libraries.find(
+		l => l.externalKey && externalKey.startsWith(l.externalKey)
+	) ?? matching.libraries[0]
+
+	if (!matchingLibrary) {
+		logger.warn('No library found in matching media source', { sourceId: matching.id })
+		return null
+	}
+
+	for (let attempt = 0; attempt < 5; attempt++) {
+		await new Promise(resolve => setTimeout(resolve, 2000))
+		try {
+			const programs = await getLibraryPrograms(tunarrUrl, matchingLibrary.id)
+			const found = programs.find(p => p.externalKey === externalKey)
+			if (found) {
+				logger.info('Found indexed program', { externalKey, uniqueId: found.uniqueId, attempt })
+				return found
+			}
+			logger.info('Program not yet indexed, retrying...', { externalKey, attempt, totalPrograms: programs.length })
+		} catch (err) {
+			logger.warn('Failed to query library programs', { error: String(err), attempt })
+		}
+	}
+
+	logger.warn('Program not found after scanning', { externalKey })
+	return null
 }
 
 export async function updateChannelProgramming(
 	tunarrUrl: string,
 	channelId: string,
-	program: TunarrContentProgram,
+	program: TunarrProgram,
 	mode: 'append' | 'replace'
 ): Promise<void> {
 	const programs = [program]
