@@ -73,6 +73,10 @@ export async function listMediaSources(tunarrUrl: string): Promise<TunarrMediaSo
 	return tunarrFetch<TunarrMediaSource[]>(tunarrUrl, '/media-sources')
 }
 
+export async function getMediaSource(tunarrUrl: string, sourceId: string): Promise<TunarrMediaSource> {
+	return tunarrFetch<TunarrMediaSource>(tunarrUrl, `/media-sources/${sourceId}`)
+}
+
 export async function scanMediaSource(tunarrUrl: string, sourceId: string): Promise<void> {
 	logger.info('Triggering media source scan', { sourceId })
 	await tunarrFetch(tunarrUrl, `/media-sources/${sourceId}/scan`, { method: 'POST' })
@@ -102,20 +106,29 @@ export async function scanAndFindProgram(
 		return null
 	}
 
+	// Fetch full source details (list endpoint may not include full library data)
+	const fullSource = await getMediaSource(tunarrUrl, matching.id)
+	logger.info('Scanning media source', { sourceId: fullSource.id, sourceName: fullSource.name, libraryCount: fullSource.libraries?.length })
+
 	// Trigger scan
-	logger.info('Scanning media source', { sourceId: matching.id, sourceName: matching.name })
-	await scanMediaSource(tunarrUrl, matching.id)
+	await scanMediaSource(tunarrUrl, fullSource.id)
 
-	// Poll for the program to appear (scan may take a moment)
-	const matchingLibrary = matching.libraries.find(
+	// Find the matching library from the full source details
+	const matchingLibrary = fullSource.libraries?.find(
 		l => l.externalKey && externalKey.startsWith(l.externalKey)
-	) ?? matching.libraries[0]
+	) ?? fullSource.libraries?.[0]
 
-	if (!matchingLibrary) {
-		logger.warn('No library found in matching media source', { sourceId: matching.id })
+	if (!matchingLibrary?.id) {
+		logger.warn('No library with valid ID found in media source', {
+			sourceId: fullSource.id,
+			libraries: JSON.stringify(fullSource.libraries),
+		})
 		return null
 	}
 
+	logger.info('Using library for program lookup', { libraryId: matchingLibrary.id, libraryName: matchingLibrary.name })
+
+	// Poll for the program to appear (scan may take a moment)
 	for (let attempt = 0; attempt < 5; attempt++) {
 		await new Promise(resolve => setTimeout(resolve, 2000))
 		try {

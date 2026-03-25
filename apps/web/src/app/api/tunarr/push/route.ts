@@ -42,10 +42,12 @@ export async function POST(request: Request) {
 	const [page] = await db.select().from(schema.pages).where(eq(schema.pages.id, artifact.pageId)).limit(1)
 	const title = page?.title ?? 'Untitled'
 
-	// Remap the output path for Tunarr's filesystem view
+	// The externalKey is the file path as Tunarr sees it.
+	// If the artifact is already in the Tunarr media path, use it directly.
+	// Otherwise, remap from the default export dir to the Tunarr media path.
 	const [mediaPathSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_path')).limit(1)
 	let externalKey = artifact.outputPath
-	if (mediaPathSetting?.value) {
+	if (mediaPathSetting?.value && !artifact.outputPath.startsWith(mediaPathSetting.value)) {
 		const exportDir = path.resolve(PATHS.exports)
 		const relativePath = path.relative(exportDir, artifact.outputPath)
 		externalKey = path.join(mediaPathSetting.value, relativePath)

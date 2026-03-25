@@ -7,11 +7,23 @@ PGID=${PGID:-1001}
 
 echo "[entrypoint] Configuring user: PUID=$PUID PGID=$PGID (current: uid=$(id -u appuser) gid=$(getent group nodejs | cut -d: -f3))"
 
+# Remove any existing user/group that conflicts with the target PUID/PGID
+EXISTING_USER=$(getent passwd "$PUID" | cut -d: -f1 2>/dev/null || true)
+if [ -n "$EXISTING_USER" ] && [ "$EXISTING_USER" != "appuser" ]; then
+  echo "[entrypoint] Removing conflicting user $EXISTING_USER (uid=$PUID)"
+  userdel "$EXISTING_USER" 2>/dev/null || true
+fi
+EXISTING_GROUP=$(getent group "$PGID" | cut -d: -f1 2>/dev/null || true)
+if [ -n "$EXISTING_GROUP" ] && [ "$EXISTING_GROUP" != "nodejs" ]; then
+  echo "[entrypoint] Removing conflicting group $EXISTING_GROUP (gid=$PGID)"
+  groupdel "$EXISTING_GROUP" 2>/dev/null || true
+fi
+
 if [ "$(getent group nodejs | cut -d: -f3)" != "$PGID" ]; then
   groupmod -g "$PGID" nodejs || echo "[entrypoint] WARNING: failed to set GID to $PGID"
 fi
 if [ "$(id -u appuser)" != "$PUID" ]; then
-  usermod -u "$PUID" appuser || echo "[entrypoint] WARNING: failed to set UID to $PUID"
+  usermod -u "$PUID" -g "$PGID" appuser || echo "[entrypoint] WARNING: failed to set UID to $PUID"
 fi
 
 echo "[entrypoint] Running as: uid=$(id -u appuser) gid=$(id -g appuser) groups=$(id -G appuser)"
