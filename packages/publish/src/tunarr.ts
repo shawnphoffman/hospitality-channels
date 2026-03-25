@@ -13,11 +13,16 @@ export interface TunarrChannel {
 
 export interface TunarrContentProgram {
 	type: 'content'
-	sourceType: 'local'
+	subtype: 'other_video'
+	persisted: boolean
+	uniqueId: string
 	externalKey: string
+	externalSourceType: 'local'
+	externalSourceName: string
+	externalSourceId: string
+	externalIds: string[]
 	duration: number
 	title: string
-	subtype: 'movie'
 }
 
 interface CondensedProgramming {

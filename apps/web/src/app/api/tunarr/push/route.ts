@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { eq, desc } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
-import { updateChannelProgramming, scanMediaSourceForPath } from '@hospitality-channels/publish'
+import { updateChannelProgramming, scanMediaSourceForPath, listMediaSources } from '@hospitality-channels/publish'
 import type { TunarrContentProgram } from '@hospitality-channels/publish'
 import { PATHS } from '@hospitality-channels/common'
 import path from 'node:path'
+import crypto from 'node:crypto'
 
 export async function POST(request: Request) {
 	const db = await getDb()
@@ -52,13 +53,36 @@ export async function POST(request: Request) {
 		externalKey = path.join(mediaPathSetting.value, relativePath)
 	}
 
+	// Find the matching Tunarr media source for this file path
+	let externalSourceId = ''
+	let externalSourceName = ''
+	try {
+		const sources = await listMediaSources(tunarrUrlSetting.value)
+		const matching = sources.find(
+			s =>
+				s.paths?.some(p => externalKey.startsWith(p)) ||
+				s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
+		)
+		if (matching) {
+			externalSourceId = matching.id
+			externalSourceName = matching.name
+		}
+	} catch {
+		// Continue without source info — push may still work
+	}
+
 	const program: TunarrContentProgram = {
 		type: 'content',
-		sourceType: 'local',
+		subtype: 'other_video',
+		persisted: false,
+		uniqueId: crypto.randomUUID(),
 		externalKey,
+		externalSourceType: 'local',
+		externalSourceId,
+		externalSourceName,
+		externalIds: [],
 		duration: Math.round(artifact.durationSec * 1000),
 		title,
-		subtype: 'movie',
 	}
 
 	try {
