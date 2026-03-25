@@ -38,12 +38,13 @@ async function tunarrFetch<T>(tunarrUrl: string, path: string, init?: RequestIni
 	const url = `${tunarrUrl.replace(/\/+$/, '')}/api${path}`
 	const separator = url.includes('?') ? '&' : '?'
 	const uncachedUrl = `${url}${separator}_t=${Date.now()}`
+	const headers: Record<string, string> = { ...init?.headers as Record<string, string> }
+	if (init?.body) {
+		headers['Content-Type'] = 'application/json'
+	}
 	const res = await fetch(uncachedUrl, {
 		...init,
-		headers: {
-			'Content-Type': 'application/json',
-			...init?.headers,
-		},
+		headers,
 	})
 	if (!res.ok) {
 		const text = await res.text().catch(() => '')
