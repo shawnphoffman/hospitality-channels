@@ -32,6 +32,10 @@ echo "[entrypoint] Running as: uid=$(id -u appuser) gid=$(id -g appuser) groups=
 chown -R appuser:nodejs /data 2>/dev/null || true
 chown -R appuser:nodejs /exports 2>/dev/null || true
 
+# Ensure Next.js cache directory is writable
+mkdir -p /app/apps/web/.next/standalone/apps/web/.next/cache 2>/dev/null || true
+chown -R appuser:nodejs /app/apps/web/.next/standalone/apps/web/.next/cache 2>/dev/null || true
+
 # Ensure mounted media directories are writable
 for dir in /library-local /media /library; do
   if [ -d "$dir" ]; then

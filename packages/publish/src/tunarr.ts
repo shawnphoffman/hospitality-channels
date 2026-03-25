@@ -61,11 +61,19 @@ export async function getChannelProgramming(tunarrUrl: string, channelId: string
 	return tunarrFetch<CondensedProgramming>(tunarrUrl, `/channels/${channelId}/programming`)
 }
 
+export interface TunarrMediaLibrary {
+	id?: string
+	uuid?: string
+	name: string
+	externalKey?: string
+	[key: string]: unknown
+}
+
 export interface TunarrMediaSource {
 	id: string
 	name: string
 	type: string
-	libraries: Array<{ id: string; name: string; externalKey?: string }>
+	libraries: TunarrMediaLibrary[]
 	paths?: string[]
 }
 
@@ -79,7 +87,17 @@ export async function getMediaSource(tunarrUrl: string, sourceId: string): Promi
 
 export async function scanMediaSource(tunarrUrl: string, sourceId: string): Promise<void> {
 	logger.info('Triggering media source scan', { sourceId })
-	await tunarrFetch(tunarrUrl, `/media-sources/${sourceId}/scan`, { method: 'POST' })
+	const url = `${tunarrUrl.replace(/\/+$/, '')}/api/media-sources/${sourceId}/scan?_t=${Date.now()}`
+	const res = await fetch(url, { method: 'POST' })
+	if (!res.ok) {
+		const text = await res.text().catch(() => '')
+		logger.warn('Media source scan failed', { sourceId, status: res.status, body: text })
+	}
+}
+
+function getLibraryId(library: TunarrMediaLibrary): string | undefined {
+	// Tunarr may use 'id' or 'uuid' depending on version
+	return library.id || library.uuid || (library as Record<string, unknown>).libraryId as string | undefined
 }
 
 export async function getLibraryPrograms(tunarrUrl: string, libraryId: string): Promise<TunarrProgram[]> {
@@ -118,7 +136,14 @@ export async function scanAndFindProgram(
 		l => l.externalKey && externalKey.startsWith(l.externalKey)
 	) ?? fullSource.libraries?.[0]
 
-	if (!matchingLibrary?.id) {
+	logger.info('Library lookup result', {
+		found: !!matchingLibrary,
+		rawLibrary: matchingLibrary ? JSON.stringify(matchingLibrary) : 'none',
+		externalKey,
+	})
+
+	const libraryId = matchingLibrary ? getLibraryId(matchingLibrary) : undefined
+	if (!libraryId) {
 		logger.warn('No library with valid ID found in media source', {
 			sourceId: fullSource.id,
 			libraries: JSON.stringify(fullSource.libraries),
@@ -126,13 +151,13 @@ export async function scanAndFindProgram(
 		return null
 	}
 
-	logger.info('Using library for program lookup', { libraryId: matchingLibrary.id, libraryName: matchingLibrary.name })
+	logger.info('Using library for program lookup', { libraryId, libraryName: matchingLibrary?.name })
 
 	// Poll for the program to appear (scan may take a moment)
 	for (let attempt = 0; attempt < 5; attempt++) {
 		await new Promise(resolve => setTimeout(resolve, 2000))
 		try {
-			const programs = await getLibraryPrograms(tunarrUrl, matchingLibrary.id)
+			const programs = await getLibraryPrograms(tunarrUrl, libraryId)
 			const found = programs.find(p => p.externalKey === externalKey)
 			if (found) {
 				logger.info('Found indexed program', { externalKey, uniqueId: found.uniqueId, attempt })
