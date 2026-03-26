@@ -68,8 +68,12 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 		.where(eq(schema.publishedArtifacts.programId, params.id))
 		.orderBy(desc(schema.publishedArtifacts.publishedAt))
 
+	// Mark older artifacts with the same output path as superseded
+	const latestByPath = new Set<string>()
 	const artifactsWithProfile = artifacts.map(a => {
 		const profile = profiles.find(p => p.id === a.publishProfileId)
+		const superseded = latestByPath.has(a.outputPath)
+		latestByPath.add(a.outputPath)
 		return {
 			id: a.id,
 			outputPath: a.outputPath,
@@ -77,6 +81,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			status: a.status,
 			publishedAt: a.publishedAt,
 			profileName: profile?.name ?? 'Unknown',
+			superseded,
 		}
 	})
 

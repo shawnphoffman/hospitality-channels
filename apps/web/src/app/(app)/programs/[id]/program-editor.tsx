@@ -55,6 +55,7 @@ interface ArtifactData {
 	status: string
 	publishedAt: string | null
 	profileName: string
+	superseded?: boolean
 }
 
 interface ProgramEditorProps {
@@ -918,19 +919,28 @@ export function ProgramEditor({
 					<h3 className="mb-3 text-sm font-semibold text-slate-300">Published Artifacts</h3>
 					<div className="space-y-2">
 						{initialArtifacts.map(a => {
-							const showTunarrPush = tunarrConfigured && a.status === 'published' && isInTunarrPath(a.outputPath)
+							const showTunarrPush = tunarrConfigured && a.status === 'published' && isInTunarrPath(a.outputPath) && !a.superseded
 							return (
-								<div key={a.id} className="rounded-lg border border-slate-700 bg-slate-800 p-3">
+								<div
+									key={a.id}
+									className={`rounded-lg border p-3 ${a.superseded ? 'border-slate-800 bg-slate-800/50 opacity-60' : 'border-slate-700 bg-slate-800'}`}
+								>
 									<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 										<div className="min-w-0 flex-1">
 											<div className="flex flex-wrap items-center gap-2">
-												<span
-													className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-														a.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-slate-700 text-slate-400'
-													}`}
-												>
-													{a.status}
-												</span>
+												{a.superseded ? (
+													<span className="inline-block rounded-full bg-slate-700 px-2 py-0.5 text-xs font-medium text-slate-500">
+														superseded
+													</span>
+												) : (
+													<span
+														className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+															a.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-slate-700 text-slate-400'
+														}`}
+													>
+														{a.status}
+													</span>
+												)}
 												<span className="text-xs text-slate-400">
 													{a.profileName} &middot; {a.durationSec}s
 													{a.publishedAt && <> &middot; {new Date(a.publishedAt).toLocaleString()}</>}
