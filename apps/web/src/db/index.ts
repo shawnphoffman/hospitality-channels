@@ -222,6 +222,62 @@ async function runDataMigrations(database: Database) {
 			}
 		}
 	}
+
+	// Migration: Auto-create programs from clips that have backgroundAudioUrl
+	// For each clip with audio, create a program wrapping it (if not already in a program).
+	const allClips = await database.select().from(schema.clips)
+	const existingProgramClips = await database.select().from(schema.programClips)
+	const clipsAlreadyInPrograms = new Set(existingProgramClips.map(pc => pc.clipId))
+
+	for (const clip of allClips) {
+		if (clipsAlreadyInPrograms.has(clip.id)) continue
+		const data = (clip.dataJson ?? {}) as Record<string, unknown>
+		const audioUrl = data.backgroundAudioUrl as string | undefined
+		if (!audioUrl) continue
+
+		const now = new Date().toISOString()
+		const programId = generateId()
+
+		// Create the program
+		await database.insert(schema.programs).values({
+			id: programId,
+			title: clip.title,
+			slug: `${clip.slug}-program`,
+			description: null,
+			summary: null,
+			iconAssetId: null,
+			durationMode: data.matchAudioDuration ? 'auto' : 'manual',
+			manualDurationSec: clip.defaultDurationSec ?? 30,
+			createdAt: now,
+			updatedAt: now,
+		})
+
+		// Add the clip to the program
+		await database.insert(schema.programClips).values({
+			id: generateId(),
+			programId,
+			clipId: clip.id,
+			position: 0,
+		})
+
+		// Add the audio track
+		await database.insert(schema.programAudioTracks).values({
+			id: generateId(),
+			programId,
+			assetId: null,
+			audioUrl,
+			position: 0,
+			durationSec: null,
+		})
+
+		// Migrate channel definitions from clipId → programId
+		const channelDefs = await database.select().from(schema.channelDefinitions).where(eq(schema.channelDefinitions.clipId, clip.id))
+		for (const cd of channelDefs) {
+			await database.update(schema.channelDefinitions)
+				.set({ programId, clipId: null })
+				.where(eq(schema.channelDefinitions.id, cd.id))
+		}
+	}
 }
 
 async function ensureTables(client: Client, database: Database) {

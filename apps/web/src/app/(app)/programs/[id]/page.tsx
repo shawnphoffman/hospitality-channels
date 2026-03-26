@@ -48,7 +48,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			position: t.position,
 			assetId: t.assetId,
 			audioUrl: t.audioUrl,
-			durationSec: t.durationSec,
+			durationSec: t.durationSec ?? asset?.duration ?? null,
 			filename: asset ? asset.originalPath.split('/').pop() ?? 'audio' : (t.audioUrl ? new URL(t.audioUrl, 'http://localhost').pathname.split('/').pop() ?? 'audio' : 'Unknown'),
 		}
 	})
@@ -64,6 +64,11 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 	const audioAssets = allAssets
 		.filter(a => a.type === 'audio')
 		.map(a => ({ id: a.id, filename: a.originalPath.split('/').pop() ?? 'audio' }))
+
+	// Image assets for icon picker
+	const imageAssets = allAssets
+		.filter(a => a.type !== 'audio' && a.type !== 'video')
+		.map(a => ({ id: a.id, originalPath: a.originalPath }))
 
 	return (
 		<ProgramEditor
@@ -81,6 +86,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			audioTracks={enrichedTracks}
 			availableClips={availableClips}
 			audioAssets={audioAssets}
+			imageAssets={imageAssets}
 			profiles={profiles.map(p => ({ id: p.id, name: p.name }))}
 			tunarrConfigured={!!tunarrSetting?.value}
 		/>

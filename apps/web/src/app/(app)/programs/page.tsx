@@ -50,23 +50,25 @@ export default async function ProgramsListPage() {
 					</a>
 				</div>
 			) : (
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+				<div className="space-y-3">
 					{programsWithDetails.map(program => (
 						<a
 							key={program.id}
 							href={`/programs/${program.id}`}
-							className="rounded-xl border border-slate-800 bg-slate-900 p-5 transition-colors hover:border-slate-700"
+							className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-700"
 						>
-							<h3 className="font-semibold text-white">{program.title}</h3>
-							<p className="mt-1 text-xs text-slate-400">{program.slug}</p>
-							<div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
-								<span>{program.clipCount} clip{program.clipCount !== 1 ? 's' : ''}</span>
-								<span>{program.audioTrackCount} track{program.audioTrackCount !== 1 ? 's' : ''}</span>
-								<span>{formatDuration(program.computedDuration)}</span>
+							<div className="min-w-0 flex-1">
+								<h3 className="font-semibold text-white">{program.title}</h3>
+								<p className="mt-0.5 text-xs text-slate-400">{program.slug}</p>
+								<div className="mt-1.5 flex items-center gap-4 text-xs text-slate-500">
+									<span>{program.clipCount} clip{program.clipCount !== 1 ? 's' : ''}</span>
+									<span>{program.audioTrackCount} track{program.audioTrackCount !== 1 ? 's' : ''}</span>
+									<span>{formatDuration(program.computedDuration)}</span>
+								</div>
+								{program.description && (
+									<p className="mt-1.5 line-clamp-1 text-xs text-slate-400">{program.description}</p>
+								)}
 							</div>
-							{program.description && (
-								<p className="mt-2 line-clamp-2 text-xs text-slate-400">{program.description}</p>
-							)}
 						</a>
 					))}
 				</div>

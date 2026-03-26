@@ -8,10 +8,11 @@ export default async function ChannelsPage() {
 	const db = await getDb()
 	const channels = await db.select().from(schema.channelDefinitions)
 	const clips = await db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips)
+	const programs = await db.select({ id: schema.programs.id, title: schema.programs.title }).from(schema.programs)
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
 	const tunarrConfigured = !!tunarrSetting?.value
 
-	// Find latest Tunarr Export artifact per page
+	// Find latest artifact per clip/program
 	const tunarrProfile = await db
 		.select()
 		.from(schema.publishProfiles)
@@ -19,7 +20,7 @@ export default async function ChannelsPage() {
 		.limit(1)
 	const tunarrProfileId = tunarrProfile[0]?.id
 
-	let artifactsByClip: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
+	let artifactsByKey: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
 	if (tunarrProfileId) {
 		const artifacts = await db
 			.select()
@@ -28,9 +29,9 @@ export default async function ChannelsPage() {
 		for (const a of artifacts) {
 			const key = a.clipId ?? a.programId
 			if (!key) continue
-			const existing = artifactsByClip[key]
+			const existing = artifactsByKey[key]
 			if (!existing || (a.publishedAt ?? '') > (existing.publishedAt ?? '')) {
-				artifactsByClip[key] = {
+				artifactsByKey[key] = {
 					id: a.id,
 					outputPath: a.outputPath,
 					durationSec: a.durationSec,
@@ -42,10 +43,13 @@ export default async function ChannelsPage() {
 
 	const channelsWithDetails = channels.map(ch => {
 		const clip = ch.clipId ? clips.find(c => c.id === ch.clipId) : null
-		const artifact = ch.clipId ? artifactsByClip[ch.clipId] ?? null : null
+		const program = ch.programId ? programs.find(p => p.id === ch.programId) : null
+		const key = ch.programId ?? ch.clipId
+		const artifact = key ? artifactsByKey[key] ?? null : null
 		return {
 			...ch,
 			clipTitle: clip?.title ?? null,
+			programTitle: program?.title ?? null,
 			latestArtifact: artifact,
 		}
 	})
@@ -56,6 +60,7 @@ export default async function ChannelsPage() {
 			<ChannelsClient
 				initialChannels={channelsWithDetails}
 				clips={clips}
+				programs={programs}
 				tunarrConfigured={tunarrConfigured}
 			/>
 		</div>

@@ -87,6 +87,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 		.from(schema.programAudioTracks)
 		.where(eq(schema.programAudioTracks.programId, id))
 
+	// Resolve duration from asset if not provided
+	let durationSec = body.durationSec ?? null
+	if (durationSec == null && body.assetId) {
+		const [asset] = await db.select().from(schema.assets).where(eq(schema.assets.id, body.assetId)).limit(1)
+		if (asset?.duration) {
+			durationSec = asset.duration
+		}
+	}
+
 	const position = body.position ?? existing.length
 	const track = {
 		id: generateId(),
@@ -94,7 +103,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 		assetId: body.assetId ?? null,
 		audioUrl: body.audioUrl ?? null,
 		position,
-		durationSec: body.durationSec ?? null,
+		durationSec,
 	}
 
 	await db.insert(schema.programAudioTracks).values(track)

@@ -335,7 +335,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedClips, arti
 						</button>
 					</div>
 				) : (
-					<div className="grid gap-3 sm:grid-cols-2">
+					<div className="grid gap-3 md:grid-cols-2">
 						{profiles.map(p => (
 							<button
 								key={p.id}
@@ -367,16 +367,16 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedClips, arti
 				) : (
 					<div className="space-y-3">
 						{renderedClips.map(rc => (
-							<div key={rc.renderJobId} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-4">
-								<div>
+							<div key={rc.renderJobId} className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4 md:flex-row md:items-center md:justify-between">
+								<div className="min-w-0 flex-1">
 									<p className="font-medium text-white">{rc.clipTitle}</p>
 									<p className="mt-0.5 text-xs text-slate-400">Rendered {new Date(rc.renderedAt).toLocaleString()}</p>
-									<p className="text-xs text-slate-500">{rc.outputPath}</p>
+									<p className="truncate text-xs text-slate-500">{rc.outputPath}</p>
 								</div>
 								<button
 									onClick={() => handlePublish(rc.clipId)}
 									disabled={!!isPublishing || profiles.length === 0}
-									className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+									className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 md:w-auto"
 								>
 									{publishingClipId === rc.clipId && isPublishing ? 'Publishing...' : 'Publish'}
 								</button>
@@ -395,35 +395,35 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedClips, arti
 					<div className="space-y-3">
 						{artifacts.map(a => (
 							<div key={a.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-								<div className="flex items-center justify-between">
+								<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 									<div className="min-w-0 flex-1">
-										<p className="font-medium text-white">{a.programTitle ?? a.clipTitle ?? 'Untitled'}</p>
+										<div className="flex flex-wrap items-center gap-2">
+											<p className="font-medium text-white">{a.programTitle ?? a.clipTitle ?? 'Untitled'}</p>
+											<span
+												className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+													a.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-slate-800 text-slate-400'
+												}`}
+											>
+												{a.status}
+											</span>
+										</div>
 										<p className="mt-0.5 text-xs text-slate-400">
 											{a.profileName} &middot; {a.durationSec}s &middot; {a.publishedAt ? new Date(a.publishedAt).toLocaleString() : ''}
 										</p>
-										<p className="max-w-md truncate text-xs text-slate-500">{a.outputPath}</p>
+										<p className="truncate text-xs text-slate-500">{a.outputPath}</p>
 									</div>
-									<div className="flex items-center gap-2">
-										<span
-											className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-												a.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-slate-800 text-slate-400'
+									{tunarrConfigured && a.status === 'published' && (
+										<button
+											onClick={() => handleOpenPush(a.id, a.clipId)}
+											className={`w-full rounded-lg px-3 py-1.5 text-xs font-medium transition-colors md:w-auto ${
+												pushingArtifactId === a.id
+													? 'bg-purple-600 text-white'
+													: 'border border-purple-700 text-purple-400 hover:bg-purple-950'
 											}`}
 										>
-											{a.status}
-										</span>
-										{tunarrConfigured && a.status === 'published' && (
-											<button
-												onClick={() => handleOpenPush(a.id, a.clipId)}
-												className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-													pushingArtifactId === a.id
-														? 'bg-purple-600 text-white'
-														: 'border border-purple-700 text-purple-400 hover:bg-purple-950'
-												}`}
-											>
-												Push to Tunarr
-											</button>
-										)}
-									</div>
+											Push to Tunarr
+										</button>
+									)}
 								</div>
 
 								{/* Tunarr push panel */}
@@ -471,11 +471,11 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedClips, arti
 														Replace channel content
 													</label>
 												</div>
-												<div className="flex items-center gap-3">
+												<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
 													<button
 														onClick={handlePush}
 														disabled={pushing || !selectedChannelId}
-														className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
+														className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-500 disabled:opacity-50 md:w-auto"
 													>
 														{pushing ? 'Pushing...' : 'Push'}
 													</button>

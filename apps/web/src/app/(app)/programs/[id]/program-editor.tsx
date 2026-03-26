@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ImageField } from '@/components/image-field'
 
 interface ProgramData {
 	id: string
@@ -53,6 +54,7 @@ interface ProgramEditorProps {
 	audioTracks: AudioTrack[]
 	availableClips: { id: string; title: string }[]
 	audioAssets: { id: string; filename: string }[]
+	imageAssets: { id: string; originalPath: string }[]
 	profiles: { id: string; name: string }[]
 	tunarrConfigured?: boolean
 }
@@ -70,6 +72,7 @@ export function ProgramEditor({
 	audioTracks: initialTracks,
 	availableClips,
 	audioAssets,
+	imageAssets,
 	profiles,
 	tunarrConfigured,
 }: ProgramEditorProps) {
@@ -80,8 +83,23 @@ export function ProgramEditor({
 	const [slug, setSlug] = useState(program.slug)
 	const [description, setDescription] = useState(program.description)
 	const [summary, setSummary] = useState(program.summary)
+	const [iconUrl, setIconUrl] = useState(() => {
+		if (!program.iconAssetId) return ''
+		const asset = imageAssets.find(a => a.id === program.iconAssetId)
+		return asset ? `/api/assets/serve?path=${encodeURIComponent(asset.originalPath)}` : ''
+	})
 	const [durationMode, setDurationMode] = useState(program.durationMode)
 	const [manualDurationSec, setManualDurationSec] = useState(program.manualDurationSec ?? 60)
+
+	// Resolve iconUrl → asset ID for saving
+	const resolveIconAssetId = (url: string): string | null => {
+		if (!url) return null
+		const match = url.match(/[?&]path=([^&]+)/)
+		if (!match) return null
+		const path = decodeURIComponent(match[1])
+		const asset = imageAssets.find(a => a.originalPath === path || a.originalPath.endsWith(`/${path}`))
+		return asset?.id ?? null
+	}
 
 	const [clips, setClips] = useState(initialClips)
 	const [tracks, setTracks] = useState(initialTracks)
@@ -152,6 +170,7 @@ export function ProgramEditor({
 					slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
 					description: description || null,
 					summary: summary || null,
+					iconAssetId: resolveIconAssetId(iconUrl),
 					durationMode,
 					manualDurationSec: durationMode === 'manual' ? manualDurationSec : null,
 				}),
@@ -185,6 +204,7 @@ export function ProgramEditor({
 					slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
 					description: description || null,
 					summary: summary || null,
+					iconAssetId: resolveIconAssetId(iconUrl),
 					durationMode,
 					manualDurationSec: durationMode === 'manual' ? manualDurationSec : null,
 				}),
@@ -384,28 +404,30 @@ export function ProgramEditor({
 	return (
 		<div className="space-y-6">
 			{/* Toolbar */}
-			<div className="flex flex-wrap items-center gap-3">
-				<div className="mr-auto">
+			<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+				<div className="md:mr-auto">
 					<h2 className="text-xl font-bold text-white">{title || 'Untitled Program'}</h2>
 					<p className="text-xs text-slate-400">{slug} &middot; {formatDuration(computedDuration)} total &middot; {clips.length} clip{clips.length !== 1 ? 's' : ''}</p>
 				</div>
-				{profiles.length > 0 && (
-					<select value={selectedProfileId} onChange={e => setSelectedProfileId(e.target.value)}
-						className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none">
-						{profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-					</select>
-				)}
-				<button onClick={handleSave} disabled={saving}
-					className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50">
-					{saving ? 'Saving...' : 'Save'}
-				</button>
-				{profiles.length > 0 && (
-					<button onClick={handleSaveAndPublish} disabled={saving || rendering || !selectedProfileId || clips.length === 0}
-						className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50">
-						{rendering ? 'Working...' : 'Save & Publish'}
+				<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+					{profiles.length > 0 && (
+						<select value={selectedProfileId} onChange={e => setSelectedProfileId(e.target.value)}
+							className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none md:w-auto">
+							{profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+						</select>
+					)}
+					<button onClick={handleSave} disabled={saving}
+						className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50 md:w-auto">
+						{saving ? 'Saving...' : 'Save'}
 					</button>
-				)}
-				<a href="/programs" className="text-sm text-slate-400 hover:text-slate-300">Back</a>
+					{profiles.length > 0 && (
+						<button onClick={handleSaveAndPublish} disabled={saving || rendering || !selectedProfileId || clips.length === 0}
+							className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 md:w-auto">
+							{rendering ? 'Working...' : 'Save & Publish'}
+						</button>
+					)}
+					<a href="/programs" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">Back</a>
+				</div>
 			</div>
 
 			{/* Status messages */}
@@ -444,21 +466,23 @@ export function ProgramEditor({
 					{tunarrChannels.length === 0 ? (
 						<p className="text-sm text-slate-400">No Tunarr channels found.</p>
 					) : (
-						<div className="flex flex-wrap items-center gap-3">
+						<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
 							<select value={selectedChannelId} onChange={e => setSelectedChannelId(e.target.value)}
-								className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none">
+								className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none md:w-auto">
 								{tunarrChannels.map(ch => <option key={ch.id} value={ch.id}>{ch.number}. {ch.name}</option>)}
 							</select>
-							<label className="flex items-center gap-2 text-sm text-slate-300">
-								<input type="radio" name="push-mode" checked={pushMode === 'append'} onChange={() => setPushMode('append')} className="accent-purple-500" />
-								Add
-							</label>
-							<label className="flex items-center gap-2 text-sm text-slate-300">
-								<input type="radio" name="push-mode" checked={pushMode === 'replace'} onChange={() => setPushMode('replace')} className="accent-purple-500" />
-								Replace
-							</label>
+							<div className="flex gap-4">
+								<label className="flex items-center gap-2 text-sm text-slate-300">
+									<input type="radio" name="push-mode" checked={pushMode === 'append'} onChange={() => setPushMode('append')} className="accent-purple-500" />
+									Add
+								</label>
+								<label className="flex items-center gap-2 text-sm text-slate-300">
+									<input type="radio" name="push-mode" checked={pushMode === 'replace'} onChange={() => setPushMode('replace')} className="accent-purple-500" />
+									Replace
+								</label>
+							</div>
 							<button onClick={handlePush} disabled={pushing}
-								className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50">
+								className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 md:w-auto">
 								{pushing ? 'Pushing...' : 'Push'}
 							</button>
 							{pushResult && <span className={`text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</span>}
@@ -494,6 +518,13 @@ export function ProgramEditor({
 								<textarea id="summary" value={summary} onChange={e => setSummary(e.target.value)} rows={2}
 									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
 							</div>
+							<ImageField
+								id="icon"
+								label="Icon / Artwork"
+								value={iconUrl}
+								onChange={setIconUrl}
+								placeholder="Select program artwork..."
+							/>
 						</div>
 					</section>
 
@@ -558,7 +589,13 @@ export function ProgramEditor({
 										</div>
 										<div className="min-w-0 flex-1">
 											<p className="truncate text-sm font-medium text-white">{clip.title}</p>
-											<p className="text-xs text-slate-500">{clip.templateName} &middot; {formatDuration(perClipDuration)}</p>
+											<p className="text-xs text-slate-500">
+												{clip.templateName}
+												{perClipDuration > 0
+													? <> &middot; {formatDuration(perClipDuration)}</>
+													: <span className="ml-1 text-amber-400"> &middot; duration not set</span>
+												}
+											</p>
 										</div>
 										<div className="flex shrink-0 items-center gap-1">
 											<button onClick={() => handleMoveClip(i, -1)} disabled={i === 0}
@@ -610,8 +647,11 @@ export function ProgramEditor({
 										</svg>
 										<div className="min-w-0 flex-1">
 											<p className="truncate text-sm text-white">{track.filename}</p>
-											<p className="text-xs text-slate-500">
-												{track.durationSec ? formatDuration(track.durationSec) : 'Duration unknown'}
+											<p className="text-xs">
+												{track.durationSec
+													? <span className="text-slate-500">{formatDuration(track.durationSec)}</span>
+													: <span className="text-amber-400">Duration unknown &mdash; scan assets to detect</span>
+												}
 											</p>
 										</div>
 										<div className="flex shrink-0 items-center gap-1">

@@ -45,7 +45,6 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 	// Form state
 	const [title, setTitle] = useState(clip.title)
 	const [slug, setSlug] = useState(clip.slug)
-	const [durationSec, setDurationSec] = useState(clip.defaultDurationSec)
 	const [fieldValues, setFieldValues] = useState<Record<string, string>>(clip.dataJson)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -98,7 +97,6 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 					title,
 					slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
 					dataJson: fieldValues,
-					defaultDurationSec: durationSec,
 				}),
 			})
 			if (!res.ok) {
@@ -144,19 +142,21 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 	return (
 		<div className="flex min-h-[calc(100vh-4rem)] flex-col lg:h-[calc(100vh-4rem)]">
 			{/* Toolbar */}
-			<div className="mb-3 flex shrink-0 flex-wrap items-center gap-3">
-				<div className="mr-auto">
+			<div className="mb-3 flex shrink-0 flex-col gap-3 md:flex-row md:items-center">
+				<div className="md:mr-auto">
 					<h2 className="text-xl font-bold text-white">{title || 'Untitled'}</h2>
 					<p className="text-xs text-slate-400">{templateName} &middot; {slug}</p>
 				</div>
-				<button
-					onClick={handleSave}
-					disabled={saving}
-					className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-				>
-					{saving ? 'Saving...' : 'Save'}
-				</button>
-				<a href="/clips" className="text-sm text-slate-400 hover:text-slate-300">Back</a>
+				<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+					<button
+						onClick={handleSave}
+						disabled={saving}
+						className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50 md:w-auto"
+					>
+						{saving ? 'Saving...' : 'Save'}
+					</button>
+					<a href="/clips" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">Back</a>
+				</div>
 			</div>
 
 			{/* Status messages */}
@@ -182,9 +182,8 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
 							</div>
 							<div>
-								<label htmlFor="duration" className="block text-xs text-slate-400">Default Duration (seconds)</label>
-								<input id="duration" type="number" min={1} max={3600} value={durationSec} onChange={e => setDurationSec(parseInt(e.target.value, 10) || 30)}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label className="block text-xs text-slate-400">Template</label>
+								<span className="mt-1 inline-block rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-white">{templateName}</span>
 							</div>
 						</div>
 					</section>
@@ -203,12 +202,6 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 							</div>
 						</section>
 					)}
-
-					{/* Template (read-only) */}
-					<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-						<h3 className="mb-2 text-sm font-semibold text-slate-300">Template</h3>
-						<span className="rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-white">{templateName}</span>
-					</section>
 
 					{/* Template Fields */}
 					{fields.length > 0 && (

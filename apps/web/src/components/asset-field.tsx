@@ -134,21 +134,12 @@ export function AssetField({
 							className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 						/>
 					) : (
-						<div className="flex flex-1 items-center gap-2">
-							<button
-								type="button"
-								onClick={openPicker}
-								className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300 transition-colors hover:border-slate-500"
-							>
-								{value ? 'Asset' : 'Select Asset'}
-							</button>
-							{value && (
-								<span className="truncate text-xs text-slate-500">
-									{decodeURIComponent(value.split('path=')[1] ?? '')
-										.split('/')
-										.pop()}
-								</span>
-							)}
+						<div className="flex flex-1 items-center">
+							<span className="truncate text-sm text-slate-400">
+								{value
+									? decodeURIComponent(value.split('path=')[1] ?? '').split('/').pop()
+									: 'No asset selected'}
+							</span>
 						</div>
 					)}
 				</div>
