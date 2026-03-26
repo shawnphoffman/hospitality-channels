@@ -59,7 +59,8 @@ const CREATE_TABLES_SQL = [
   )`,
 	`CREATE TABLE IF NOT EXISTS published_artifacts (
     id TEXT PRIMARY KEY,
-    page_id TEXT NOT NULL REFERENCES pages(id),
+    page_id TEXT REFERENCES pages(id),
+    program_id TEXT REFERENCES programs(id),
     publish_profile_id TEXT NOT NULL REFERENCES publish_profiles(id),
     output_path TEXT NOT NULL,
     poster_path TEXT,
@@ -72,6 +73,7 @@ const CREATE_TABLES_SQL = [
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
     page_id TEXT REFERENCES pages(id),
+    program_id TEXT REFERENCES programs(id),
     profile_id TEXT REFERENCES publish_profiles(id),
     payload TEXT DEFAULT '{}',
     status TEXT NOT NULL DEFAULT 'queued',
@@ -92,11 +94,39 @@ const CREATE_TABLES_SQL = [
     channel_number INTEGER NOT NULL,
     channel_name TEXT NOT NULL,
     page_id TEXT REFERENCES pages(id),
+    program_id TEXT REFERENCES programs(id),
     artifact_id TEXT REFERENCES published_artifacts(id),
     description TEXT,
     poster_asset_id TEXT REFERENCES assets(id),
     push_mode TEXT DEFAULT 'replace',
     enabled INTEGER NOT NULL DEFAULT 1
+  )`,
+	`CREATE TABLE IF NOT EXISTS programs (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    description TEXT,
+    summary TEXT,
+    icon_asset_id TEXT REFERENCES assets(id),
+    duration_mode TEXT NOT NULL DEFAULT 'auto',
+    manual_duration_sec INTEGER,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+	`CREATE TABLE IF NOT EXISTS program_clips (
+    id TEXT PRIMARY KEY,
+    program_id TEXT NOT NULL REFERENCES programs(id),
+    clip_id TEXT NOT NULL REFERENCES pages(id),
+    position INTEGER NOT NULL,
+    UNIQUE(program_id, clip_id)
+  )`,
+	`CREATE TABLE IF NOT EXISTS program_audio_tracks (
+    id TEXT PRIMARY KEY,
+    program_id TEXT NOT NULL REFERENCES programs(id),
+    asset_id TEXT REFERENCES assets(id),
+    audio_url TEXT,
+    position INTEGER NOT NULL,
+    duration_sec REAL
   )`,
 ]
 
@@ -154,6 +184,9 @@ async function ensureSeeded(database: Database) {
 const MIGRATIONS_SQL = [
 	'ALTER TABLE channel_definitions ADD COLUMN tunarr_channel_id TEXT',
 	"ALTER TABLE channel_definitions ADD COLUMN push_mode TEXT DEFAULT 'replace'",
+	'ALTER TABLE published_artifacts ADD COLUMN program_id TEXT',
+	'ALTER TABLE jobs ADD COLUMN program_id TEXT',
+	'ALTER TABLE channel_definitions ADD COLUMN program_id TEXT',
 ]
 
 /**

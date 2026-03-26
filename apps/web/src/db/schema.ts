@@ -57,8 +57,9 @@ export const publishProfiles = sqliteTable("publish_profiles", {
 export const publishedArtifacts = sqliteTable("published_artifacts", {
   id: text("id").primaryKey(),
   clipId: text("page_id")
-    .notNull()
     .references(() => clips.id),
+  programId: text("program_id")
+    .references(() => programs.id),
   publishProfileId: text("publish_profile_id")
     .notNull()
     .references(() => publishProfiles.id),
@@ -76,6 +77,7 @@ export const jobs = sqliteTable("jobs", {
   id: text("id").primaryKey(),
   type: text("type").notNull(),
   clipId: text("page_id").references(() => clips.id),
+  programId: text("program_id").references(() => programs.id),
   profileId: text("profile_id").references(() => publishProfiles.id),
   payload: text("payload", { mode: "json" }).default({}),
   status: text("status")
@@ -94,12 +96,50 @@ export const settings = sqliteTable("settings", {
   updatedAt: text("updated_at").notNull()
 });
 
+// --- Programs ---
+
+export const programs = sqliteTable("programs", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  summary: text("summary"),
+  iconAssetId: text("icon_asset_id").references(() => assets.id),
+  durationMode: text("duration_mode").notNull().default("auto"),
+  manualDurationSec: integer("manual_duration_sec"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull()
+});
+
+export const programClips = sqliteTable("program_clips", {
+  id: text("id").primaryKey(),
+  programId: text("program_id")
+    .notNull()
+    .references(() => programs.id),
+  clipId: text("clip_id")
+    .notNull()
+    .references(() => clips.id),
+  position: integer("position").notNull()
+});
+
+export const programAudioTracks = sqliteTable("program_audio_tracks", {
+  id: text("id").primaryKey(),
+  programId: text("program_id")
+    .notNull()
+    .references(() => programs.id),
+  assetId: text("asset_id").references(() => assets.id),
+  audioUrl: text("audio_url"),
+  position: integer("position").notNull(),
+  durationSec: real("duration_sec")
+});
+
 export const channelDefinitions = sqliteTable("channel_definitions", {
   id: text("id").primaryKey(),
   tunarrChannelId: text("tunarr_channel_id"),
   channelNumber: integer("channel_number").notNull(),
   channelName: text("channel_name").notNull(),
   clipId: text("page_id").references(() => clips.id),
+  programId: text("program_id").references(() => programs.id),
   artifactId: text("artifact_id").references(() => publishedArtifacts.id),
   description: text("description"),
   posterAssetId: text("poster_asset_id").references(() => assets.id),

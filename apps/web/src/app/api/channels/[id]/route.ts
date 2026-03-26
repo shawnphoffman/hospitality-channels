@@ -8,6 +8,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 	const body = (await request.json()) as {
 		clipId?: string | null
 		pageId?: string | null
+		programId?: string | null
 		pushMode?: 'append' | 'replace'
 		enabled?: boolean
 		description?: string | null
@@ -21,6 +22,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 	const updates: Record<string, unknown> = {}
 	if ('clipId' in body) updates.clipId = body.clipId
 	else if ('pageId' in body) updates.clipId = body.pageId
+	if ('programId' in body) updates.programId = body.programId
 	if ('pushMode' in body) updates.pushMode = body.pushMode
 	if ('enabled' in body) updates.enabled = body.enabled
 	if ('description' in body) updates.description = body.description

@@ -26,9 +26,11 @@ export default async function ChannelsPage() {
 			.from(schema.publishedArtifacts)
 			.where(eq(schema.publishedArtifacts.publishProfileId, tunarrProfileId))
 		for (const a of artifacts) {
-			const existing = artifactsByClip[a.clipId]
+			const key = a.clipId ?? a.programId
+			if (!key) continue
+			const existing = artifactsByClip[key]
 			if (!existing || (a.publishedAt ?? '') > (existing.publishedAt ?? '')) {
-				artifactsByClip[a.clipId] = {
+				artifactsByClip[key] = {
 					id: a.id,
 					outputPath: a.outputPath,
 					durationSec: a.durationSec,

@@ -13,6 +13,7 @@ export const jobs = sqliteTable("jobs", {
   id: text("id").primaryKey(),
   type: text("type").notNull(),
   clipId: text("page_id"),
+  programId: text("program_id"),
   profileId: text("profile_id"),
   payload: text("payload", { mode: "json" }).default({}),
   status: text("status")
@@ -51,7 +52,8 @@ export const publishProfiles = sqliteTable("publish_profiles", {
 
 export const publishedArtifacts = sqliteTable("published_artifacts", {
   id: text("id").primaryKey(),
-  clipId: text("page_id").notNull(),
+  clipId: text("page_id"),
+  programId: text("program_id"),
   publishProfileId: text("publish_profile_id").notNull(),
   outputPath: text("output_path").notNull(),
   posterPath: text("poster_path"),
@@ -63,5 +65,34 @@ export const publishedArtifacts = sqliteTable("published_artifacts", {
   publishedAt: text("published_at")
 });
 
-const schema = { jobs, clips, publishProfiles, publishedArtifacts };
+export const programs = sqliteTable("programs", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  summary: text("summary"),
+  iconAssetId: text("icon_asset_id"),
+  durationMode: text("duration_mode").notNull().default("auto"),
+  manualDurationSec: integer("manual_duration_sec"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull()
+});
+
+export const programClips = sqliteTable("program_clips", {
+  id: text("id").primaryKey(),
+  programId: text("program_id").notNull(),
+  clipId: text("clip_id").notNull(),
+  position: integer("position").notNull()
+});
+
+export const programAudioTracks = sqliteTable("program_audio_tracks", {
+  id: text("id").primaryKey(),
+  programId: text("program_id").notNull(),
+  assetId: text("asset_id"),
+  audioUrl: text("audio_url"),
+  position: integer("position").notNull(),
+  durationSec: real("duration_sec")
+});
+
+const schema = { jobs, clips, publishProfiles, publishedArtifacts, programs, programClips, programAudioTracks };
 export const db = drizzle(client, { schema });

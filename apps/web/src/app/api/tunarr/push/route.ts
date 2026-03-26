@@ -39,8 +39,29 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: 'Artifact not found' }, { status: 404 })
 	}
 
-	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, artifact.clipId)).limit(1)
-	const title = clip?.title ?? 'Untitled'
+	// Resolve title and metadata from either program or clip
+	let title = 'Untitled'
+	let summary: string | null = null
+	let description: string | null = null
+	let iconAssetId: string | null = null
+	let durationSec: number | null = null
+
+	if (artifact.programId) {
+		const [prog] = await db.select().from(schema.programs).where(eq(schema.programs.id, artifact.programId)).limit(1)
+		if (prog) {
+			title = prog.title
+			summary = prog.summary ?? null
+			description = prog.description ?? null
+			iconAssetId = prog.iconAssetId ?? null
+		}
+	} else if (artifact.clipId) {
+		const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, artifact.clipId)).limit(1)
+		if (clip) {
+			title = clip.title
+		}
+	}
+
+	durationSec = artifact.durationSec ?? null
 
 	// The externalKey is the file path as Tunarr sees it.
 	// If the artifact is already in the Tunarr media path, use it directly.
@@ -63,8 +84,18 @@ export async function POST(request: Request) {
 			)
 		}
 
-		// Override the title with our page title
+		// Enrich the Tunarr program with our metadata
 		program.title = title
+		if (summary) program.summary = summary
+		if (description) program.description = description
+		if (durationSec) program.duration = Math.round(durationSec * 1000) // Tunarr uses milliseconds
+		if (iconAssetId) {
+			// Resolve icon asset path for Tunarr
+			const [iconAsset] = await db.select().from(schema.assets).where(eq(schema.assets.id, iconAssetId)).limit(1)
+			if (iconAsset?.originalPath) {
+				program.icon = iconAsset.originalPath
+			}
+		}
 
 		await updateChannelProgramming(tunarrUrlSetting.value, body.channelId, program, body.mode)
 		return NextResponse.json({ success: true, title, channelId: body.channelId, mode: body.mode })

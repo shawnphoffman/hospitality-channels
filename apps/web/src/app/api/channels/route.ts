@@ -13,12 +13,15 @@ export async function GET() {
 	const db = await getDb()
 	const channels = await db.select().from(schema.channelDefinitions)
 	const clips = await db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips)
+	const programs = await db.select({ id: schema.programs.id, title: schema.programs.title }).from(schema.programs)
 
 	const result = channels.map(ch => {
 		const clip = ch.clipId ? clips.find(p => p.id === ch.clipId) : null
+		const program = ch.programId ? programs.find(p => p.id === ch.programId) : null
 		return {
 			...ch,
 			clipTitle: clip?.title ?? null,
+			programTitle: program?.title ?? null,
 		}
 	})
 
@@ -33,6 +36,7 @@ export async function POST(request: Request) {
 		channelName: string
 		clipId?: string
 		pageId?: string
+		programId?: string
 		pushMode?: 'append' | 'replace'
 	}
 
@@ -51,6 +55,7 @@ export async function POST(request: Request) {
 	}
 
 	const clipId = body.clipId ?? body.pageId ?? null
+	const programId = body.programId ?? null
 
 	const id = generateId()
 	await db.insert(schema.channelDefinitions).values({
@@ -59,6 +64,7 @@ export async function POST(request: Request) {
 		channelNumber: body.channelNumber,
 		channelName: body.channelName,
 		clipId,
+		programId,
 		pushMode: body.pushMode ?? 'replace',
 		enabled: true,
 	})

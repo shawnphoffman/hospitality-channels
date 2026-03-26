@@ -57,7 +57,8 @@ export const publishProfileSchema = z.object({
 
 export const publishedArtifactSchema = z.object({
   id: z.string().optional(),
-  clipId: z.string(),
+  clipId: z.string().optional().nullable(),
+  programId: z.string().optional().nullable(),
   publishProfileId: z.string(),
   outputPath: z.string(),
   posterPath: z.string().optional(),
@@ -78,6 +79,10 @@ export const channelDefinitionSchema = z.object({
     .string()
     .optional()
     .nullable(),
+  programId: z
+    .string()
+    .optional()
+    .nullable(),
   artifactId: z
     .string()
     .optional()
@@ -90,9 +95,41 @@ export const channelDefinitionSchema = z.object({
   enabled: z.boolean().default(true)
 });
 
+export const programSchema = z.object({
+  id: z.string().optional(),
+  title: z.string(),
+  slug: z.string(),
+  description: z.string().optional().nullable(),
+  summary: z.string().optional().nullable(),
+  iconAssetId: z.string().optional().nullable(),
+  durationMode: z.enum(["auto", "manual"]).default("auto"),
+  manualDurationSec: z.number().optional().nullable(),
+  createdAt: z.string().datetime().optional(),
+  updatedAt: z.string().datetime().optional()
+});
+
+export const programClipSchema = z.object({
+  id: z.string().optional(),
+  programId: z.string(),
+  clipId: z.string(),
+  position: z.number()
+});
+
+export const programAudioTrackSchema = z.object({
+  id: z.string().optional(),
+  programId: z.string(),
+  assetId: z.string().optional().nullable(),
+  audioUrl: z.string().optional().nullable(),
+  position: z.number(),
+  durationSec: z.number().optional().nullable()
+});
+
 export type Template = z.infer<typeof templateSchema>;
 export type Clip = z.infer<typeof clipSchema>;
 export type Asset = z.infer<typeof assetSchema>;
 export type PublishProfile = z.infer<typeof publishProfileSchema>;
 export type PublishedArtifact = z.infer<typeof publishedArtifactSchema>;
 export type ChannelDefinition = z.infer<typeof channelDefinitionSchema>;
+export type Program = z.infer<typeof programSchema>;
+export type ProgramClip = z.infer<typeof programClipSchema>;
+export type ProgramAudioTrack = z.infer<typeof programAudioTrackSchema>;

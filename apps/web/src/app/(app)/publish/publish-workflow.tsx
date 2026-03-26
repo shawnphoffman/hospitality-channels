@@ -21,8 +21,10 @@ interface RenderedClip {
 
 interface Artifact {
 	id: string
-	clipId: string
-	clipTitle: string
+	clipId: string | null
+	clipTitle: string | null
+	programId?: string | null
+	programTitle?: string | null
 	profileName: string
 	outputPath: string
 	durationSec: number
@@ -158,7 +160,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedClips, arti
 		}
 	}
 
-	const handleOpenPush = async (artifactId: string, clipId?: string) => {
+	const handleOpenPush = async (artifactId: string, clipId?: string | null) => {
 		if (pushingArtifactId === artifactId) {
 			setPushingArtifactId(null)
 			return
