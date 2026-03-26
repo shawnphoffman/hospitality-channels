@@ -29,15 +29,15 @@ export function renderMarkdown(text: string): string {
 
 		// Headings
 		if (/^### (.+)/.test(trimmed)) {
-			output.push(`<h3>${trimmed.replace(/^### /, '')}</h3>`)
+			output.push(`<h3 style="font-size:1.25em;font-weight:bold;margin:0">${trimmed.replace(/^### /, '')}</h3>`)
 			continue
 		}
 		if (/^## (.+)/.test(trimmed)) {
-			output.push(`<h2>${trimmed.replace(/^## /, '')}</h2>`)
+			output.push(`<h2 style="font-size:1.5em;font-weight:bold;margin:0">${trimmed.replace(/^## /, '')}</h2>`)
 			continue
 		}
 		if (/^# (.+)/.test(trimmed)) {
-			output.push(`<h1>${trimmed.replace(/^# /, '')}</h1>`)
+			output.push(`<h1 style="font-size:1.75em;font-weight:bold;margin:0">${trimmed.replace(/^# /, '')}</h1>`)
 			continue
 		}
 
