@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo2a.png" alt="Hospitality Channels" width="128" />
+  <img src="logo2c.png" alt="Hospitality Channels" width="200" />
 </p>
 
 # Hospitality Channels
