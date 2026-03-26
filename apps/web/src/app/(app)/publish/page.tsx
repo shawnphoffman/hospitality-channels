@@ -4,7 +4,7 @@ import { desc, eq } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
 import { PublishWorkflow } from './publish-workflow'
 
-export default async function PublishPage() {
+export default async function ArtifactsPage() {
 	const db = await getDb()
 	const profiles = await db.select().from(schema.publishProfiles)
 	const artifacts = await db.select().from(schema.publishedArtifacts).orderBy(desc(schema.publishedArtifacts.publishedAt))
@@ -49,14 +49,8 @@ export default async function PublishPage() {
 
 	return (
 		<div>
-			<h2 className="mb-6 text-2xl font-bold text-white">Publish</h2>
+			<h2 className="mb-6 text-2xl font-bold text-white">Artifacts</h2>
 			<PublishWorkflow
-				profiles={profiles.map(p => ({
-					id: p.id,
-					name: p.name,
-					exportPath: p.exportPath,
-					fileNamingPattern: p.fileNamingPattern,
-				}))}
 				artifacts={artifactsWithDetails.map(a => ({
 					id: a.id,
 					clipId: a.clipId,

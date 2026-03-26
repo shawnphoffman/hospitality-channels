@@ -13,10 +13,20 @@ export default async function SettingsPage() {
 		}
 	}
 
+	const profiles = await db.select().from(schema.publishProfiles)
+
 	return (
 		<div>
 			<h2 className="mb-6 text-2xl font-bold text-white">Settings</h2>
-			<SettingsForm initialSettings={settings} />
+			<SettingsForm
+				initialSettings={settings}
+				initialProfiles={profiles.map(p => ({
+					id: p.id,
+					name: p.name,
+					exportPath: p.exportPath,
+					fileNamingPattern: p.fileNamingPattern,
+				}))}
+			/>
 		</div>
 	)
 }

@@ -74,9 +74,16 @@ export async function POST(request: Request) {
 		externalKey = path.join(mediaPathSetting.value, relativePath)
 	}
 
+	// Load configured media source/library if available
+	const [mediaSourceSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_source_id')).limit(1)
+	const [librarySetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_library_id')).limit(1)
+
 	try {
 		// Scan the media source and find the indexed program matching this file
-		const program = await scanAndFindProgram(tunarrUrlSetting.value, externalKey)
+		const program = await scanAndFindProgram(tunarrUrlSetting.value, externalKey, {
+			mediaSourceId: mediaSourceSetting?.value || undefined,
+			libraryId: librarySetting?.value || undefined,
+		})
 		if (!program) {
 			return NextResponse.json(
 				{ error: `File not found in Tunarr library after scanning. Make sure "${externalKey}" exists and is accessible to Tunarr.` },

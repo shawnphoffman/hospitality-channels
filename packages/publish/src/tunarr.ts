@@ -107,45 +107,66 @@ export async function getLibraryPrograms(tunarrUrl: string, libraryId: string): 
 /**
  * Scan the media source that contains the given path, then search its library
  * for the program matching the externalKey. Returns the persisted program if found.
+ *
+ * When mediaSourceId and libraryId are provided, uses those directly instead of
+ * auto-discovering from the path. These come from the user's Tunarr settings.
  */
-export async function scanAndFindProgram(tunarrUrl: string, externalKey: string): Promise<TunarrProgram | null> {
-	const sources = await listMediaSources(tunarrUrl)
-	const matching = sources.find(
-		s => s.paths?.some(p => externalKey.startsWith(p)) || s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
-	)
+export async function scanAndFindProgram(
+	tunarrUrl: string,
+	externalKey: string,
+	opts?: { mediaSourceId?: string; libraryId?: string }
+): Promise<TunarrProgram | null> {
+	let sourceId: string | undefined = opts?.mediaSourceId
+	let libraryId: string | undefined = opts?.libraryId
 
-	if (!matching) {
-		logger.warn('No matching media source found for path', { externalKey, sourceCount: sources.length })
-		return null
-	}
+	if (sourceId && libraryId) {
+		// Use configured source + library directly
+		logger.info('Using configured media source and library', { sourceId, libraryId, externalKey })
+		await scanMediaSource(tunarrUrl, sourceId)
+	} else {
+		// Auto-discover from path
+		const sources = await listMediaSources(tunarrUrl)
+		const matching = sources.find(
+			s => s.paths?.some(p => externalKey.startsWith(p)) || s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
+		)
 
-	// Fetch full source details (list endpoint may not include full library data)
-	const fullSource = await getMediaSource(tunarrUrl, matching.id)
-	logger.info('Scanning media source', { sourceId: fullSource.id, sourceName: fullSource.name, libraryCount: fullSource.libraries?.length })
+		if (!matching) {
+			logger.warn('No matching media source found for path', { externalKey, sourceCount: sources.length })
+			return null
+		}
 
-	// Trigger scan
-	await scanMediaSource(tunarrUrl, fullSource.id)
-
-	// Find the matching library from the full source details
-	const matchingLibrary =
-		fullSource.libraries?.find(l => l.externalKey && externalKey.startsWith(l.externalKey)) ?? fullSource.libraries?.[0]
-
-	logger.info('Library lookup result', {
-		found: !!matchingLibrary,
-		rawLibrary: matchingLibrary ? JSON.stringify(matchingLibrary) : 'none',
-		externalKey,
-	})
-
-	const libraryId = matchingLibrary ? getLibraryId(matchingLibrary) : undefined
-	if (!libraryId) {
-		logger.warn('No library with valid ID found in media source', {
+		// Fetch full source details (list endpoint may not include full library data)
+		const fullSource = await getMediaSource(tunarrUrl, matching.id)
+		logger.info('Scanning media source', {
 			sourceId: fullSource.id,
-			libraries: JSON.stringify(fullSource.libraries),
+			sourceName: fullSource.name,
+			libraryCount: fullSource.libraries?.length,
 		})
-		return null
-	}
 
-	logger.info('Using library for program lookup', { libraryId, libraryName: matchingLibrary?.name })
+		// Trigger scan
+		await scanMediaSource(tunarrUrl, fullSource.id)
+
+		// Find the matching library from the full source details
+		const matchingLibrary =
+			fullSource.libraries?.find(l => l.externalKey && externalKey.startsWith(l.externalKey)) ?? fullSource.libraries?.[0]
+
+		logger.info('Library lookup result', {
+			found: !!matchingLibrary,
+			rawLibrary: matchingLibrary ? JSON.stringify(matchingLibrary) : 'none',
+			externalKey,
+		})
+
+		libraryId = matchingLibrary ? getLibraryId(matchingLibrary) : undefined
+		if (!libraryId) {
+			logger.warn('No library with valid ID found in media source', {
+				sourceId: fullSource.id,
+				libraries: JSON.stringify(fullSource.libraries),
+			})
+			return null
+		}
+
+		logger.info('Using library for program lookup', { libraryId, libraryName: matchingLibrary?.name })
+	}
 
 	// Poll for the program to appear (scan may take a moment)
 	for (let attempt = 0; attempt < 15; attempt++) {
