@@ -166,8 +166,8 @@ async function ensureSeeded(database: Database) {
 		}
 	}
 	const existingProfiles = await database.select().from(schema.publishProfiles)
-	const hasDefaultExport = existingProfiles.some(p => p.name === 'Default')
-	if (!hasDefaultExport) {
+	const hasDefault = existingProfiles.some(p => p.name === 'Default' || p.name === 'Default Export')
+	if (!hasDefault) {
 		await database.insert(schema.publishProfiles).values({
 			id: generateId(),
 			name: 'Default',
@@ -241,6 +241,28 @@ async function runDataMigrations(database: Database) {
 		const matches = await database.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.name, oldName))
 		for (const p of matches) {
 			await database.update(schema.publishProfiles).set({ name: newName }).where(eq(schema.publishProfiles.id, p.id))
+		}
+	}
+
+	// Migration: Deduplicate profiles with the same name
+	// Keep the one referenced by artifacts, or the first one if none are referenced.
+	const allProfiles = await database.select().from(schema.publishProfiles)
+	const profilesByName = new Map<string, typeof allProfiles>()
+	for (const p of allProfiles) {
+		const list = profilesByName.get(p.name) ?? []
+		list.push(p)
+		profilesByName.set(p.name, list)
+	}
+	for (const [, dupes] of profilesByName) {
+		if (dupes.length <= 1) continue
+		const referencedIds = new Set(
+			(await database.select({ pid: schema.publishedArtifacts.publishProfileId }).from(schema.publishedArtifacts)).map(r => r.pid)
+		)
+		const keep = dupes.find(p => referencedIds.has(p.id)) ?? dupes[0]
+		for (const p of dupes) {
+			if (p.id !== keep.id) {
+				await database.delete(schema.publishProfiles).where(eq(schema.publishProfiles.id, p.id))
+			}
 		}
 	}
 
