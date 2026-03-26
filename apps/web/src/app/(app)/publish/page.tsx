@@ -47,6 +47,9 @@ export default async function ArtifactsPage() {
 		}
 	})
 
+	// Count superseded (hidden) artifacts
+	const supersededCount = artifacts.length - dedupedArtifacts.length
+
 	return (
 		<div>
 			<h2 className="mb-6 text-2xl font-bold text-white">Artifacts</h2>
@@ -63,6 +66,7 @@ export default async function ArtifactsPage() {
 					status: a.status,
 					publishedAt: a.publishedAt,
 				}))}
+				supersededCount={supersededCount}
 				tunarrConfigured={tunarrConfigured}
 				tunarrMediaPath={tunarrMediaPath}
 				channelBindings={channelBindings}
