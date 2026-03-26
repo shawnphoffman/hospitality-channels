@@ -202,23 +202,54 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 			const res = await fetch(`/api/tunarr/channels/${ch.tunarrChannelId}/programming`)
 			if (res.ok) {
 				const data = await res.json()
-				// Handle multiple possible Tunarr response shapes
-				let programList: Array<{ title?: string; duration?: number; originalProgram?: { title?: string; duration?: number } }>
+				// Handle Tunarr CondensedProgramming response:
+				// { programs: Record<id, Program> | Program[], lineup: LineupItem[] }
+				// Programs dict has the real titles/durations; lineup has references + durations
+				let programsById: Record<string, { title?: string; duration?: number }> = {}
+				let programList: Array<{
+					title?: string
+					duration?: number
+					id?: string
+					programId?: string
+					originalProgram?: { title?: string; duration?: number }
+				}>
+
 				if (Array.isArray(data)) {
 					programList = data
-				} else if (Array.isArray(data.programs)) {
-					programList = data.programs
-				} else if (data.lineup && Array.isArray(data.lineup)) {
-					programList = data.lineup
-				} else if (data.programs && typeof data.programs === 'object') {
-					programList = Object.values(data.programs)
 				} else {
-					programList = []
+					// Build lookup from programs (Record or Array)
+					if (data.programs) {
+						if (Array.isArray(data.programs)) {
+							for (const p of data.programs) {
+								if (p.id) programsById[p.id] = p
+								if (p.uniqueId) programsById[p.uniqueId] = p
+							}
+						} else if (typeof data.programs === 'object') {
+							programsById = data.programs
+						}
+					}
+
+					// Use lineup if available (it represents actual channel order), otherwise fall back to programs
+					if (data.lineup && Array.isArray(data.lineup) && data.lineup.length > 0) {
+						programList = data.lineup
+					} else if (Array.isArray(data.programs)) {
+						programList = data.programs
+					} else if (data.programs && typeof data.programs === 'object') {
+						programList = Object.values(data.programs)
+					} else {
+						programList = []
+					}
 				}
-				const progs: ProgramInfo[] = programList.map(p => ({
-					title: p.title ?? p.originalProgram?.title ?? 'Untitled',
-					duration: p.duration ?? p.originalProgram?.duration ?? 0,
-				}))
+
+				const progs: ProgramInfo[] = programList.map(p => {
+					// Resolve title from programs lookup if lineup item lacks it
+					const refId = p.id || p.programId
+					const resolved = refId ? programsById[refId] : undefined
+					return {
+						title: p.title || resolved?.title || p.originalProgram?.title || 'Unknown',
+						duration: p.duration ?? resolved?.duration ?? p.originalProgram?.duration ?? 0,
+					}
+				})
 				setProgramming(prev => ({ ...prev, [ch.id]: progs }))
 			} else {
 				setProgramming(prev => ({ ...prev, [ch.id]: [] }))
