@@ -87,6 +87,61 @@ async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string
 	}
 }
 
+async function resolveVideoForClip(clipId: string): Promise<{ videoPath?: string; tempFile?: string }> {
+	try {
+		const [clip] = await db.select().from(clips).where(eq(clips.id, clipId)).limit(1)
+		if (!clip) return {}
+
+		const data = (clip.dataJson ?? {}) as Record<string, string>
+		const videoUrl = data.backgroundVideoUrl
+		if (!videoUrl) return {}
+
+		logger.info('resolveVideo: found backgroundVideoUrl', { clipId, videoUrl })
+
+		const rendersDir = path.resolve(PATHS.renders)
+		await mkdir(rendersDir, { recursive: true })
+
+		if (videoUrl.startsWith('/api/assets/serve')) {
+			const fullUrl = `${WEB_URL}${videoUrl}`
+			const res = await fetch(fullUrl)
+			if (!res.ok) {
+				logger.warn('resolveVideo: failed to fetch internal asset', { url: fullUrl, status: res.status })
+				return {}
+			}
+			const buffer = Buffer.from(await res.arrayBuffer())
+			const ext = path.extname(new URL(fullUrl, 'http://localhost').searchParams.get('path') ?? '.mp4') || '.mp4'
+			const tempPath = path.join(rendersDir, `_bgvideo-${Date.now()}${ext}`)
+			await writeFile(tempPath, buffer)
+			return { videoPath: tempPath, tempFile: tempPath }
+		}
+
+		if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
+			const res = await fetch(videoUrl)
+			if (!res.ok) {
+				logger.warn('resolveVideo: failed to fetch external video', { url: videoUrl, status: res.status })
+				return {}
+			}
+			const buffer = Buffer.from(await res.arrayBuffer())
+			const tempPath = path.join(rendersDir, `_bgvideo-${Date.now()}.mp4`)
+			await writeFile(tempPath, buffer)
+			return { videoPath: tempPath, tempFile: tempPath }
+		}
+
+		// Filesystem path
+		const { access } = await import('node:fs/promises')
+		try {
+			await access(videoUrl)
+		} catch {
+			logger.warn('resolveVideo: filesystem path not accessible', { videoUrl })
+			return {}
+		}
+		return { videoPath: videoUrl }
+	} catch (err) {
+		logger.warn('resolveVideo: unexpected error', { clipId, error: String(err) })
+		return {}
+	}
+}
+
 export async function handleRenderJob(job: Job): Promise<string> {
 	const payload = job.payload as {
 		durationSec: number
@@ -106,6 +161,7 @@ export async function handleRenderJob(job: Job): Promise<string> {
 	const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`)
 
 	const audio = await resolveAudioForClip(clipId)
+	const video = await resolveVideoForClip(clipId)
 
 	logger.info('Starting render', {
 		clipId,
@@ -114,6 +170,7 @@ export async function handleRenderJob(job: Job): Promise<string> {
 		hasAudio: !!audio.audioPath,
 		audioPath: audio.audioPath,
 		matchAudioDuration: audio.matchAudioDuration,
+		hasVideoBackground: !!video.videoPath,
 	})
 
 	const captureResult = await capturePageVideo({
@@ -122,10 +179,12 @@ export async function handleRenderJob(job: Job): Promise<string> {
 		durationSec: payload.durationSec,
 		audioPath: audio.audioPath,
 		matchAudioDuration: audio.matchAudioDuration,
+		backgroundVideoPath: video.videoPath,
 	})
 
-	// Clean up temp audio file
+	// Clean up temp files
 	if (audio.tempFile) await unlink(audio.tempFile).catch(() => {})
+	if (video.tempFile) await unlink(video.tempFile).catch(() => {})
 
 	if (!captureResult.success) {
 		throw new Error(`Capture failed: ${captureResult.error}`)
@@ -217,6 +276,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 	const renderPath = path.join(outputDir, `${slug}_${ts}.mp4`)
 
 	const audio = await resolveAudioForClip(clipId)
+	const video = await resolveVideoForClip(clipId)
 
 	logger.info('Starting render+publish', {
 		clipId,
@@ -225,6 +285,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		hasAudio: !!audio.audioPath,
 		audioPath: audio.audioPath,
 		matchAudioDuration: audio.matchAudioDuration,
+		hasVideoBackground: !!video.videoPath,
 	})
 
 	const captureResult = await capturePageVideo({
@@ -233,10 +294,12 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		durationSec: payload.durationSec,
 		audioPath: audio.audioPath,
 		matchAudioDuration: audio.matchAudioDuration,
+		backgroundVideoPath: video.videoPath,
 	})
 
-	// Clean up temp audio file
+	// Clean up temp files
 	if (audio.tempFile) await unlink(audio.tempFile).catch(() => {})
+	if (video.tempFile) await unlink(video.tempFile).catch(() => {})
 
 	if (!captureResult.success) {
 		throw new Error(`Capture failed: ${captureResult.error}`)
