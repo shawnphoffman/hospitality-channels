@@ -107,26 +107,35 @@ function TemplateDevContent() {
 			{/* Preview */}
 			<div
 				ref={wrapperRef}
-				className="relative flex aspect-video max-h-[50vh] w-full items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+				className="relative flex w-full items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+				style={{ height: scale > 0 ? Math.round(SCENE_H * scale) + 48 : undefined, minHeight: 200 }}
 			>
 				{PreviewScene && scale > 0 && (
 					<div
 						style={{
-							width: SCENE_W,
-							height: SCENE_H,
-							transform: `scale(${scale})`,
-							transformOrigin: 'center center',
+							width: Math.round(SCENE_W * scale),
+							height: Math.round(SCENE_H * scale),
 						}}
-						className="relative shrink-0"
+						className="relative shrink-0 overflow-hidden"
 					>
-						<PreviewScene data={data} />
+						<div
+							style={{
+								width: SCENE_W,
+								height: SCENE_H,
+								transform: `scale(${scale})`,
+								transformOrigin: 'top left',
+							}}
+							className="absolute left-0 top-0"
+						>
+							<PreviewScene data={data} />
 
-						{showSafeArea && (
-							<div
-								className="pointer-events-none absolute inset-0 border-red-500/40"
-								style={{ borderWidth: `${SCENE_H * 0.05}px ${SCENE_W * 0.05}px` }}
-							/>
-						)}
+							{showSafeArea && (
+								<div
+									className="pointer-events-none absolute inset-0 border-red-500/40"
+									style={{ borderWidth: `${SCENE_H * 0.05}px ${SCENE_W * 0.05}px` }}
+								/>
+							)}
+						</div>
 					</div>
 				)}
 
