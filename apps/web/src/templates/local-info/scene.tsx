@@ -23,7 +23,7 @@ function InfoBlock({ title, description, hasBg }: { title: string; description: 
 }
 
 function PhotoBlock({ src, height }: { src: string; height?: number }) {
-	return <img src={src} alt="" className="shrink-0 rounded-2xl object-cover" style={{ width: '100%', height: height ?? '100%' }} />
+	return <img src={src} alt="" className="shrink-0 rounded-2xl object-cover" style={{ width: '100%', height: height ?? 'auto' }} />
 }
 
 export function LocalInfoScene({ data }: TemplateSceneProps) {

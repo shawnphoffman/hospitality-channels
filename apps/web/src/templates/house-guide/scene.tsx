@@ -64,7 +64,7 @@ export function HouseGuideScene({ data }: TemplateSceneProps) {
 						{hasInfo && (
 							<div className={`flex flex-1 items-center gap-12 ${cardClass}`} style={{ padding: '40px 48px' }}>
 								{data.infoImageUrl && (
-									<img src={data.infoImageUrl} alt="" className="shrink-0 rounded-xl object-cover" style={{ width: 260, height: 260 }} />
+									<img src={data.infoImageUrl} alt="" className="shrink-0 rounded-xl object-cover" style={{ width: 260, height: 'auto' }} />
 								)}
 								{data.infoText && (
 									<SimpleMarkdown text={data.infoText} style={{ fontSize: 32 }} className="flex-1 leading-relaxed text-white/80" />
