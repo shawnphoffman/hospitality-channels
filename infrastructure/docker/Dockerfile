@@ -80,4 +80,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV WEB_URL=http://localhost:3000
 
+HEALTHCHECK --interval=5m --timeout=10s --retries=5 --start-period=1m \
+  CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 ENTRYPOINT ["/entrypoint.sh"]

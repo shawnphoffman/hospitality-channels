@@ -37,4 +37,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 # Ensure /data volume is writable by nextjs, then run server as nextjs
+HEALTHCHECK --interval=5m --timeout=10s --retries=5 --start-period=1m \
+  CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 ENTRYPOINT ["sh", "-c", "chown -R nextjs:nodejs /data 2>/dev/null || true; exec runuser -u nextjs -- node apps/web/server.js"]

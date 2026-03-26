@@ -50,4 +50,7 @@ WORKDIR /app
 COPY --from=builder /app ./
 RUN pnpm --filter @hospitality-channels/render-core exec playwright install chromium
 
+HEALTHCHECK --interval=5m --timeout=10s --retries=5 --start-period=1m \
+  CMD pgrep -f "apps/worker/dist/index.js" > /dev/null || exit 1
+
 CMD ["node", "apps/worker/dist/index.js"]

@@ -1,65 +1,31 @@
-x-common: &common
-  restart: unless-stopped
-  environment: &env
-    TZ: America/Los_Angeles
-    PUID: 1000
-    PGID: 1000
-  networks:
-    - proxy_net
-  logging:
-    driver: json-file
-    options:
-      max-size: 10m
-      max-file: '3'
-
-x-health: &health
-  interval: 5m
-  timeout: 10s
-  retries: 5
-  start_period: 1m
-
 # =================================================================
-networks:
-  proxy_net:
-    external: true
-
+# Example docker-compose.yml
+#
+# Adjust volumes, ports, and network settings to match your setup.
+# The unified Dockerfile runs both the web server and worker in a
+# single container.
 # =================================================================
+
 services:
-  app:
-    <<: *common
+  hospitality-channels:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
+    restart: unless-stopped
     ports:
       - '${PORT:-3000}:3000'
     volumes:
+      # Application data (SQLite database, assets, etc.)
       - app-data:/data
+      # Media export directory — mount wherever Tunarr can read from
       - exports:/exports
+      # Optional: mount a host path if Tunarr reads from a local directory
+      # - /path/to/media:/library-local:rw
     environment:
-      <<: *env
-    # ================================
-    healthcheck:
-      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      <<: *health
-    # ================================
-    labels:
-      # TRAEFIK
-      - traefik.enable=true
-      # Use the right network and port
-      - traefik.docker.network=proxy_net
-      - traefik.http.services.guest.loadbalancer.server.port=3000
-      # HTTPS by default
-      - traefik.http.routers.guest.rule=Host(`guest.lan.goober.house`)
-      - traefik.http.routers.guest.entrypoints=websecure
-      - traefik.http.routers.guest.tls=true
-      - traefik.http.routers.guest.tls.certresolver=cloudflare
-      # HTTP redirect to HTTPS
-      - traefik.http.routers.guest-http.entrypoints=web
-      - traefik.http.routers.guest-http.rule=Host(`guest.lan.goober.house`)
-      - traefik.http.routers.guest-http.middlewares=redir-https
-      - traefik.http.middlewares.redir-https.redirectscheme.scheme=https
+      - TZ=${TZ:-UTC}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
 
 volumes:
   app-data:
   exports:
-    driver: local
