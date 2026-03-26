@@ -38,7 +38,7 @@ async function tunarrFetch<T>(tunarrUrl: string, path: string, init?: RequestIni
 	const url = `${tunarrUrl.replace(/\/+$/, '')}/api${path}`
 	const separator = url.includes('?') ? '&' : '?'
 	const uncachedUrl = `${url}${separator}_t=${Date.now()}`
-	const headers: Record<string, string> = { ...init?.headers as Record<string, string> }
+	const headers: Record<string, string> = { ...(init?.headers as Record<string, string>) }
 	if (init?.body) {
 		headers['Content-Type'] = 'application/json'
 	}
@@ -97,7 +97,7 @@ export async function scanMediaSource(tunarrUrl: string, sourceId: string): Prom
 
 function getLibraryId(library: TunarrMediaLibrary): string | undefined {
 	// Tunarr may use 'id' or 'uuid' depending on version
-	return library.id || library.uuid || (library as Record<string, unknown>).libraryId as string | undefined
+	return library.id || library.uuid || ((library as Record<string, unknown>).libraryId as string | undefined)
 }
 
 export async function getLibraryPrograms(tunarrUrl: string, libraryId: string): Promise<TunarrProgram[]> {
@@ -108,15 +108,10 @@ export async function getLibraryPrograms(tunarrUrl: string, libraryId: string): 
  * Scan the media source that contains the given path, then search its library
  * for the program matching the externalKey. Returns the persisted program if found.
  */
-export async function scanAndFindProgram(
-	tunarrUrl: string,
-	externalKey: string
-): Promise<TunarrProgram | null> {
+export async function scanAndFindProgram(tunarrUrl: string, externalKey: string): Promise<TunarrProgram | null> {
 	const sources = await listMediaSources(tunarrUrl)
 	const matching = sources.find(
-		s =>
-			s.paths?.some(p => externalKey.startsWith(p)) ||
-			s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
+		s => s.paths?.some(p => externalKey.startsWith(p)) || s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
 	)
 
 	if (!matching) {
@@ -132,9 +127,8 @@ export async function scanAndFindProgram(
 	await scanMediaSource(tunarrUrl, fullSource.id)
 
 	// Find the matching library from the full source details
-	const matchingLibrary = fullSource.libraries?.find(
-		l => l.externalKey && externalKey.startsWith(l.externalKey)
-	) ?? fullSource.libraries?.[0]
+	const matchingLibrary =
+		fullSource.libraries?.find(l => l.externalKey && externalKey.startsWith(l.externalKey)) ?? fullSource.libraries?.[0]
 
 	logger.info('Library lookup result', {
 		found: !!matchingLibrary,
@@ -154,7 +148,7 @@ export async function scanAndFindProgram(
 	logger.info('Using library for program lookup', { libraryId, libraryName: matchingLibrary?.name })
 
 	// Poll for the program to appear (scan may take a moment)
-	for (let attempt = 0; attempt < 5; attempt++) {
+	for (let attempt = 0; attempt < 15; attempt++) {
 		await new Promise(resolve => setTimeout(resolve, 2000))
 		try {
 			const programs = await getLibraryPrograms(tunarrUrl, libraryId)

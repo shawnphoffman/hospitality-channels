@@ -40,6 +40,8 @@ export default async function PublishPage() {
 
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
 	const tunarrConfigured = !!tunarrSetting?.value
+	const [tunarrMediaPathSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_path')).limit(1)
+	const tunarrMediaPath = tunarrMediaPathSetting?.value ?? ''
 
 	// Load channel bindings for pre-selecting push targets
 	const channelDefs = await db.select().from(schema.channelDefinitions)
@@ -95,6 +97,7 @@ export default async function PublishPage() {
 					publishedAt: a.publishedAt,
 				}))}
 				tunarrConfigured={tunarrConfigured}
+				tunarrMediaPath={tunarrMediaPath}
 				channelBindings={channelBindings}
 			/>
 		</div>

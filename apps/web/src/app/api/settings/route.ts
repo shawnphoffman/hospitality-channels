@@ -35,17 +35,13 @@ export async function PUT(request: Request) {
 		}
 	}
 
-	// Sync the "Tunarr Export" publish profile based on settings
+	// Sync the "Tunarr" publish profile based on settings
 	const tunarrUrl = body.tunarr_url ?? ''
 	const tunarrMediaPath = body.tunarr_media_path ?? ''
-	const [existingTunarrProfile] = await db
-		.select()
-		.from(schema.publishProfiles)
-		.where(eq(schema.publishProfiles.name, 'Tunarr Export'))
-		.limit(1)
+	const [existingTunarrProfile] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.name, 'Tunarr')).limit(1)
 
 	if (tunarrUrl && tunarrMediaPath) {
-		// Upsert the Tunarr Export profile
+		// Upsert the Tunarr profile
 		if (existingTunarrProfile) {
 			await db
 				.update(schema.publishProfiles)
@@ -54,7 +50,7 @@ export async function PUT(request: Request) {
 		} else {
 			await db.insert(schema.publishProfiles).values({
 				id: generateId(),
-				name: 'Tunarr Export',
+				name: 'Tunarr',
 				exportPath: tunarrMediaPath,
 				outputFormat: 'mp4',
 				lineupType: 'main',

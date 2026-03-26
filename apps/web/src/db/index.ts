@@ -166,11 +166,11 @@ async function ensureSeeded(database: Database) {
 		}
 	}
 	const existingProfiles = await database.select().from(schema.publishProfiles)
-	const hasDefaultExport = existingProfiles.some(p => p.name === 'Default Export')
+	const hasDefaultExport = existingProfiles.some(p => p.name === 'Default')
 	if (!hasDefaultExport) {
 		await database.insert(schema.publishProfiles).values({
 			id: generateId(),
-			name: 'Default Export',
+			name: 'Default',
 			exportPath: PATHS.exports,
 			outputFormat: 'mp4',
 			lineupType: 'main',
@@ -216,7 +216,7 @@ const REBUILD_PUBLISHED_ARTIFACTS_SQL = [
 async function runDataMigrations(database: Database) {
 	// Migration: Clean up duplicate "Default Tunarr Export" profiles
 	// Legacy seed code created a new profile on every restart. Keep the one
-	// referenced by published artifacts, rename it to "Default Export", delete the rest.
+	// referenced by published artifacts, rename it to "Default", delete the rest.
 	const oldProfiles = await database.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.name, 'Default Tunarr Export'))
 	if (oldProfiles.length > 0) {
 		// Find which ones are referenced by artifacts
@@ -225,13 +225,22 @@ async function runDataMigrations(database: Database) {
 		)
 		const toKeep = oldProfiles.find(p => referencedIds.has(p.id)) ?? oldProfiles[0]
 		// Rename the kept one
-		await database.update(schema.publishProfiles).set({ name: 'Default Export' }).where(eq(schema.publishProfiles.id, toKeep.id))
+		await database.update(schema.publishProfiles).set({ name: 'Default' }).where(eq(schema.publishProfiles.id, toKeep.id))
 		// Delete the rest
 		const toDeleteIds = oldProfiles.filter(p => p.id !== toKeep.id).map(p => p.id)
 		if (toDeleteIds.length > 0) {
 			for (const id of toDeleteIds) {
 				await database.delete(schema.publishProfiles).where(eq(schema.publishProfiles.id, id))
 			}
+		}
+	}
+
+	// Migration: Rename "Default Export" → "Default" and "Tunarr Export" → "Tunarr"
+	const renameMap: Record<string, string> = { 'Default Export': 'Default', 'Tunarr Export': 'Tunarr' }
+	for (const [oldName, newName] of Object.entries(renameMap)) {
+		const matches = await database.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.name, oldName))
+		for (const p of matches) {
+			await database.update(schema.publishProfiles).set({ name: newName }).where(eq(schema.publishProfiles.id, p.id))
 		}
 	}
 
