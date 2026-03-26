@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { getTemplateScenes } from '@/templates/registry'
+
+const SCENE_W = 1920
+const SCENE_H = 1080
 
 interface TemplateRowProps {
 	slug: string
@@ -125,8 +128,20 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 	const entry = getTemplateScenes(slug)
 	const Scene = entry?.scene
 	const [showPreview, setShowPreview] = useState(false)
+	const modalWrapperRef = useRef<HTMLDivElement>(null)
+	const [modalScale, setModalScale] = useState(0)
 
-	const handleClose = useCallback(() => setShowPreview(false), [])
+	const handleClose = useCallback(() => {
+		setShowPreview(false)
+		setModalScale(0)
+	}, [])
+
+	const recalcModalScale = useCallback(() => {
+		const el = modalWrapperRef.current
+		if (!el) return
+		const s = el.clientWidth / SCENE_W
+		setModalScale(Math.max(s, 0.05))
+	}, [])
 
 	useEffect(() => {
 		if (!showPreview) return
@@ -134,10 +149,18 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 			if (e.key === 'Escape') handleClose()
 		}
 		document.addEventListener('keydown', handleKey)
-		return () => document.removeEventListener('keydown', handleKey)
-	}, [showPreview, handleClose])
+		// Compute scale once modal is open and laid out
+		requestAnimationFrame(recalcModalScale)
+		window.addEventListener('resize', recalcModalScale)
+		return () => {
+			document.removeEventListener('keydown', handleKey)
+			window.removeEventListener('resize', recalcModalScale)
+		}
+	}, [showPreview, handleClose, recalcModalScale])
 
 	const sampleData = sampleDataMap[slug] ?? {}
+	const scaledW = Math.round(SCENE_W * modalScale)
+	const scaledH = Math.round(SCENE_H * modalScale)
 
 	return (
 		<>
@@ -198,32 +221,19 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 							</div>
 						</div>
 						{/* 16:9 preview container */}
-						<div
-							className="relative overflow-hidden rounded-xl border border-slate-700 bg-black shadow-2xl"
-							style={{ aspectRatio: '16/9' }}
-						>
-							<div
-								style={{
-									width: 1920,
-									height: 1080,
-									transform: 'scale(var(--preview-scale))',
-									transformOrigin: 'top left',
-									['--preview-scale' as string]: '1',
-								}}
-								className="preview-scene"
-								ref={el => {
-									if (el) {
-										const parent = el.parentElement
-										if (parent) {
-											const scale = parent.clientWidth / 1920
-											el.style.setProperty('--preview-scale', String(scale))
-											el.style.transform = `scale(${scale})`
-										}
-									}
-								}}
-							>
-								<Scene data={sampleData} />
-							</div>
+						<div ref={modalWrapperRef} className="overflow-hidden rounded-xl border border-slate-700 bg-black shadow-2xl">
+							{modalScale > 0 && (
+								<div style={{ width: scaledW, height: scaledH }} className="relative overflow-hidden">
+									<div
+										style={{ width: SCENE_W, height: SCENE_H, transform: `scale(${modalScale})`, transformOrigin: 'top left' }}
+										className="absolute left-0 top-0"
+									>
+										<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
+											<Scene data={sampleData} />
+										</div>
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 				</div>

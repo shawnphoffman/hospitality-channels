@@ -8,7 +8,7 @@
 
 services:
   hospitality-channels:
-    image: ghcr.io/shawnphoffman/hospitality-channels:latest
+    image: ghcr.io/YOUR_ORG/hospitality-channels:latest
     restart: unless-stopped
     ports:
       - '${PORT:-3000}:3000'

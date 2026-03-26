@@ -27,7 +27,7 @@ docker compose up -d
 Or run directly:
 
 ```sh
-docker run -d -p 3000:3000 -v app-data:/data -v exports:/exports ghcr.io/shawnphoffman/hospitality-channels:latest
+docker run -d -p 3000:3000 -v app-data:/data -v exports:/exports ghcr.io/YOUR_ORG/hospitality-channels:latest
 ```
 
 The web UI is available at `http://localhost:3000`.
