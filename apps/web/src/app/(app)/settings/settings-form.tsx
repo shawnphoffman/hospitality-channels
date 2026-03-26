@@ -379,14 +379,27 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 				<div className="space-y-4">
 					<div>
 						<label className="block text-sm text-slate-400">Tunarr URL</label>
-						<input
-							type="text"
-							value={settings.tunarr_url ?? ''}
-							onChange={e => update('tunarr_url', e.target.value)}
-							placeholder="http://tunarr:8000"
-							className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-						/>
-						<p className="mt-1 text-xs text-slate-500">Base URL of your Tunarr instance</p>
+						<div className="mt-1 flex gap-2">
+							<input
+								type="text"
+								value={settings.tunarr_url ?? ''}
+								onChange={e => update('tunarr_url', e.target.value)}
+								placeholder="http://tunarr:8000"
+								className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+							/>
+							<button
+								onClick={handleTestConnection}
+								disabled={testing || !settings.tunarr_url}
+								className="shrink-0 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+							>
+								{testing ? 'Testing...' : 'Test'}
+							</button>
+						</div>
+						{testResult ? (
+							<p className={`mt-1 text-xs ${testResult.ok ? 'text-green-400' : 'text-red-400'}`}>{testResult.message}</p>
+						) : (
+							<p className="mt-1 text-xs text-slate-500">Base URL of your Tunarr instance</p>
+						)}
 					</div>
 					<div>
 						<label className="block text-sm text-slate-400">Tunarr Media Path</label>
@@ -398,17 +411,6 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 							className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 						/>
 						<p className="mt-1 text-xs text-slate-500">Filesystem path where Tunarr can access exported videos</p>
-					</div>
-
-					<div className="flex items-center gap-3">
-						<button
-							onClick={handleTestConnection}
-							disabled={testing || !settings.tunarr_url}
-							className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
-						>
-							{testing ? 'Testing...' : 'Test Connection'}
-						</button>
-						{testResult && <span className={`text-sm ${testResult.ok ? 'text-green-400' : 'text-red-400'}`}>{testResult.message}</span>}
 					</div>
 
 					{/* Media Library Selection */}
