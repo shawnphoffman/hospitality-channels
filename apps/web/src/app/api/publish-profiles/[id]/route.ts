@@ -38,6 +38,9 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 		return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 	}
 
+	// Remove referencing artifacts and jobs first to avoid FK constraint errors
+	await db.delete(schema.publishedArtifacts).where(eq(schema.publishedArtifacts.publishProfileId, params.id))
+	await db.delete(schema.jobs).where(eq(schema.jobs.profileId, params.id))
 	await db.delete(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id))
 	return NextResponse.json({ success: true })
 }
