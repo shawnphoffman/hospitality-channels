@@ -188,6 +188,28 @@ const MIGRATIONS_SQL = [
 ]
 
 /**
+ * SQLite doesn't support ALTER COLUMN to drop NOT NULL, so we recreate
+ * the table to make page_id nullable (needed for program-only artifacts).
+ */
+const REBUILD_PUBLISHED_ARTIFACTS_SQL = [
+	`CREATE TABLE IF NOT EXISTS published_artifacts_new (
+    id TEXT PRIMARY KEY,
+    page_id TEXT REFERENCES pages(id),
+    program_id TEXT REFERENCES programs(id),
+    publish_profile_id TEXT NOT NULL REFERENCES publish_profiles(id),
+    output_path TEXT NOT NULL,
+    poster_path TEXT,
+    duration_sec REAL NOT NULL,
+    render_version TEXT,
+    status TEXT NOT NULL DEFAULT 'published',
+    published_at TEXT
+  )`,
+	`INSERT OR IGNORE INTO published_artifacts_new SELECT * FROM published_artifacts`,
+	`DROP TABLE published_artifacts`,
+	`ALTER TABLE published_artifacts_new RENAME TO published_artifacts`,
+]
+
+/**
  * Data migrations that clean up legacy data. Each migration is idempotent
  * and safe to run on every startup.
  */
@@ -278,6 +300,20 @@ async function ensureTables(client: Client, database: Database) {
 		} catch {
 			/* column already exists */
 		}
+	}
+	// Rebuild published_artifacts to make page_id nullable (safe if already nullable)
+	try {
+		// Check if page_id has a NOT NULL constraint by inspecting table info
+		const tableInfo = await client.execute("PRAGMA table_info('published_artifacts')")
+		const pageIdCol = tableInfo.rows.find((r: any) => r.name === 'page_id' || r[1] === 'page_id')
+		const isNotNull = pageIdCol && (pageIdCol.notnull === 1 || pageIdCol[3] === 1)
+		if (isNotNull) {
+			for (const sql of REBUILD_PUBLISHED_ARTIFACTS_SQL) {
+				await client.execute(sql)
+			}
+		}
+	} catch {
+		/* table already correct */
 	}
 	await ensureSeeded(database)
 	await runDataMigrations(database)

@@ -16,6 +16,12 @@ const MIME_TYPES: Record<string, string> = {
 	'.mp4': 'video/mp4',
 	'.webm': 'video/webm',
 	'.mov': 'video/quicktime',
+	'.mp3': 'audio/mpeg',
+	'.wav': 'audio/wav',
+	'.ogg': 'audio/ogg',
+	'.flac': 'audio/flac',
+	'.aac': 'audio/aac',
+	'.m4a': 'audio/mp4',
 }
 
 export async function GET(request: Request) {
@@ -26,9 +32,9 @@ export async function GET(request: Request) {
 		return NextResponse.json({ error: 'path parameter required' }, { status: 400 })
 	}
 
-	// Prevent directory traversal — file must be within the assets directory
-	const resolved = path.resolve(filePath)
+	// Resolve relative to assets directory, then verify traversal safety
 	const assetsDir = path.resolve(PATHS.assets)
+	const resolved = path.resolve(assetsDir, filePath)
 	if (!resolved.startsWith(assetsDir)) {
 		return NextResponse.json({ error: 'Access denied' }, { status: 403 })
 	}
