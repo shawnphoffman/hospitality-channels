@@ -32,7 +32,7 @@ export function HouseGuideScene({ data }: TemplateSceneProps) {
 
 			<div className="relative z-10 flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
 				<h1 style={{ fontSize: 64 }} className="font-bold tracking-tight">
-					House Guide
+					{data.headerText || 'House Guide'}
 				</h1>
 			</div>
 

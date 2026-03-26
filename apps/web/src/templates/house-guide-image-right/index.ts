@@ -1,0 +1,1 @@
+export { HouseGuideImageRightScene } from './scene'

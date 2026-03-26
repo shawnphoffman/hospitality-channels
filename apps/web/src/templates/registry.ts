@@ -1,6 +1,8 @@
 import type { TemplateSceneEntry } from './types'
 import { WelcomeScene } from './welcome'
 import { HouseGuideScene } from './house-guide'
+import { HouseGuideImageLeftScene } from './house-guide-image-left'
+import { HouseGuideImageRightScene } from './house-guide-image-right'
 import { HotelWelcomeScene } from './hotel-welcome'
 import { DailyAgendaScene } from './daily-agenda'
 import { LocalInfoScene } from './local-info'
@@ -12,6 +14,8 @@ import { EmergencyInfoScene } from './emergency-info'
 const sceneRegistry: Record<string, TemplateSceneEntry> = {
 	welcome: { scene: WelcomeScene },
 	'house-guide': { scene: HouseGuideScene },
+	'house-guide-image-left': { scene: HouseGuideImageLeftScene },
+	'house-guide-image-right': { scene: HouseGuideImageRightScene },
 	'hotel-welcome': { scene: HotelWelcomeScene },
 	'daily-agenda': { scene: DailyAgendaScene },
 	'local-info': { scene: LocalInfoScene },

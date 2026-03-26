@@ -36,6 +36,22 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		infoText:
 			'## House Rules\n\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n\n## Amenities\n\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},
+	'house-guide-image-left': {
+		backgroundImageUrl: SAMPLE_BG,
+		infoImageUrl: SAMPLE_BG,
+		wifiSsid: 'Lakehouse_WiFi',
+		wifiPassword: 'lakelife2024',
+		infoText:
+			'## House Rules\n\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n\n## Amenities\n\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
+	},
+	'house-guide-image-right': {
+		backgroundImageUrl: SAMPLE_BG,
+		infoImageUrl: SAMPLE_BG,
+		wifiSsid: 'Lakehouse_WiFi',
+		wifiPassword: 'lakelife2024',
+		infoText:
+			'## House Rules\n\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n\n## Amenities\n\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
+	},
 	'daily-agenda': {
 		backgroundImageUrl: SAMPLE_BG,
 		headerText: "Today's Schedule",

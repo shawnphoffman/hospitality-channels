@@ -1,6 +1,8 @@
 import type { Template } from '@hospitality-channels/content-model'
 import { welcomeTemplate } from './welcome/index.js'
 import { houseGuideTemplate } from './house-guide/index.js'
+import { houseGuideImageLeftTemplate } from './house-guide-image-left/index.js'
+import { houseGuideImageRightTemplate } from './house-guide-image-right/index.js'
 import { hotelWelcomeTemplate } from './hotel-welcome/index.js'
 import { dailyAgendaTemplate } from './daily-agenda/index.js'
 import { localInfoTemplate } from './local-info/index.js'
@@ -12,6 +14,8 @@ import { emergencyInfoTemplate } from './emergency-info/index.js'
 const templates: (Template & { schema?: Record<string, unknown> })[] = [
 	welcomeTemplate,
 	houseGuideTemplate,
+	houseGuideImageLeftTemplate,
+	houseGuideImageRightTemplate,
 	hotelWelcomeTemplate,
 	dailyAgendaTemplate,
 	localInfoTemplate,

@@ -1,9 +1,9 @@
 import type { Template } from '@hospitality-channels/content-model'
 
-export const houseGuideTemplate: Template & { schema: Record<string, unknown> } = {
-	slug: 'house-guide',
-	name: 'House Guide',
-	description: 'House rules, Wi-Fi, thermostat, parking, and general info',
+export const houseGuideImageRightTemplate: Template & { schema: Record<string, unknown> } = {
+	slug: 'house-guide-image-right',
+	name: 'House Guide (Image Right)',
+	description: 'House guide with info text on the left and a large image on the right',
 	category: 'info',
 	status: 'active',
 	version: 1,
