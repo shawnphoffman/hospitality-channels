@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo2a.png" alt="Hospitality Channels" width="128" />
+</p>
+
 # Hospitality Channels
 
 Self-hosted TV channel management for hospitality environments. Create template-driven video clips, compose them into programs with background audio, render to MP4, and publish to [Tunarr](https://github.com/chrisbenincasa/tunarr) channels.
