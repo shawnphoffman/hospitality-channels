@@ -30,7 +30,7 @@ export const houseGuideTemplate: Template & { schema: Record<string, unknown> } 
 			{
 				key: 'infoText',
 				label: 'Info Text',
-				type: 'textarea',
+				type: 'markdown',
 				default: '',
 			},
 			{

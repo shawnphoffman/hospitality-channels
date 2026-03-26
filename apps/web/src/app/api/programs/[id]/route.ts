@@ -50,8 +50,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 	})
 
 	const audioDuration = audioTracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
-	const computedDuration = program.durationMode === 'manual' ? (program.manualDurationSec ?? 0) : audioDuration
-	const perClipDuration = clips.length > 0 ? computedDuration / clips.length : 0
+	const baseDuration = program.durationMode === 'manual' ? (program.manualDurationSec ?? 0) : audioDuration
+	const perClipDuration =
+		clips.length > 0
+			? program.minClipDurationSec
+				? Math.max(baseDuration / clips.length, program.minClipDurationSec)
+				: baseDuration / clips.length
+			: 0
+	const computedDuration =
+		clips.length > 0 && program.minClipDurationSec && baseDuration / clips.length < program.minClipDurationSec
+			? program.minClipDurationSec * clips.length
+			: baseDuration
 
 	return NextResponse.json({
 		...program,
@@ -84,6 +93,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 			iconAssetId: body.iconAssetId !== undefined ? body.iconAssetId : existing.iconAssetId,
 			durationMode: body.durationMode ?? existing.durationMode,
 			manualDurationSec: body.manualDurationSec !== undefined ? body.manualDurationSec : existing.manualDurationSec,
+			minClipDurationSec: body.minClipDurationSec !== undefined ? body.minClipDurationSec : existing.minClipDurationSec,
 			updatedAt: now,
 		})
 		.where(eq(schema.programs.id, id))

@@ -111,6 +111,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 				iconAssetId: program.iconAssetId,
 				durationMode: program.durationMode as 'auto' | 'manual',
 				manualDurationSec: program.manualDurationSec,
+				minClipDurationSec: program.minClipDurationSec,
 			}}
 			clips={enrichedClips}
 			audioTracks={enrichedTracks}

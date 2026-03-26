@@ -96,6 +96,7 @@ export const programs = sqliteTable('programs', {
 	iconAssetId: text('icon_asset_id').references(() => assets.id),
 	durationMode: text('duration_mode').notNull().default('auto'),
 	manualDurationSec: integer('manual_duration_sec'),
+	minClipDurationSec: integer('min_clip_duration_sec'),
 	createdAt: text('created_at').notNull(),
 	updatedAt: text('updated_at').notNull(),
 })

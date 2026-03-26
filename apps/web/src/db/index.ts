@@ -186,6 +186,7 @@ const MIGRATIONS_SQL = [
 	'ALTER TABLE jobs ADD COLUMN program_id TEXT',
 	'ALTER TABLE channel_definitions ADD COLUMN program_id TEXT',
 	'ALTER TABLE assets ADD COLUMN name TEXT',
+	'ALTER TABLE programs ADD COLUMN min_clip_duration_sec INTEGER',
 ]
 
 /**

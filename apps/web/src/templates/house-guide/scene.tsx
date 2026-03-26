@@ -1,5 +1,6 @@
 'use client'
 
+import { SimpleMarkdown } from '../../lib/markdown'
 import type { TemplateSceneProps } from '../types'
 import { WifiQrCode } from '../wifi-qr-code'
 
@@ -51,9 +52,7 @@ export function HouseGuideScene({ data }: TemplateSceneProps) {
 									<img src={data.infoImageUrl} alt="" className="shrink-0 rounded-xl object-cover" style={{ width: 260, height: 260 }} />
 								)}
 								{data.infoText && (
-									<p style={{ fontSize: 32, whiteSpace: 'pre-line' }} className="flex-1 leading-relaxed text-slate-200">
-										{data.infoText}
-									</p>
+									<SimpleMarkdown text={data.infoText} style={{ fontSize: 32 }} className="flex-1 leading-relaxed text-slate-200" />
 								)}
 							</div>
 						)}

@@ -1,0 +1,1 @@
+export { LocalInfoScene } from './scene'

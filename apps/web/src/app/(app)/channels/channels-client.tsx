@@ -292,7 +292,9 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 	if (!tunarrConfigured) {
 		return (
 			<div className="rounded-xl border border-dashed border-slate-700 p-8 text-center">
-				<p className="text-slate-400">Tunarr is not configured.</p>
+				<p className="text-slate-400">
+					Tunarr integration is required to manage channels. Configure your Tunarr URL and media library in Settings to get started.
+				</p>
 				<a href="/settings" className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300">
 					Go to Settings
 				</a>
@@ -432,7 +434,10 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 
 				{channels.length === 0 && !showAdd ? (
 					<div className="rounded-xl border border-dashed border-slate-700 p-8 text-center">
-						<p className="text-slate-400">No channels managed yet.</p>
+						<p className="text-slate-400">
+							No channel bindings yet. Add a channel to link a Tunarr channel to a program. Once bound, you can push the latest published
+							artifact with a single click.
+						</p>
 						<button onClick={handleOpenAdd} className="mt-3 text-sm text-blue-400 hover:text-blue-300">
 							Add your first channel
 						</button>
@@ -469,6 +474,24 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 											&middot; Last published{' '}
 											{ch.latestArtifact.publishedAt ? new Date(ch.latestArtifact.publishedAt).toLocaleDateString() : 'unknown'}
 										</span>
+									)}
+								</p>
+								<p className="mt-1.5 flex items-center gap-1.5 text-xs">
+									{(ch.programTitle || ch.clipTitle) && ch.latestArtifact ? (
+										<>
+											<span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+											<span className="text-green-400">Ready to push</span>
+										</>
+									) : (ch.programTitle || ch.clipTitle) && !ch.latestArtifact ? (
+										<>
+											<span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+											<span className="text-amber-400">Awaiting publish</span>
+										</>
+									) : (
+										<>
+											<span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-500" />
+											<span className="text-slate-500">Not bound — assign a program to enable quick publishing</span>
+										</>
 									)}
 								</p>
 

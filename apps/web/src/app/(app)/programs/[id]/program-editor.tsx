@@ -13,6 +13,7 @@ interface ProgramData {
 	iconAssetId: string | null
 	durationMode: 'auto' | 'manual'
 	manualDurationSec: number | null
+	minClipDurationSec: number | null
 }
 
 interface ProgramClip {
@@ -109,6 +110,7 @@ export function ProgramEditor({
 		return program.durationMode
 	})
 	const [manualDurationSec, setManualDurationSec] = useState(program.manualDurationSec ?? 60)
+	const [minClipDurationSec, setMinClipDurationSec] = useState(program.minClipDurationSec ?? null)
 
 	// Resolve iconUrl → asset ID for saving
 	const resolveIconAssetId = (url: string): string | null => {
@@ -122,6 +124,7 @@ export function ProgramEditor({
 
 	const [clips, setClips] = useState(initialClips)
 	const [tracks, setTracks] = useState(initialTracks)
+	const [artifacts, setArtifacts] = useState(initialArtifacts)
 
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -157,8 +160,13 @@ export function ProgramEditor({
 
 	// Computed duration
 	const audioDuration = tracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
-	const computedDuration = durationMode === 'manual' ? manualDurationSec : audioDuration
-	const perClipDuration = clips.length > 0 ? computedDuration / clips.length : 0
+	const baseDuration = durationMode === 'manual' ? manualDurationSec : audioDuration
+	const perClipDuration =
+		clips.length > 0 ? (minClipDurationSec ? Math.max(baseDuration / clips.length, minClipDurationSec) : baseDuration / clips.length) : 0
+	const computedDuration =
+		clips.length > 0 && minClipDurationSec && baseDuration / clips.length < minClipDurationSec
+			? minClipDurationSec * clips.length
+			: baseDuration
 
 	// Job polling
 	useEffect(() => {
@@ -171,6 +179,21 @@ export function ProgramEditor({
 					setRenderJob(updated)
 					if (updated.status === 'completed' || updated.status === 'failed') {
 						setRendering(false)
+						if (updated.status === 'completed') {
+							// Refresh server-side data
+							router.refresh()
+							// Fetch fresh artifacts list
+							fetch(`/api/programs/${program.id}/artifacts`)
+								.then(r => (r.ok ? r.json() : null))
+								.then(data => {
+									if (data) setArtifacts(data)
+								})
+								.catch(() => {})
+							// Trigger Tunarr library scan if configured and artifact is in media path
+							if (tunarrConfigured && updated.outputPath && isInTunarrPath(updated.outputPath)) {
+								fetch('/api/tunarr/scan', { method: 'POST' }).catch(() => {})
+							}
+						}
 					}
 				}
 			} catch {
@@ -178,7 +201,7 @@ export function ProgramEditor({
 			}
 		}, 2000)
 		return () => clearInterval(interval)
-	}, [renderJob])
+	}, [renderJob]) // eslint-disable-line react-hooks/exhaustive-deps
 
 	const handleTitleChange = (val: string) => {
 		setTitle(val)
@@ -210,6 +233,7 @@ export function ProgramEditor({
 					iconAssetId: resolveIconAssetId(iconUrl),
 					durationMode,
 					manualDurationSec: durationMode === 'manual' ? manualDurationSec : null,
+					minClipDurationSec: minClipDurationSec ?? null,
 				}),
 			})
 			if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to save')
@@ -245,6 +269,7 @@ export function ProgramEditor({
 					iconAssetId: resolveIconAssetId(iconUrl),
 					durationMode,
 					manualDurationSec: durationMode === 'manual' ? manualDurationSec : null,
+					minClipDurationSec: minClipDurationSec ?? null,
 				}),
 			})
 			// Then render & publish
@@ -639,6 +664,26 @@ export function ProgramEditor({
 						{durationMode === 'auto' && tracks.length === 0 && (
 							<p className="mt-1 text-xs text-amber-400">Add audio tracks below to compute duration</p>
 						)}
+						<div className="mt-3">
+							<label htmlFor="minClipDuration" className="block text-xs text-slate-400">
+								Minimum clip duration (seconds)
+							</label>
+							<input
+								id="minClipDuration"
+								type="number"
+								min={1}
+								value={minClipDurationSec ?? ''}
+								onChange={e => {
+									const v = e.target.value
+									setMinClipDurationSec(v === '' ? null : parseInt(v, 10) || null)
+								}}
+								className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								placeholder="Optional"
+							/>
+							<p className="mt-1 text-xs text-slate-500">
+								If set, each clip will be shown for at least this many seconds, extending total duration if needed.
+							</p>
+						</div>
 					</section>
 				</div>
 
@@ -925,11 +970,11 @@ export function ProgramEditor({
 			)}
 
 			{/* Artifacts section */}
-			{initialArtifacts.length > 0 && (
+			{artifacts.length > 0 && (
 				<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
 					<h3 className="mb-3 text-sm font-semibold text-slate-300">Published Artifacts</h3>
 					<div className="space-y-2">
-						{initialArtifacts.map(a => {
+						{artifacts.map(a => {
 							const showTunarrPush = tunarrConfigured && a.status === 'published' && isInTunarrPath(a.outputPath) && !a.superseded
 							return (
 								<div

@@ -44,7 +44,11 @@ export default async function ChannelsPage() {
 
 	return (
 		<div>
-			<h2 className="mb-6 text-2xl font-bold text-white">Channels</h2>
+			<h2 className="mb-2 text-2xl font-bold text-white">Channels</h2>
+			<p className="text-sm text-slate-500 mb-6">
+				Manage Tunarr channel bindings. Bind a program to a channel for quick one-click publishing — the latest artifact from the bound
+				program is always ready to push.
+			</p>
 			<ChannelsClient initialChannels={channelsWithDetails} clips={clips} programs={programs} tunarrConfigured={tunarrConfigured} />
 		</div>
 	)
