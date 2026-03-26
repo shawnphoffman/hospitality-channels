@@ -31,24 +31,24 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 	},
 	'house-guide': {
 		backgroundImageUrl: SAMPLE_BG,
-		wifiSsid: 'Lakehouse_WiFi',
-		wifiPassword: 'lakelife2024',
+		qrCodeValue: 'WIFI:T:WPA;S:Lakehouse_WiFi;P:lakelife2024;;',
+		qrCodeLabel: 'Lakehouse WiFi',
 		infoText:
 			'## House Rules\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n## Amenities\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},
 	'house-guide-image-left': {
 		backgroundImageUrl: SAMPLE_BG,
 		infoImageUrl: SAMPLE_BG,
-		wifiSsid: 'Lakehouse_WiFi',
-		wifiPassword: 'lakelife2024',
+		qrCodeValue: 'WIFI:T:WPA;S:Lakehouse_WiFi;P:lakelife2024;;',
+		qrCodeLabel: 'Lakehouse WiFi',
 		infoText:
 			'## House Rules\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n## Amenities\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},
 	'house-guide-image-right': {
 		backgroundImageUrl: SAMPLE_BG,
 		infoImageUrl: SAMPLE_BG,
-		wifiSsid: 'Lakehouse_WiFi',
-		wifiPassword: 'lakelife2024',
+		qrCodeValue: 'WIFI:T:WPA;S:Lakehouse_WiFi;P:lakelife2024;;',
+		qrCodeLabel: 'Lakehouse WiFi',
 		infoText:
 			'## House Rules\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n## Amenities\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},

@@ -22,14 +22,14 @@ export const houseGuideImageRightTemplate: Template & { schema: Record<string, u
 				default: '',
 			},
 			{
-				key: 'wifiSsid',
-				label: 'Wi-Fi SSID',
+				key: 'qrCodeValue',
+				label: 'QR Code Value',
 				type: 'string',
 				default: '',
 			},
 			{
-				key: 'wifiPassword',
-				label: 'Wi-Fi Password',
+				key: 'qrCodeLabel',
+				label: 'QR Code Label',
 				type: 'string',
 				default: '',
 			},

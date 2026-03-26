@@ -2,11 +2,10 @@
 
 import { SimpleMarkdown } from '../../lib/markdown'
 import type { TemplateSceneProps } from '../types'
-import { WifiQrCode } from '../wifi-qr-code'
+import { QrCode } from '../qr-code'
 
 export function HouseGuideImageRightScene({ data }: TemplateSceneProps) {
-	const hasWifiQr = Boolean(data.wifiSsid && data.wifiPassword)
-	const hasWifi = Boolean(data.wifiSsid)
+	const hasQr = Boolean(data.qrCodeValue)
 	const backgroundImageUrl = data.backgroundImageUrl
 	const hasBg = Boolean(backgroundImageUrl)
 
@@ -32,17 +31,14 @@ export function HouseGuideImageRightScene({ data }: TemplateSceneProps) {
 				<div className="mt-2" style={{ height: 3, width: 120, background: hasBg ? 'rgba(255,255,255,0.3)' : '#6366f1' }} />
 
 				<div className="mt-10 flex flex-col gap-8">
-					{hasWifi && (
+					{hasQr && (
 						<div className={`flex items-center gap-8 ${cardClass}`} style={{ padding: '28px 36px' }}>
-							{hasWifiQr && <WifiQrCode ssid={data.wifiSsid} password={data.wifiPassword} size={100} />}
-							<div>
-								<p style={{ fontSize: 18, letterSpacing: '0.15em' }} className="uppercase text-white/50">
-									Wi-Fi
+							<QrCode value={data.qrCodeValue} size={100} />
+							{data.qrCodeLabel && (
+								<p style={{ fontSize: 30 }} className="font-semibold leading-snug">
+									{data.qrCodeLabel}
 								</p>
-								<p style={{ fontSize: 32 }} className="mt-2 font-semibold leading-snug">
-									{data.wifiSsid}
-								</p>
-							</div>
+							)}
 						</div>
 					)}
 
