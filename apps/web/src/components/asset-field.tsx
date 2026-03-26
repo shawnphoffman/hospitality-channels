@@ -4,6 +4,7 @@ import { useState, useRef, type ReactNode } from 'react'
 
 export interface AssetData {
 	id: string
+	name?: string | null
 	type: string
 	originalPath: string
 }
@@ -47,6 +48,7 @@ export function AssetField({
 	const [showPicker, setShowPicker] = useState(false)
 	const [assets, setAssets] = useState<AssetData[]>([])
 	const [loadingAssets, setLoadingAssets] = useState(false)
+	const [selectedAsset, setSelectedAsset] = useState<AssetData | null>(null)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const [uploading, setUploading] = useState(false)
 
@@ -72,6 +74,7 @@ export function AssetField({
 
 	const selectAsset = (asset: AssetData) => {
 		onChange(assetServeUrl(asset))
+		setSelectedAsset(asset)
 		setShowPicker(false)
 		setMode('asset')
 	}
@@ -137,9 +140,10 @@ export function AssetField({
 						<div className="flex flex-1 items-center">
 							<span className="truncate text-sm text-slate-400">
 								{value
-									? decodeURIComponent(value.split('path=')[1] ?? '')
+									? (selectedAsset?.name ??
+										decodeURIComponent(value.split('path=')[1] ?? '')
 											.split('/')
-											.pop()
+											.pop())
 									: 'No asset selected'}
 							</span>
 						</div>

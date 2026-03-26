@@ -3,8 +3,9 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { execFile } from 'node:child_process'
 import { access, constants } from 'node:fs/promises'
-import { eq, isNull, or } from 'drizzle-orm'
+import { eq, isNull, or, and } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
+import { extractCoverArt } from '@/lib/cover-art'
 
 interface ProbeResult {
 	duration?: number
@@ -83,6 +84,26 @@ export async function POST() {
 		}
 	}
 
+	// Extract cover art for audio assets that don't have it yet
+	let coversExtracted = 0
+	const audioCandidates = await db
+		.select()
+		.from(schema.assets)
+		.where(and(eq(schema.assets.type, 'audio'), isNull(schema.assets.derivedPath)))
+
+	for (const asset of audioCandidates) {
+		try {
+			await access(asset.originalPath, constants.R_OK)
+		} catch {
+			continue
+		}
+		const coverPath = await extractCoverArt(asset.originalPath, asset.id)
+		if (coverPath) {
+			await db.update(schema.assets).set({ derivedPath: coverPath }).where(eq(schema.assets.id, asset.id))
+			coversExtracted++
+		}
+	}
+
 	// Backfill program_audio_tracks that reference assets with newly detected durations
 	const nullDurationTracks = await db.select().from(schema.programAudioTracks).where(isNull(schema.programAudioTracks.durationSec))
 
@@ -101,5 +122,6 @@ export async function POST() {
 		assetsUpdated: updated,
 		assetsSkipped: skipped,
 		tracksUpdated,
+		coversExtracted,
 	})
 }

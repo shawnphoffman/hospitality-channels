@@ -37,7 +37,7 @@ export function ImageField(props: ImageFieldProps) {
 				<div className="overflow-hidden rounded-lg border border-slate-700 transition-colors hover:border-blue-500">
 					{/* eslint-disable-next-line @next/next/no-img-element */}
 					<img src={assetUrl} alt="" className="aspect-video w-full object-cover" loading="lazy" />
-					<p className="truncate px-2 py-1 text-xs text-slate-400">{asset.originalPath.split('/').pop()}</p>
+					<p className="truncate px-2 py-1 text-xs text-slate-400">{asset.name ?? asset.originalPath.split('/').pop()}</p>
 				</div>
 			)}
 		/>

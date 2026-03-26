@@ -6,7 +6,14 @@ import { ImagesClient } from './images-client'
 export default async function ImagesPage() {
 	const db = await getDb()
 	const allAssets = await db.select().from(schema.assets)
-	const imageAssets = allAssets.filter(a => a.type !== 'audio' && a.type !== 'video')
+	const imageAssets = allAssets
+		.filter(a => a.type !== 'audio' && a.type !== 'video')
+		.map(a => ({
+			id: a.id,
+			name: a.name ?? null,
+			type: a.type,
+			originalPath: a.originalPath,
+		}))
 
 	return (
 		<div>

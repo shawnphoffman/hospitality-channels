@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 interface AssetData {
 	id: string
+	name: string | null
 	type: string
 	originalPath: string
 }
@@ -16,6 +17,9 @@ export function ImagesClient({ initialAssets }: { initialAssets: AssetData[] }) 
 	const [uploading, setUploading] = useState(false)
 	const [message, setMessage] = useState<string | null>(null)
 	const [dimensions, setDimensions] = useState<Record<string, { w: number; h: number }>>({})
+	const [editingId, setEditingId] = useState<string | null>(null)
+	const [editName, setEditName] = useState('')
+	const [saving, setSaving] = useState(false)
 
 	useEffect(() => {
 		for (const asset of initialAssets) {
@@ -72,6 +76,37 @@ export function ImagesClient({ initialAssets }: { initialAssets: AssetData[] }) 
 		}
 	}
 
+	const startEditing = (asset: AssetData) => {
+		setEditingId(asset.id)
+		setEditName(asset.name ?? '')
+	}
+
+	const handleSaveName = async (id: string) => {
+		setSaving(true)
+		try {
+			await fetch(`/api/assets/${id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name: editName }),
+			})
+			setEditingId(null)
+			router.refresh()
+		} catch {
+			setMessage('Failed to save name')
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	const handleKeyDown = (e: React.KeyboardEvent, id: string) => {
+		if (e.key === 'Enter') {
+			e.preventDefault()
+			handleSaveName(id)
+		} else if (e.key === 'Escape') {
+			setEditingId(null)
+		}
+	}
+
 	return (
 		<>
 			<div className="mb-6 flex flex-wrap items-center gap-3">
@@ -111,34 +146,81 @@ export function ImagesClient({ initialAssets }: { initialAssets: AssetData[] }) 
 				</div>
 			) : (
 				<div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-					{initialAssets.map(asset => (
-						<div key={asset.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-3">
-							<div className="mb-2 overflow-hidden rounded-lg bg-slate-800">
-								{/* eslint-disable-next-line @next/next/no-img-element */}
-								<img
-									src={`/api/assets/serve?path=${encodeURIComponent(asset.originalPath)}`}
-									alt=""
-									className="aspect-video w-full object-cover"
-									loading="lazy"
-								/>
-							</div>
-							<p className="truncate text-sm text-white">{asset.originalPath.split('/').pop()}</p>
-							<p className="text-xs text-slate-500">
-								{asset.type}
-								{dimensions[asset.id] && (
-									<span className="ml-1">
-										&middot; {dimensions[asset.id].w}&times;{dimensions[asset.id].h}
-									</span>
+					{initialAssets.map(asset => {
+						const filename = asset.originalPath.split('/').pop() ?? ''
+						const isEditing = editingId === asset.id
+
+						return (
+							<div key={asset.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-3">
+								<div className="mb-2 overflow-hidden rounded-lg bg-slate-800">
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src={`/api/assets/serve?path=${encodeURIComponent(asset.originalPath)}`}
+										alt=""
+										className="aspect-video w-full object-cover"
+										loading="lazy"
+									/>
+								</div>
+								{isEditing ? (
+									<div className="flex items-center gap-1">
+										<input
+											type="text"
+											value={editName}
+											onChange={e => setEditName(e.target.value)}
+											onKeyDown={e => handleKeyDown(e, asset.id)}
+											placeholder={filename}
+											autoFocus
+											className="min-w-0 flex-1 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+										/>
+										<button
+											onClick={() => handleSaveName(asset.id)}
+											disabled={saving}
+											className="shrink-0 rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-500 disabled:opacity-50"
+										>
+											Save
+										</button>
+										<button
+											onClick={() => setEditingId(null)}
+											className="shrink-0 rounded px-1 py-1 text-xs text-slate-400 hover:text-white"
+										>
+											Cancel
+										</button>
+									</div>
+								) : (
+									<button onClick={() => startEditing(asset)} className="group/name block w-full text-left" title="Click to edit name">
+										<p className="truncate text-sm font-medium text-white group-hover/name:text-blue-400">{asset.name || filename}</p>
+										{asset.name && <p className="truncate text-xs text-slate-500">{filename}</p>}
+										{!asset.name && (
+											<p className="text-xs text-slate-500">
+												{asset.type}
+												{dimensions[asset.id] && (
+													<span className="ml-1">
+														&middot; {dimensions[asset.id].w}&times;{dimensions[asset.id].h}
+													</span>
+												)}
+											</p>
+										)}
+									</button>
 								)}
-							</p>
-							<button
-								onClick={() => handleDelete(asset.id)}
-								className="absolute right-2 top-2 rounded bg-red-900/80 px-2 py-1 text-xs text-red-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-800"
-							>
-								Delete
-							</button>
-						</div>
-					))}
+								{asset.name && (
+									<p className="text-xs text-slate-500">
+										{asset.type}
+										{dimensions[asset.id] && (
+											<span className="ml-1">
+												&middot; {dimensions[asset.id].w}&times;{dimensions[asset.id].h}
+											</span>
+										)}
+									</p>
+								)}
+								<button
+									onClick={() => handleDelete(asset.id)}
+									className="absolute right-2 top-2 rounded bg-red-900/80 px-2 py-1 text-xs text-red-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-800"
+								>
+									Delete
+								</button>
+							</div>
+						)
+					})}
 				</div>
 			)}
 		</>

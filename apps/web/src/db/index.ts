@@ -185,6 +185,7 @@ const MIGRATIONS_SQL = [
 	'ALTER TABLE published_artifacts ADD COLUMN program_id TEXT',
 	'ALTER TABLE jobs ADD COLUMN program_id TEXT',
 	'ALTER TABLE channel_definitions ADD COLUMN program_id TEXT',
+	'ALTER TABLE assets ADD COLUMN name TEXT',
 ]
 
 /**

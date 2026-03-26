@@ -29,6 +29,7 @@ export const clips = sqliteTable('pages', {
 
 export const assets = sqliteTable('assets', {
 	id: text('id').primaryKey(),
+	name: text('name'),
 	type: text('type').notNull(),
 	originalPath: text('original_path').notNull(),
 	derivedPath: text('derived_path'),

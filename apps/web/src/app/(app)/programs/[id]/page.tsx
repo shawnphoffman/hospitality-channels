@@ -50,10 +50,11 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			audioUrl: t.audioUrl,
 			durationSec: t.durationSec ?? asset?.duration ?? null,
 			filename: asset
-				? (asset.originalPath.split('/').pop() ?? 'audio')
+				? (asset.name ?? asset.originalPath.split('/').pop() ?? 'audio')
 				: t.audioUrl
 					? (new URL(t.audioUrl, 'http://localhost').pathname.split('/').pop() ?? 'audio')
 					: 'Unknown',
+			coverArtPath: asset?.derivedPath ?? null,
 		}
 	})
 
@@ -92,10 +93,12 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 	// Available audio assets
 	const audioAssets = allAssets
 		.filter(a => a.type === 'audio')
-		.map(a => ({ id: a.id, filename: a.originalPath.split('/').pop() ?? 'audio' }))
+		.map(a => ({ id: a.id, filename: a.name ?? a.originalPath.split('/').pop() ?? 'audio' }))
 
 	// Image assets for icon picker
-	const imageAssets = allAssets.filter(a => a.type !== 'audio' && a.type !== 'video').map(a => ({ id: a.id, originalPath: a.originalPath }))
+	const imageAssets = allAssets
+		.filter(a => a.type !== 'audio' && a.type !== 'video')
+		.map(a => ({ id: a.id, name: a.name ?? null, originalPath: a.originalPath }))
 
 	return (
 		<ProgramEditor

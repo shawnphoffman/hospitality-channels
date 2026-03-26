@@ -30,6 +30,7 @@ interface AudioTrack {
 	audioUrl: string | null
 	durationSec: number | null
 	filename: string
+	coverArtPath?: string | null
 }
 
 interface JobData {
@@ -64,7 +65,7 @@ interface ProgramEditorProps {
 	audioTracks: AudioTrack[]
 	availableClips: { id: string; title: string }[]
 	audioAssets: { id: string; filename: string }[]
-	imageAssets: { id: string; originalPath: string }[]
+	imageAssets: { id: string; name: string | null; originalPath: string }[]
 	profiles: { id: string; name: string; exportPath: string; fileNamingPattern: string | null }[]
 	tunarrConfigured?: boolean
 	tunarrMediaPath?: string
@@ -421,14 +422,15 @@ export function ProgramEditor({
 								assetId: string | null
 								audioUrl: string | null
 								durationSec: number | null
-								asset?: { originalPath?: string }
+								asset?: { name?: string; originalPath?: string; derivedPath?: string | null }
 							}) => ({
 								id: t.id,
 								position: t.position,
 								assetId: t.assetId,
 								audioUrl: t.audioUrl,
 								durationSec: t.durationSec,
-								filename: t.asset?.originalPath?.split('/').pop() ?? t.audioUrl ?? 'audio',
+								filename: t.asset?.name ?? t.asset?.originalPath?.split('/').pop() ?? t.audioUrl ?? 'audio',
+								coverArtPath: t.asset?.derivedPath ?? null,
 							})
 						)
 					)
@@ -741,19 +743,28 @@ export function ProgramEditor({
 							<div className="space-y-2">
 								{tracks.map((track, i) => (
 									<div key={track.id} className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 p-2">
-										<svg
-											className="h-5 w-5 shrink-0 text-slate-500"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											strokeWidth={1.5}
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+										{track.coverArtPath ? (
+											/* eslint-disable-next-line @next/next/no-img-element */
+											<img
+												src={`/api/assets/serve?path=${encodeURIComponent(track.coverArtPath)}`}
+												alt=""
+												className="h-8 w-8 shrink-0 rounded object-cover"
 											/>
-										</svg>
+										) : (
+											<svg
+												className="h-5 w-5 shrink-0 text-slate-500"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												strokeWidth={1.5}
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+												/>
+											</svg>
+										)}
 										<div className="min-w-0 flex-1">
 											<p className="truncate text-sm text-white">{track.filename}</p>
 											<p className="text-xs">
