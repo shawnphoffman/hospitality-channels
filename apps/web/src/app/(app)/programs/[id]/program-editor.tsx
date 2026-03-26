@@ -379,6 +379,45 @@ export function ProgramEditor({
 		})
 	}
 
+	// Probe assets for missing metadata (duration/dimensions)
+	const [probing, setProbing] = useState(false)
+	const handleProbeAssets = async () => {
+		setProbing(true)
+		try {
+			const res = await fetch('/api/assets/probe', { method: 'POST' })
+			if (res.ok) {
+				// Reload tracks from server to get updated durations
+				const tracksRes = await fetch(`/api/programs/${program.id}/audio-tracks`)
+				if (tracksRes.ok) {
+					const enrichedTracks = await tracksRes.json()
+					setTracks(
+						enrichedTracks.map(
+							(t: {
+								id: string
+								position: number
+								assetId: string | null
+								audioUrl: string | null
+								durationSec: number | null
+								asset?: { originalPath?: string }
+							}) => ({
+								id: t.id,
+								position: t.position,
+								assetId: t.assetId,
+								audioUrl: t.audioUrl,
+								durationSec: t.durationSec,
+								filename: t.asset?.originalPath?.split('/').pop() ?? t.audioUrl ?? 'audio',
+							})
+						)
+					)
+				}
+			}
+		} catch {
+			/* empty */
+		} finally {
+			setProbing(false)
+		}
+	}
+
 	// Tunarr push
 	const handleOpenPush = async () => {
 		setShowPush(true)
@@ -793,7 +832,14 @@ export function ProgramEditor({
 												{track.durationSec ? (
 													<span className="text-slate-500">{formatDuration(track.durationSec)}</span>
 												) : (
-													<span className="text-amber-400">Duration unknown &mdash; scan assets to detect</span>
+													<button
+														type="button"
+														onClick={handleProbeAssets}
+														disabled={probing}
+														className="text-amber-400 underline decoration-amber-400/40 hover:text-amber-300 disabled:opacity-50"
+													>
+														{probing ? 'Detecting duration…' : 'Duration unknown — click to detect'}
+													</button>
 												)}
 											</p>
 										</div>

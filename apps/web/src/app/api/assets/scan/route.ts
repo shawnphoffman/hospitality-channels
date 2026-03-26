@@ -1,12 +1,38 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
+import { execFile } from 'node:child_process'
+import { readdir, stat, mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
 import { PATHS } from '@hospitality-channels/common'
-import { readdir, stat, mkdir } from 'node:fs/promises'
-import path from 'node:path'
-import { eq } from 'drizzle-orm'
+
+function probeFile(filePath: string): Promise<{ duration?: number; width?: number; height?: number }> {
+	return new Promise(resolve => {
+		execFile(
+			'ffprobe',
+			['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', filePath],
+			{ timeout: 15000 },
+			(err, stdout) => {
+				if (err) {
+					resolve({})
+					return
+				}
+				try {
+					const info = JSON.parse(stdout)
+					const duration = info.format?.duration ? parseFloat(info.format.duration) : undefined
+					const videoStream = info.streams?.find((s: { codec_type: string }) => s.codec_type === 'video')
+					const width = videoStream?.width ?? undefined
+					const height = videoStream?.height ?? undefined
+					resolve({ duration, width, height })
+				} catch {
+					resolve({})
+				}
+			}
+		)
+	})
+}
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif'])
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.wma'])
@@ -58,15 +84,16 @@ export async function POST() {
 
 		const assetType = classifyAssetType(entry)
 		const id = generateId()
+		const probe = await probeFile(filePath)
 
 		await db.insert(schema.assets).values({
 			id,
 			type: assetType,
 			originalPath: filePath,
 			derivedPath: null,
-			width: null,
-			height: null,
-			duration: null,
+			width: probe.width ?? null,
+			height: probe.height ?? null,
+			duration: probe.duration ?? null,
 			tags: null,
 			checksum: null,
 		})
