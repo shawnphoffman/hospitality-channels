@@ -166,9 +166,9 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 		<>
 			<div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
 				{/* Preview thumbnail */}
-				<div className="h-[54px] w-24 shrink-0 overflow-hidden rounded bg-slate-950">
+				<div className="h-[108px] w-48 shrink-0 overflow-hidden rounded bg-slate-950">
 					{Scene && (
-						<div style={{ width: 1920, height: 1080, transform: 'scale(0.05)', transformOrigin: 'top left' }}>
+						<div style={{ width: 1920, height: 1080, transform: 'scale(0.1)', transformOrigin: 'top left' }}>
 							<Scene data={sampleData} />
 						</div>
 					)}
@@ -177,7 +177,7 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 					<p className="font-medium text-white">{name}</p>
 					{description && <p className="mt-0.5 text-sm text-slate-400">{description}</p>}
 				</div>
-				<div className="flex shrink-0 gap-2">
+				<div className="flex shrink-0 flex-col gap-2">
 					<button
 						onClick={() => setShowPreview(true)}
 						className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-800 hover:text-white"
@@ -186,7 +186,7 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 					</button>
 					<a
 						href={`/clips/new?template=${slug}`}
-						className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+						className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-500"
 					>
 						Use Template
 					</a>
