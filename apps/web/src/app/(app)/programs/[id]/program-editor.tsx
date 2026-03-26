@@ -55,7 +55,7 @@ interface ProgramEditorProps {
 	availableClips: { id: string; title: string }[]
 	audioAssets: { id: string; filename: string }[]
 	imageAssets: { id: string; originalPath: string }[]
-	profiles: { id: string; name: string }[]
+	profiles: { id: string; name: string; exportPath: string; fileNamingPattern: string | null }[]
 	tunarrConfigured?: boolean
 }
 
@@ -474,7 +474,7 @@ export function ProgramEditor({
 						{slug} &middot; {formatDuration(computedDuration)} total &middot; {clips.length} clip{clips.length !== 1 ? 's' : ''}
 					</p>
 				</div>
-				<div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
+				<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
 					<button
 						onClick={handleSave}
 						disabled={saving}
@@ -482,111 +482,25 @@ export function ProgramEditor({
 					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
-					{profiles.map(p => (
-						<button
-							key={p.id}
-							onClick={() => handleSaveAndPublish(p.id)}
-							disabled={saving || rendering || clips.length === 0}
-							className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 md:w-auto"
-						>
-							{rendering && renderingProfileId === p.id ? 'Working...' : `Save & Publish to ${p.name}`}
-						</button>
-					))}
-					<a href="/programs" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">
-						Back
+					<a
+						href="/programs"
+						className="w-full rounded-lg border border-slate-700 px-4 py-2 text-center text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white md:w-auto"
+					>
+						Cancel
 					</a>
+					<button
+						onClick={handleDelete}
+						disabled={saving}
+						className="w-full rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50 md:w-auto"
+					>
+						Delete
+					</button>
 				</div>
 			</div>
 
 			{/* Status messages */}
 			{error && <div className="rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-300">{error}</div>}
 			{successMsg && <div className="rounded-lg border border-green-800 bg-green-950 px-4 py-3 text-sm text-green-300">{successMsg}</div>}
-
-			{/* Job status */}
-			{renderJob && (
-				<div
-					className={`rounded-lg border px-4 py-3 text-sm ${
-						renderJob.status === 'completed'
-							? 'border-green-800 bg-green-950 text-green-300'
-							: renderJob.status === 'failed'
-								? 'border-red-800 bg-red-950 text-red-300'
-								: 'border-blue-800 bg-blue-950 text-blue-300'
-					}`}
-				>
-					{renderJob.status === 'queued' && 'Render & publish job queued...'}
-					{renderJob.status === 'processing' && 'Rendering and publishing... This may take a few minutes for multi-clip programs.'}
-					{renderJob.status === 'completed' && (
-						<div className="flex items-center gap-3">
-							<span>
-								Rendered and published!
-								{renderJob.outputPath && <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>}
-							</span>
-							{tunarrConfigured && !showPush && (
-								<button
-									onClick={handleOpenPush}
-									className="rounded border border-purple-700 px-3 py-1 text-xs font-medium text-purple-400 hover:bg-purple-950"
-								>
-									Push to Tunarr
-								</button>
-							)}
-						</div>
-					)}
-					{renderJob.status === 'failed' && <>Failed{renderJob.error ? `: ${renderJob.error}` : ''}</>}
-				</div>
-			)}
-
-			{/* Tunarr push panel */}
-			{showPush && (
-				<div className="rounded-lg border border-purple-800 bg-purple-950/30 p-4">
-					{tunarrChannels.length === 0 ? (
-						<p className="text-sm text-slate-400">No Tunarr channels found.</p>
-					) : (
-						<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-							<select
-								value={selectedChannelId}
-								onChange={e => setSelectedChannelId(e.target.value)}
-								className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none md:w-auto"
-							>
-								{tunarrChannels.map(ch => (
-									<option key={ch.id} value={ch.id}>
-										{ch.number}. {ch.name}
-									</option>
-								))}
-							</select>
-							<div className="flex gap-4">
-								<label className="flex items-center gap-2 text-sm text-slate-300">
-									<input
-										type="radio"
-										name="push-mode"
-										checked={pushMode === 'append'}
-										onChange={() => setPushMode('append')}
-										className="accent-purple-500"
-									/>
-									Add
-								</label>
-								<label className="flex items-center gap-2 text-sm text-slate-300">
-									<input
-										type="radio"
-										name="push-mode"
-										checked={pushMode === 'replace'}
-										onChange={() => setPushMode('replace')}
-										className="accent-purple-500"
-									/>
-									Replace
-								</label>
-							</div>
-							<button
-								onClick={handlePush}
-								disabled={pushing}
-								className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 md:w-auto"
-							>
-								{pushing ? 'Pushing...' : 'Push'}
-							</button>
-							{pushResult && <span className={`text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</span>}
-						</div>
-					)}
-				</div>
-			)}
 
 			<div className="grid gap-6 lg:grid-cols-2">
 				{/* Left column */}
@@ -688,15 +602,6 @@ export function ProgramEditor({
 							<p className="mt-1 text-xs text-amber-400">Add audio tracks below to compute duration</p>
 						)}
 					</section>
-
-					{/* Delete */}
-					<button
-						onClick={handleDelete}
-						disabled={saving}
-						className="w-full rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50"
-					>
-						Delete Program
-					</button>
 				</div>
 
 				{/* Right column */}
@@ -920,6 +825,125 @@ export function ProgramEditor({
 					</section>
 				</div>
 			</div>
+
+			{/* Publish section */}
+			{profiles.length > 0 && (
+				<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+					<h3 className="mb-3 text-sm font-semibold text-slate-300">Publish</h3>
+
+					{/* Job status */}
+					{renderJob && (
+						<div
+							className={`mb-3 rounded-lg border px-4 py-3 text-sm ${
+								renderJob.status === 'completed'
+									? 'border-green-800 bg-green-950 text-green-300'
+									: renderJob.status === 'failed'
+										? 'border-red-800 bg-red-950 text-red-300'
+										: 'border-blue-800 bg-blue-950 text-blue-300'
+							}`}
+						>
+							{renderJob.status === 'queued' && 'Render & publish job queued...'}
+							{renderJob.status === 'processing' && 'Rendering and publishing... This may take a few minutes.'}
+							{renderJob.status === 'completed' && (
+								<div className="flex items-center gap-3">
+									<span>
+										Rendered and published!
+										{renderJob.outputPath && <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>}
+									</span>
+									{tunarrConfigured && !showPush && (
+										<button
+											onClick={handleOpenPush}
+											className="rounded border border-purple-700 px-3 py-1 text-xs font-medium text-purple-400 hover:bg-purple-950"
+										>
+											Push to Tunarr
+										</button>
+									)}
+								</div>
+							)}
+							{renderJob.status === 'failed' && <>Failed{renderJob.error ? `: ${renderJob.error}` : ''}</>}
+						</div>
+					)}
+
+					{/* Tunarr push panel */}
+					{showPush && (
+						<div className="mb-3 rounded-lg border border-purple-800 bg-purple-950/30 p-4">
+							{tunarrChannels.length === 0 ? (
+								<p className="text-sm text-slate-400">No Tunarr channels found.</p>
+							) : (
+								<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+									<select
+										value={selectedChannelId}
+										onChange={e => setSelectedChannelId(e.target.value)}
+										className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none md:w-auto"
+									>
+										{tunarrChannels.map(ch => (
+											<option key={ch.id} value={ch.id}>
+												{ch.number}. {ch.name}
+											</option>
+										))}
+									</select>
+									<div className="flex gap-4">
+										<label className="flex items-center gap-2 text-sm text-slate-300">
+											<input
+												type="radio"
+												name="push-mode"
+												checked={pushMode === 'append'}
+												onChange={() => setPushMode('append')}
+												className="accent-purple-500"
+											/>
+											Add
+										</label>
+										<label className="flex items-center gap-2 text-sm text-slate-300">
+											<input
+												type="radio"
+												name="push-mode"
+												checked={pushMode === 'replace'}
+												onChange={() => setPushMode('replace')}
+												className="accent-purple-500"
+											/>
+											Replace
+										</label>
+									</div>
+									<button
+										onClick={handlePush}
+										disabled={pushing}
+										className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 md:w-auto"
+									>
+										{pushing ? 'Pushing...' : 'Push'}
+									</button>
+									{pushResult && (
+										<span className={`text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</span>
+									)}
+								</div>
+							)}
+						</div>
+					)}
+
+					<div className="space-y-2">
+						{profiles.map(p => (
+							<div
+								key={p.id}
+								className="flex flex-col gap-3 rounded-lg border border-slate-700 bg-slate-800 p-3 md:flex-row md:items-center"
+							>
+								<div className="min-w-0 flex-1">
+									<p className="text-sm font-medium text-white">{p.name}</p>
+									<p className="mt-0.5 text-xs text-slate-400">
+										{p.exportPath}
+										{p.fileNamingPattern && <span className="text-slate-500"> &middot; {p.fileNamingPattern}</span>}
+									</p>
+								</div>
+								<button
+									onClick={() => handleSaveAndPublish(p.id)}
+									disabled={saving || rendering || clips.length === 0}
+									className="w-full shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 md:w-auto"
+								>
+									{rendering && renderingProfileId === p.id ? 'Working...' : 'Save & Publish'}
+								</button>
+							</div>
+						))}
+					</div>
+				</section>
+			)}
 		</div>
 	)
 }

@@ -89,7 +89,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			availableClips={availableClips}
 			audioAssets={audioAssets}
 			imageAssets={imageAssets}
-			profiles={profiles.map(p => ({ id: p.id, name: p.name }))}
+			profiles={profiles.map(p => ({ id: p.id, name: p.name, exportPath: p.exportPath, fileNamingPattern: p.fileNamingPattern }))}
 			tunarrConfigured={!!tunarrSetting?.value}
 		/>
 	)
