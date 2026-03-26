@@ -34,7 +34,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		wifiSsid: 'Lakehouse_WiFi',
 		wifiPassword: 'lakelife2024',
 		infoText:
-			'## House Rules\n\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n\n## Amenities\n\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
+			'## House Rules\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n## Amenities\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},
 	'house-guide-image-left': {
 		backgroundImageUrl: SAMPLE_BG,
@@ -42,7 +42,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		wifiSsid: 'Lakehouse_WiFi',
 		wifiPassword: 'lakelife2024',
 		infoText:
-			'## House Rules\n\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n\n## Amenities\n\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
+			'## House Rules\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n## Amenities\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},
 	'house-guide-image-right': {
 		backgroundImageUrl: SAMPLE_BG,
@@ -50,7 +50,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		wifiSsid: 'Lakehouse_WiFi',
 		wifiPassword: 'lakelife2024',
 		infoText:
-			'## House Rules\n\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n\n## Amenities\n\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
+			'## House Rules\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n## Amenities\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},
 	'daily-agenda': {
 		backgroundImageUrl: SAMPLE_BG,
@@ -135,7 +135,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		nearestHospital: 'City General — 0.8 miles north on Main St.',
 		nearestPharmacy: 'CVS Pharmacy — 0.3 miles east on 2nd Ave.',
 		fireSafety:
-			'**Fire exits** are located at both ends of each hallway.\n\nIn case of fire:\n- Do not use elevators\n- Proceed to the nearest stairwell\n- Meet at the front parking lot',
+			'**Fire exits** are located at both ends of each hallway.\nIn case of fire:\n- Do not use elevators\n- Proceed to the nearest stairwell\n- Meet at the front parking lot',
 		additionalInfo: 'AED units are located in the lobby and on each even-numbered floor.',
 	},
 }
