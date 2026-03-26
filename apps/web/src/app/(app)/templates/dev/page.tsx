@@ -33,7 +33,6 @@ function TemplateDevContent() {
 	const [selectedSlug, setSelectedSlug] = useState(initialSlug)
 	const [data, setData] = useState<Record<string, string>>({})
 	const [showSafeArea, setShowSafeArea] = useState(false)
-	const [renderMode, setRenderMode] = useState(false)
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [scale, setScale] = useState(0)
 
@@ -93,16 +92,6 @@ function TemplateDevContent() {
 				<label className="flex items-center gap-2 text-sm text-slate-400">
 					<input
 						type="checkbox"
-						checked={renderMode}
-						onChange={e => setRenderMode(e.target.checked)}
-						className="rounded border-slate-600"
-					/>
-					Render mode
-				</label>
-
-				<label className="flex items-center gap-2 text-sm text-slate-400">
-					<input
-						type="checkbox"
 						checked={showSafeArea}
 						onChange={e => setShowSafeArea(e.target.checked)}
 						className="rounded border-slate-600"
@@ -130,7 +119,7 @@ function TemplateDevContent() {
 						}}
 						className="relative shrink-0"
 					>
-						<PreviewScene data={data} renderMode={renderMode} />
+						<PreviewScene data={data} />
 
 						{showSafeArea && (
 							<div

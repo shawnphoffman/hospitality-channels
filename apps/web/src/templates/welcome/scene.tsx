@@ -3,7 +3,7 @@
 import type { TemplateSceneProps } from '../types'
 import { WifiQrCode } from '../wifi-qr-code'
 
-export function WelcomeScene({ data, renderMode }: TemplateSceneProps) {
+export function WelcomeScene({ data }: TemplateSceneProps) {
 	const guestName = data.guestName || 'Guest'
 	const welcomeMessage = data.welcomeMessage || 'Welcome to your home away from home!'
 	const wifiSsid = data.wifiSsid
@@ -55,12 +55,6 @@ export function WelcomeScene({ data, renderMode }: TemplateSceneProps) {
 						)}
 					</div>
 				</div>
-			)}
-
-			{!renderMode && (
-				<p style={{ fontSize: 18 }} className="absolute bottom-10 right-12 text-slate-600">
-					Preview
-				</p>
 			)}
 		</div>
 	)

@@ -2,7 +2,7 @@
 
 import type { TemplateSceneProps } from '../types'
 
-export function HotelWelcomeScene({ data, renderMode }: TemplateSceneProps) {
+export function HotelWelcomeScene({ data }: TemplateSceneProps) {
 	const guestName = data.guestName || 'Guest'
 	const subtitle = data.subtitle || 'Welcome to your stay'
 	const backgroundImageUrl = data.backgroundImageUrl
@@ -28,12 +28,6 @@ export function HotelWelcomeScene({ data, renderMode }: TemplateSceneProps) {
 					</p>
 				</div>
 			</div>
-
-			{!renderMode && (
-				<p style={{ fontSize: 18 }} className="absolute bottom-10 right-12 text-slate-500">
-					Preview
-				</p>
-			)}
 		</div>
 	)
 }

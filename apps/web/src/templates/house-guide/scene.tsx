@@ -3,7 +3,7 @@
 import type { TemplateSceneProps } from '../types'
 import { WifiQrCode } from '../wifi-qr-code'
 
-export function HouseGuideScene({ data, renderMode }: TemplateSceneProps) {
+export function HouseGuideScene({ data }: TemplateSceneProps) {
 	const hasWifiQr = Boolean(data.wifiSsid && data.wifiPassword)
 	const hasWifi = Boolean(data.wifiSsid)
 	const hasInfo = Boolean(data.infoImageUrl || data.infoText)
@@ -60,12 +60,6 @@ export function HouseGuideScene({ data, renderMode }: TemplateSceneProps) {
 					</>
 				)}
 			</div>
-
-			{!renderMode && (
-				<p style={{ fontSize: 16, paddingBottom: 24 }} className="text-center text-slate-600">
-					Preview
-				</p>
-			)}
 		</div>
 	)
 }
