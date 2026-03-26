@@ -18,10 +18,16 @@ Self-hosted TV channel management for hospitality environments. Create template-
 
 ### Docker (recommended)
 
-A single container runs both the web server and background worker.
+A single container runs both the web server and background worker. Pre-built images are available from the GitHub Container Registry.
 
 ```sh
 docker compose up -d
+```
+
+Or run directly:
+
+```sh
+docker run -d -p 3000:3000 -v app-data:/data -v exports:/exports ghcr.io/shawnphoffman/hospitality-channels:latest
 ```
 
 The web UI is available at `http://localhost:3000`.
