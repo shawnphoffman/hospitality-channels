@@ -41,32 +41,34 @@ export function WelcomeScene({ data }: TemplateSceneProps) {
 				/>
 			)}
 
-			<h1 style={{ fontSize: 42 }} className="relative z-10 mb-6 text-center font-light leading-tight text-white/70">
-				{welcomeMessage}
-			</h1>
+			<div className={`relative z-10 flex flex-col items-center rounded-3xl ${cardClass}`} style={{ padding: '64px 80px' }}>
+				<p style={{ fontSize: 96 }} className="mb-6 text-center font-bold leading-none tracking-tight">
+					{guestName}
+				</p>
 
-			<p style={{ fontSize: 96 }} className="relative z-10 mb-10 text-center font-bold leading-none tracking-tight">
-				{guestName}
-			</p>
+				<h1 style={{ fontSize: 42 }} className="mb-10 text-center font-light leading-tight text-white/70">
+					{welcomeMessage}
+				</h1>
 
-			{wifiSsid && (
-				<div className={`relative z-10 flex items-center gap-8 rounded-2xl ${cardClass}`} style={{ padding: '32px 64px' }}>
-					{hasWifiQr && <WifiQrCode ssid={wifiSsid} password={wifiPassword} size={140} />}
-					<div className={hasWifiQr ? 'text-left' : 'text-center'}>
-						<p style={{ fontSize: 20, letterSpacing: '0.2em' }} className="mb-2 uppercase text-white/50">
-							Wi-Fi
-						</p>
-						<p style={{ fontSize: 36 }} className="font-semibold">
-							{wifiSsid}
-						</p>
-						{!hasWifiQr && wifiPassword && (
-							<p style={{ fontSize: 28 }} className="mt-2 font-light text-white/70">
-								{wifiPassword}
+				{wifiSsid && (
+					<div className="flex items-center gap-8">
+						{hasWifiQr && <WifiQrCode ssid={wifiSsid} password={wifiPassword} size={140} />}
+						<div className={hasWifiQr ? 'text-left' : 'text-center'}>
+							<p style={{ fontSize: 20, letterSpacing: '0.2em' }} className="mb-2 uppercase text-white/50">
+								Wi-Fi
 							</p>
-						)}
+							<p style={{ fontSize: 36 }} className="font-semibold">
+								{wifiSsid}
+							</p>
+							{!hasWifiQr && wifiPassword && (
+								<p style={{ fontSize: 28 }} className="mt-2 font-light text-white/70">
+									{wifiPassword}
+								</p>
+							)}
+						</div>
 					</div>
-				</div>
-			)}
+				)}
+			</div>
 		</div>
 	)
 }
