@@ -8,6 +8,9 @@ export function HotelWelcomeScene({ data }: TemplateSceneProps) {
 	const guestName = data.guestName || 'Guest'
 	const subtitle = data.subtitle || 'Welcome to your stay'
 	const backgroundImageUrl = data.backgroundImageUrl
+	const backgroundVideoUrl = data.backgroundVideoUrl
+	const hasVideo = Boolean(backgroundVideoUrl)
+	const hasBg = Boolean(backgroundImageUrl || backgroundVideoUrl)
 	const wifiSsid = data.wifiSsid
 	const wifiPassword = data.wifiPassword
 	const hasWifi = Boolean(wifiSsid)
@@ -17,12 +20,13 @@ export function HotelWelcomeScene({ data }: TemplateSceneProps) {
 		<div
 			className="relative flex h-full w-full items-end text-white"
 			style={{
-				backgroundImage: backgroundImageUrl ? `url(${backgroundImageUrl})` : undefined,
-				backgroundSize: 'cover',
-				backgroundPosition: 'center',
-				backgroundColor: backgroundImageUrl ? undefined : '#1e293b',
+				background: backgroundImageUrl && !hasVideo ? `url(${backgroundImageUrl}) center / cover no-repeat` : hasBg ? '#000' : '#1e293b',
 			}}
 		>
+			{hasVideo && (
+				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
+			)}
+
 			{/* Semi-transparent panel on the left */}
 			<div className="absolute bottom-0 left-0 top-0 flex items-end" style={{ background: 'rgba(0,0,0,0.7)' }}>
 				<div className="w-full" style={{ padding: '96px 120px 96px 64px' }}>

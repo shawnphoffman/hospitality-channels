@@ -10,6 +10,7 @@ export const dailyAgendaTemplate: Template & { schema: Record<string, unknown> }
 	schema: {
 		fields: [
 			{ key: 'backgroundImageUrl', label: 'Background Image', type: 'image', default: '' },
+			{ key: 'backgroundVideoUrl', label: 'Background Video', type: 'video', default: '' },
 			{ key: 'imageUrl', label: 'Side Image (left)', type: 'image', default: '' },
 			{ key: 'headerText', label: 'Header', type: 'string', default: "Today's Schedule" },
 			{ key: 'date', label: 'Date', type: 'string', default: '' },

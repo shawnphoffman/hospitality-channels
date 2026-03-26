@@ -16,6 +16,12 @@ export const welcomeTemplate: Template & { schema: Record<string, unknown> } = {
 				default: '',
 			},
 			{
+				key: 'backgroundVideoUrl',
+				label: 'Background Video',
+				type: 'video',
+				default: '',
+			},
+			{
 				key: 'guestName',
 				label: 'Guest Name',
 				type: 'string',

@@ -22,6 +22,12 @@ export const houseGuideImageRightTemplate: Template & { schema: Record<string, u
 				default: '',
 			},
 			{
+				key: 'backgroundVideoUrl',
+				label: 'Background Video',
+				type: 'video',
+				default: '',
+			},
+			{
 				key: 'qrCodeValue',
 				label: 'QR Code Value',
 				type: 'string',

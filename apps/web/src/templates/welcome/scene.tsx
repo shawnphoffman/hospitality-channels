@@ -10,7 +10,9 @@ export function WelcomeScene({ data }: TemplateSceneProps) {
 	const wifiPassword = data.wifiPassword
 	const hasWifiQr = Boolean(wifiSsid && wifiPassword)
 	const backgroundImageUrl = data.backgroundImageUrl
-	const hasBg = Boolean(backgroundImageUrl)
+	const backgroundVideoUrl = data.backgroundVideoUrl
+	const hasVideo = Boolean(backgroundVideoUrl)
+	const hasBg = Boolean(backgroundImageUrl || backgroundVideoUrl)
 
 	const cardClass = hasBg
 		? 'border border-white/10 bg-black/60 backdrop-blur-sm'
@@ -20,12 +22,19 @@ export function WelcomeScene({ data }: TemplateSceneProps) {
 		<div
 			className="relative flex h-full w-full flex-col items-center justify-center text-white"
 			style={{
-				background: hasBg
-					? `url(${backgroundImageUrl}) center / cover no-repeat`
-					: 'linear-gradient(to bottom right, #0f172a, #1e293b, #1e1b4b)',
+				background:
+					backgroundImageUrl && !hasVideo
+						? `url(${backgroundImageUrl}) center / cover no-repeat`
+						: hasBg
+							? '#000'
+							: 'linear-gradient(to bottom right, #0f172a, #1e293b, #1e1b4b)',
 			}}
 		>
 			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} />}
+
+			{hasVideo && (
+				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
+			)}
 
 			{!hasBg && (
 				<div

@@ -19,6 +19,12 @@ export const hotelWelcomeTemplate: Template & {
 				required: true,
 			},
 			{
+				key: 'backgroundVideoUrl',
+				label: 'Background Video',
+				type: 'video',
+				default: '',
+			},
+			{
 				key: 'guestName',
 				label: 'Guest Name',
 				type: 'string',

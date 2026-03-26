@@ -10,6 +10,7 @@ export const checkoutTemplate: Template & { schema: Record<string, unknown> } = 
 	schema: {
 		fields: [
 			{ key: 'backgroundImageUrl', label: 'Background Image', type: 'image', default: '' },
+			{ key: 'backgroundVideoUrl', label: 'Background Video', type: 'video', default: '' },
 			{ key: 'headerText', label: 'Header', type: 'string', default: 'Checkout Information' },
 			{ key: 'checkoutTime', label: 'Checkout Time', type: 'string', default: '11:00 AM', required: true },
 			{ key: 'lateCheckout', label: 'Late Checkout', type: 'string', default: '' },

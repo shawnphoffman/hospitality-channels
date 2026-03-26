@@ -10,6 +10,7 @@ export const amenitiesTemplate: Template & { schema: Record<string, unknown> } =
 	schema: {
 		fields: [
 			{ key: 'backgroundImageUrl', label: 'Background Image', type: 'image', default: '' },
+			{ key: 'backgroundVideoUrl', label: 'Background Video', type: 'video', default: '' },
 			{ key: 'headerText', label: 'Header', type: 'string', default: 'Property Amenities' },
 			{ key: 'amenity1Name', label: 'Amenity 1 Name', type: 'string', default: '' },
 			{ key: 'amenity1Hours', label: 'Amenity 1 Hours', type: 'string', default: '' },

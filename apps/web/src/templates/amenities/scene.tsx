@@ -12,7 +12,9 @@ interface Amenity {
 export function AmenitiesScene({ data }: TemplateSceneProps) {
 	const headerText = data.headerText || 'Property Amenities'
 	const backgroundImageUrl = data.backgroundImageUrl
-	const hasBg = Boolean(backgroundImageUrl)
+	const backgroundVideoUrl = data.backgroundVideoUrl
+	const hasVideo = Boolean(backgroundVideoUrl)
+	const hasBg = Boolean(backgroundImageUrl || backgroundVideoUrl)
 
 	const amenities: Amenity[] = [
 		{ name: data.amenity1Name, hours: data.amenity1Hours, details: data.amenity1Details, icon: data.amenity1Icon || 'pool' },
@@ -39,10 +41,19 @@ export function AmenitiesScene({ data }: TemplateSceneProps) {
 			style={{
 				width: 1920,
 				height: 1080,
-				background: hasBg ? `url(${backgroundImageUrl}) center / cover no-repeat` : 'linear-gradient(to bottom, #0f172a, #020617)',
+				background:
+					backgroundImageUrl && !hasVideo
+						? `url(${backgroundImageUrl}) center / cover no-repeat`
+						: hasBg
+							? '#000'
+							: 'linear-gradient(to bottom, #0f172a, #020617)',
 			}}
 		>
 			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
+
+			{hasVideo && (
+				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
+			)}
 
 			<div className="relative z-10 flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
 				<h1 style={{ fontSize: 64 }} className="font-bold tracking-tight">

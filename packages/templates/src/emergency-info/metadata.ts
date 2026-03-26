@@ -10,6 +10,7 @@ export const emergencyInfoTemplate: Template & { schema: Record<string, unknown>
 	schema: {
 		fields: [
 			{ key: 'backgroundImageUrl', label: 'Background Image', type: 'image', default: '' },
+			{ key: 'backgroundVideoUrl', label: 'Background Video', type: 'video', default: '' },
 			{ key: 'headerText', label: 'Header', type: 'string', default: 'Emergency Information' },
 			{ key: 'emergencyNumber', label: 'Emergency Number', type: 'string', default: '911' },
 			{ key: 'frontDesk', label: 'Front Desk', type: 'string', default: '' },

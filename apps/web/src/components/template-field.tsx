@@ -2,6 +2,7 @@
 
 import { ImageField } from './image-field'
 import { AudioField } from './audio-field'
+import { VideoField } from './video-field'
 
 interface FieldSchema {
 	key: string
@@ -36,6 +37,10 @@ export function TemplateField({ field, value, onChange, idPrefix = '' }: Templat
 
 	if (field.type === 'audio') {
 		return <AudioField id={fieldId} label={field.label} value={value} onChange={onChange} required={field.required} />
+	}
+
+	if (field.type === 'video') {
+		return <VideoField id={fieldId} label={field.label} value={value} onChange={onChange} required={field.required} />
 	}
 
 	if (field.type === 'boolean') {

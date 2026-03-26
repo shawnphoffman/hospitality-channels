@@ -10,6 +10,7 @@ export const localInfoTemplate: Template & { schema: Record<string, unknown> } =
 	schema: {
 		fields: [
 			{ key: 'backgroundImageUrl', label: 'Background Image', type: 'image', default: '' },
+			{ key: 'backgroundVideoUrl', label: 'Background Video', type: 'video', default: '' },
 			{ key: 'headerText', label: 'Header', type: 'string', default: 'Local Information' },
 			{ key: 'layout', label: 'Layout', type: 'string', default: 'photo-right' },
 			{ key: 'photo1Url', label: 'Photo 1', type: 'image', default: '' },

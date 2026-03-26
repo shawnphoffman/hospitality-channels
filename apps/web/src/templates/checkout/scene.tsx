@@ -29,7 +29,9 @@ export function CheckoutScene({ data }: TemplateSceneProps) {
 	const contactNumber = data.contactNumber || ''
 	const additionalInfo = data.additionalInfo || ''
 	const backgroundImageUrl = data.backgroundImageUrl
-	const hasBg = Boolean(backgroundImageUrl)
+	const backgroundVideoUrl = data.backgroundVideoUrl
+	const hasVideo = Boolean(backgroundVideoUrl)
+	const hasBg = Boolean(backgroundImageUrl || backgroundVideoUrl)
 
 	const infoItems = [
 		{ label: 'Late Checkout', value: lateCheckout },
@@ -44,10 +46,19 @@ export function CheckoutScene({ data }: TemplateSceneProps) {
 		<div
 			className="relative flex h-full w-full flex-col text-white"
 			style={{
-				background: hasBg ? `url(${backgroundImageUrl}) center / cover no-repeat` : 'linear-gradient(to bottom, #0f172a, #020617)',
+				background:
+					backgroundImageUrl && !hasVideo
+						? `url(${backgroundImageUrl}) center / cover no-repeat`
+						: hasBg
+							? '#000'
+							: 'linear-gradient(to bottom, #0f172a, #020617)',
 			}}
 		>
 			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
+
+			{hasVideo && (
+				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
+			)}
 
 			<div className="relative z-10 flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
 				<h1 style={{ fontSize: 64 }} className="font-bold tracking-tight">

@@ -13,7 +13,9 @@ export function DailyAgendaScene({ data }: TemplateSceneProps) {
 	const date = data.date || ''
 	const footerText = data.footerText || ''
 	const backgroundImageUrl = data.backgroundImageUrl
-	const hasBg = Boolean(backgroundImageUrl)
+	const backgroundVideoUrl = data.backgroundVideoUrl
+	const hasVideo = Boolean(backgroundVideoUrl)
+	const hasBg = Boolean(backgroundImageUrl || backgroundVideoUrl)
 	const imageUrl = data.imageUrl
 	const hasImage = Boolean(imageUrl)
 
@@ -37,10 +39,19 @@ export function DailyAgendaScene({ data }: TemplateSceneProps) {
 		<div
 			className="relative flex h-full w-full flex-col text-white"
 			style={{
-				background: hasBg ? `url(${backgroundImageUrl}) center / cover no-repeat` : 'linear-gradient(to bottom, #0f172a, #020617)',
+				background:
+					backgroundImageUrl && !hasVideo
+						? `url(${backgroundImageUrl}) center / cover no-repeat`
+						: hasBg
+							? '#000'
+							: 'linear-gradient(to bottom, #0f172a, #020617)',
 			}}
 		>
 			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
+
+			{hasVideo && (
+				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
+			)}
 
 			<div className="relative z-10 flex h-full w-full flex-1">
 				{/* Optional left image */}
