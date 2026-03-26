@@ -4,6 +4,10 @@ import { houseGuideTemplate } from './house-guide/index.js'
 import { hotelWelcomeTemplate } from './hotel-welcome/index.js'
 import { dailyAgendaTemplate } from './daily-agenda/index.js'
 import { localInfoTemplate } from './local-info/index.js'
+import { amenitiesTemplate } from './amenities/index.js'
+import { checkoutTemplate } from './checkout/index.js'
+import { contactDirectoryTemplate } from './contact-directory/index.js'
+import { emergencyInfoTemplate } from './emergency-info/index.js'
 
 const templates: (Template & { schema?: Record<string, unknown> })[] = [
 	welcomeTemplate,
@@ -11,6 +15,10 @@ const templates: (Template & { schema?: Record<string, unknown> })[] = [
 	hotelWelcomeTemplate,
 	dailyAgendaTemplate,
 	localInfoTemplate,
+	amenitiesTemplate,
+	checkoutTemplate,
+	contactDirectoryTemplate,
+	emergencyInfoTemplate,
 ]
 
 export function getTemplateRegistry(): (Template & {

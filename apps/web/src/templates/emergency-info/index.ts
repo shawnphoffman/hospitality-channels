@@ -1,0 +1,1 @@
+export { EmergencyInfoScene } from './scene'

@@ -4,6 +4,10 @@ import { HouseGuideScene } from './house-guide'
 import { HotelWelcomeScene } from './hotel-welcome'
 import { DailyAgendaScene } from './daily-agenda'
 import { LocalInfoScene } from './local-info'
+import { AmenitiesScene } from './amenities'
+import { CheckoutScene } from './checkout'
+import { ContactDirectoryScene } from './contact-directory'
+import { EmergencyInfoScene } from './emergency-info'
 
 const sceneRegistry: Record<string, TemplateSceneEntry> = {
 	welcome: { scene: WelcomeScene },
@@ -11,6 +15,10 @@ const sceneRegistry: Record<string, TemplateSceneEntry> = {
 	'hotel-welcome': { scene: HotelWelcomeScene },
 	'daily-agenda': { scene: DailyAgendaScene },
 	'local-info': { scene: LocalInfoScene },
+	amenities: { scene: AmenitiesScene },
+	checkout: { scene: CheckoutScene },
+	'contact-directory': { scene: ContactDirectoryScene },
+	'emergency-info': { scene: EmergencyInfoScene },
 }
 
 export function getTemplateScenes(slug: string): TemplateSceneEntry | undefined {

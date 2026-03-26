@@ -1,0 +1,34 @@
+import type { Template } from '@hospitality-channels/content-model'
+
+export const amenitiesTemplate: Template & { schema: Record<string, unknown> } = {
+	slug: 'amenities',
+	name: 'Amenities',
+	description: 'Showcase property amenities with photo, hours, and details',
+	category: 'info',
+	status: 'active',
+	version: 1,
+	schema: {
+		fields: [
+			{ key: 'headerText', label: 'Header', type: 'string', default: 'Property Amenities' },
+			{ key: 'amenity1Name', label: 'Amenity 1 Name', type: 'string', default: '' },
+			{ key: 'amenity1Hours', label: 'Amenity 1 Hours', type: 'string', default: '' },
+			{ key: 'amenity1Details', label: 'Amenity 1 Details', type: 'string', default: '' },
+			{ key: 'amenity1Icon', label: 'Amenity 1 Icon', type: 'string', default: 'pool' },
+			{ key: 'amenity2Name', label: 'Amenity 2 Name', type: 'string', default: '' },
+			{ key: 'amenity2Hours', label: 'Amenity 2 Hours', type: 'string', default: '' },
+			{ key: 'amenity2Details', label: 'Amenity 2 Details', type: 'string', default: '' },
+			{ key: 'amenity2Icon', label: 'Amenity 2 Icon', type: 'string', default: 'gym' },
+			{ key: 'amenity3Name', label: 'Amenity 3 Name', type: 'string', default: '' },
+			{ key: 'amenity3Hours', label: 'Amenity 3 Hours', type: 'string', default: '' },
+			{ key: 'amenity3Details', label: 'Amenity 3 Details', type: 'string', default: '' },
+			{ key: 'amenity3Icon', label: 'Amenity 3 Icon', type: 'string', default: 'spa' },
+			{ key: 'amenity4Name', label: 'Amenity 4 Name', type: 'string', default: '' },
+			{ key: 'amenity4Hours', label: 'Amenity 4 Hours', type: 'string', default: '' },
+			{ key: 'amenity4Details', label: 'Amenity 4 Details', type: 'string', default: '' },
+			{ key: 'amenity4Icon', label: 'Amenity 4 Icon', type: 'string', default: 'business' },
+			{ key: 'photoUrl', label: 'Photo', type: 'image', default: '' },
+			{ key: 'backgroundAudioUrl', label: 'Background Audio', type: 'audio', default: '' },
+			{ key: 'matchAudioDuration', label: 'Match video duration to audio length', type: 'boolean', default: false },
+		],
+	},
+}

@@ -5,7 +5,7 @@ export const hotelWelcomeTemplate: Template & {
 } = {
 	slug: 'hotel-welcome',
 	name: 'Hotel Welcome',
-	description: 'Full-screen hotel welcome display with background image, guest name, and subtitle',
+	description: 'Full-screen hotel welcome display with background image, guest name, subtitle, and Wi-Fi info',
 	category: 'welcome',
 	status: 'active',
 	version: 1,
@@ -30,6 +30,18 @@ export const hotelWelcomeTemplate: Template & {
 				label: 'Subtitle',
 				type: 'textarea',
 				default: 'Welcome to your stay',
+			},
+			{
+				key: 'wifiSsid',
+				label: 'Wi-Fi SSID',
+				type: 'string',
+				default: '',
+			},
+			{
+				key: 'wifiPassword',
+				label: 'Wi-Fi Password',
+				type: 'string',
+				default: '',
 			},
 			{
 				key: 'backgroundAudioUrl',

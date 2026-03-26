@@ -1,3 +1,5 @@
-export { welcomeTemplate } from "./welcome/index.js";
-export { houseGuideTemplate } from "./house-guide/index.js";
-export { getTemplateRegistry, getTemplateBySlug } from "./registry.js";
+export { welcomeTemplate } from './welcome/index.js'
+export { houseGuideTemplate } from './house-guide/index.js'
+export { amenitiesTemplate } from './amenities/index.js'
+export { contactDirectoryTemplate } from './contact-directory/index.js'
+export { getTemplateRegistry, getTemplateBySlug } from './registry.js'
