@@ -47,8 +47,9 @@ COPY . .
 RUN mkdir -p /data && touch /data/guest-tv-pages.db && \
     pnpm run build --filter=@hospitality-channels/web --filter=@hospitality-channels/worker
 
-# Copy static assets into the standalone output where Next.js expects them
-RUN cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+# Copy static assets and public files into the standalone output where Next.js expects them
+RUN cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static && \
+    cp -r apps/web/public apps/web/.next/standalone/apps/web/public
 
 # Slim down: remove source files, docs, build caches
 RUN rm -rf .turbo apps/worker/src packages/*/src docs .github .git
