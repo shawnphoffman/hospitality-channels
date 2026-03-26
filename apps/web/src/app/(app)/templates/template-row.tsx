@@ -244,7 +244,7 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 										style={{ width: SCENE_W, height: SCENE_H, transform: `scale(${modalScale})`, transformOrigin: 'top left' }}
 										className="absolute left-0 top-0"
 									>
-										<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
+										<div className="absolute inset-0 overflow-hidden">
 											<Scene data={sampleData} />
 										</div>
 									</div>

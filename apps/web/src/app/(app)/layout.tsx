@@ -147,10 +147,12 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 		<nav className={`shrink-0 border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
 			<div className="flex items-center justify-between p-4">
 				{!collapsed && (
-					<div className="min-w-0">
+					<div className="flex min-w-0 items-center gap-2">
+						<img src="/logo1b.png" alt="" className="h-7 w-7 shrink-0" />
 						<h1 className="truncate text-lg font-bold text-white">Hospitality TV</h1>
 					</div>
 				)}
+				{collapsed && <img src="/logo1b.png" alt="" className="mx-auto h-6 w-6" />}
 				<button
 					onClick={onToggle}
 					className={`shrink-0 rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white ${collapsed ? 'mx-auto' : ''}`}

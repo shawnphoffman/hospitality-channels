@@ -18,10 +18,7 @@ export function HouseGuideImageLeftScene({ data }: TemplateSceneProps) {
 		<div
 			className="relative flex h-full w-full text-white"
 			style={{
-				backgroundImage: hasBg ? `url(${backgroundImageUrl})` : undefined,
-				backgroundSize: 'cover',
-				backgroundPosition: 'center',
-				background: hasBg ? undefined : 'linear-gradient(to bottom, #0f172a, #020617)',
+				background: hasBg ? `url(${backgroundImageUrl}) center / cover no-repeat` : 'linear-gradient(to bottom, #0f172a, #020617)',
 			}}
 		>
 			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}

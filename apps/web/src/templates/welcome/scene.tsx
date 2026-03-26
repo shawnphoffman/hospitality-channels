@@ -20,10 +20,9 @@ export function WelcomeScene({ data }: TemplateSceneProps) {
 		<div
 			className="relative flex h-full w-full flex-col items-center justify-center text-white"
 			style={{
-				backgroundImage: hasBg ? `url(${backgroundImageUrl})` : undefined,
-				backgroundSize: 'cover',
-				backgroundPosition: 'center',
-				background: hasBg ? undefined : 'linear-gradient(to bottom right, #0f172a, #1e293b, #1e1b4b)',
+				background: hasBg
+					? `url(${backgroundImageUrl}) center / cover no-repeat`
+					: 'linear-gradient(to bottom right, #0f172a, #1e293b, #1e1b4b)',
 			}}
 		>
 			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} />}
