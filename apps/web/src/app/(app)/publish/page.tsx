@@ -14,6 +14,7 @@ export default async function PublishPage() {
 	const completedRenders = renderJobs.filter(j => j.status === 'completed' && j.outputPath)
 
 	const clips = await db.select().from(schema.clips)
+	const programs = await db.select().from(schema.programs)
 
 	const clipsWithRenders = completedRenders
 		.map(job => {
@@ -44,8 +45,9 @@ export default async function PublishPage() {
 	const channelDefs = await db.select().from(schema.channelDefinitions)
 	const channelBindings: Record<string, { tunarrChannelId: string; pushMode: string }> = {}
 	for (const cd of channelDefs) {
-		if (cd.clipId && cd.tunarrChannelId) {
-			channelBindings[cd.clipId] = { tunarrChannelId: cd.tunarrChannelId, pushMode: cd.pushMode ?? 'replace' }
+		const key = cd.programId ?? cd.clipId
+		if (key && cd.tunarrChannelId) {
+			channelBindings[key] = { tunarrChannelId: cd.tunarrChannelId, pushMode: cd.pushMode ?? 'replace' }
 		}
 	}
 
@@ -58,11 +60,13 @@ export default async function PublishPage() {
 	})
 
 	const artifactsWithDetails = dedupedArtifacts.map(a => {
-		const clip = clips.find(c => c.id === a.clipId)
+		const clip = a.clipId ? clips.find(c => c.id === a.clipId) : null
+		const program = a.programId ? programs.find(p => p.id === a.programId) : null
 		const profile = profiles.find(p => p.id === a.publishProfileId)
 		return {
 			...a,
-			clipTitle: clip?.title ?? a.clipId,
+			clipTitle: clip?.title ?? null,
+			programTitle: program?.title ?? null,
 			profileName: profile?.name ?? a.publishProfileId,
 		}
 	})
@@ -82,6 +86,8 @@ export default async function PublishPage() {
 					id: a.id,
 					clipId: a.clipId,
 					clipTitle: a.clipTitle,
+					programId: a.programId,
+					programTitle: a.programTitle,
 					profileName: a.profileName,
 					outputPath: a.outputPath,
 					durationSec: a.durationSec,

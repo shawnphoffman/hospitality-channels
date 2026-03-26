@@ -15,8 +15,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
 const iconProps = { xmlns: 'http://www.w3.org/2000/svg', width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
 
-const links = [
+type NavItem = { type: 'link'; href: string; label: string; icon: JSX.Element } | { type: 'separator' }
+
+const navItems: NavItem[] = [
 	{
+		type: 'link',
 		href: '/',
 		label: 'Dashboard',
 		icon: (
@@ -29,6 +32,7 @@ const links = [
 		),
 	},
 	{
+		type: 'link',
 		href: '/clips',
 		label: 'Clips',
 		icon: (
@@ -41,6 +45,33 @@ const links = [
 		),
 	},
 	{
+		type: 'link',
+		href: '/programs',
+		label: 'Programs',
+		icon: (
+			<svg {...iconProps}>
+				<rect x="2" y="2" width="20" height="20" rx="2" />
+				<line x1="7" y1="2" x2="7" y2="22" />
+				<line x1="2" y1="12" x2="22" y2="12" />
+				<line x1="2" y1="7" x2="7" y2="7" />
+				<line x1="2" y1="17" x2="7" y2="17" />
+			</svg>
+		),
+	},
+	{
+		type: 'link',
+		href: '/channels',
+		label: 'Channels',
+		icon: (
+			<svg {...iconProps}>
+				<rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+				<polyline points="17 2 12 7 7 2" />
+			</svg>
+		),
+	},
+	{ type: 'separator' },
+	{
+		type: 'link',
 		href: '/templates',
 		label: 'Templates',
 		icon: (
@@ -52,8 +83,9 @@ const links = [
 		),
 	},
 	{
-		href: '/assets',
-		label: 'Assets',
+		type: 'link',
+		href: '/images',
+		label: 'Images',
 		icon: (
 			<svg {...iconProps}>
 				<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -63,6 +95,20 @@ const links = [
 		),
 	},
 	{
+		type: 'link',
+		href: '/audio',
+		label: 'Audio',
+		icon: (
+			<svg {...iconProps}>
+				<path d="M9 18V5l12-3v13" />
+				<circle cx="6" cy="18" r="3" />
+				<circle cx="18" cy="15" r="3" />
+			</svg>
+		),
+	},
+	{ type: 'separator' },
+	{
+		type: 'link',
 		href: '/publish',
 		label: 'Publish',
 		icon: (
@@ -74,16 +120,7 @@ const links = [
 		),
 	},
 	{
-		href: '/channels',
-		label: 'Channels',
-		icon: (
-			<svg {...iconProps}>
-				<rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
-				<polyline points="17 2 12 7 7 2" />
-			</svg>
-		),
-	},
-	{
+		type: 'link',
 		href: '/settings',
 		label: 'Settings',
 		icon: (
@@ -117,18 +154,27 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 				</button>
 			</div>
 			<ul className="space-y-1 px-2">
-				{links.map(link => (
-					<li key={link.href}>
-						<a
-							href={link.href}
-							className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
-							title={collapsed ? link.label : undefined}
-						>
-							<span className="shrink-0">{link.icon}</span>
-							{!collapsed && <span>{link.label}</span>}
-						</a>
-					</li>
-				))}
+				{navItems.map((item, i) => {
+					if (item.type === 'separator') {
+						return (
+							<li key={`sep-${i}`} className="py-1">
+								<div className={`border-t border-slate-800 ${collapsed ? 'mx-1' : 'mx-2'}`} />
+							</li>
+						)
+					}
+					return (
+						<li key={item.href}>
+							<a
+								href={item.href}
+								className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+								title={collapsed ? item.label : undefined}
+							>
+								<span className="shrink-0">{item.icon}</span>
+								{!collapsed && <span>{item.label}</span>}
+							</a>
+						</li>
+					)
+				})}
 			</ul>
 		</nav>
 	)

@@ -397,7 +397,7 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedClips, arti
 							<div key={a.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
 								<div className="flex items-center justify-between">
 									<div className="min-w-0 flex-1">
-										<p className="font-medium text-white">{a.clipTitle}</p>
+										<p className="font-medium text-white">{a.programTitle ?? a.clipTitle ?? 'Untitled'}</p>
 										<p className="mt-0.5 text-xs text-slate-400">
 											{a.profileName} &middot; {a.durationSec}s &middot; {a.publishedAt ? new Date(a.publishedAt).toLocaleString() : ''}
 										</p>

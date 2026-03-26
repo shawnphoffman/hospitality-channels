@@ -28,8 +28,19 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
 		required?: boolean
 	}>
 
-	const profiles = await db.select().from(schema.publishProfiles)
-	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
+	// Find programs that include this clip
+	const programClips = await db
+		.select()
+		.from(schema.programClips)
+		.where(eq(schema.programClips.clipId, clip.id))
+
+	const programIds = programClips.map(pc => pc.programId)
+	const allPrograms = programIds.length > 0
+		? await db.select().from(schema.programs)
+		: []
+	const clipPrograms = allPrograms
+		.filter(p => programIds.includes(p.id))
+		.map(p => ({ id: p.id, title: p.title }))
 
 	return (
 		<ClipEditor
@@ -44,8 +55,7 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
 			templateName={dbTemplate.name ?? registryTemplate?.name ?? 'Unknown'}
 			templateSlug={dbTemplate.slug}
 			fields={fields}
-			profiles={profiles.map(p => ({ id: p.id, name: p.name }))}
-			tunarrConfigured={!!tunarrSetting?.value}
+			programs={clipPrograms}
 		/>
 	)
 }
