@@ -107,7 +107,14 @@ export async function handleRenderJob(job: Job): Promise<string> {
 
 	const audio = await resolveAudioForClip(clipId)
 
-	logger.info('Starting render', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath, audioPath: audio.audioPath, matchAudioDuration: audio.matchAudioDuration })
+	logger.info('Starting render', {
+		clipId,
+		url,
+		durationSec: payload.durationSec,
+		hasAudio: !!audio.audioPath,
+		audioPath: audio.audioPath,
+		matchAudioDuration: audio.matchAudioDuration,
+	})
 
 	const captureResult = await capturePageVideo({
 		url,
@@ -137,6 +144,7 @@ export async function handlePublishJob(job: Job): Promise<string> {
 		exportPath: string
 		fileNamingPattern: string | null
 		outputFormat: string
+		generateNfo?: boolean
 	}
 
 	const clipId = job.clipId ?? 'unknown'
@@ -159,6 +167,7 @@ export async function handlePublishJob(job: Job): Promise<string> {
 			fileNamingPattern: payload.fileNamingPattern ?? undefined,
 		},
 		durationSec: payload.durationSec,
+		generateNfo: payload.generateNfo ?? true,
 	})
 
 	if (!result.success) {
@@ -190,6 +199,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		exportPath: string
 		fileNamingPattern: string | null
 		outputFormat: string
+		generateNfo?: boolean
 	}
 
 	const clipId = job.clipId ?? 'unknown'
@@ -208,7 +218,14 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 
 	const audio = await resolveAudioForClip(clipId)
 
-	logger.info('Starting render+publish', { clipId, url, durationSec: payload.durationSec, hasAudio: !!audio.audioPath, audioPath: audio.audioPath, matchAudioDuration: audio.matchAudioDuration })
+	logger.info('Starting render+publish', {
+		clipId,
+		url,
+		durationSec: payload.durationSec,
+		hasAudio: !!audio.audioPath,
+		audioPath: audio.audioPath,
+		matchAudioDuration: audio.matchAudioDuration,
+	})
 
 	const captureResult = await capturePageVideo({
 		url,
@@ -241,6 +258,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 			fileNamingPattern: payload.fileNamingPattern ?? undefined,
 		},
 		durationSec: actualDuration,
+		generateNfo: payload.generateNfo ?? true,
 	})
 
 	if (!result.success) {
@@ -361,13 +379,14 @@ async function concatenateAudio(audioPaths: string[], outputPath: string): Promi
 	await writeFile(listPath, listContent, 'utf-8')
 
 	const result = await new Promise<{ success: boolean; error?: string }>(resolve => {
-		const proc = spawn('ffmpeg', [
-			'-y', '-f', 'concat', '-safe', '0', '-i', listPath,
-			'-c', 'copy', outputPath,
-		], { stdio: ['ignore', 'pipe', 'pipe'] })
+		const proc = spawn('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', outputPath], {
+			stdio: ['ignore', 'pipe', 'pipe'],
+		})
 
 		let stderr = ''
-		proc.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
+		proc.stderr?.on('data', (chunk: Buffer) => {
+			stderr += chunk.toString()
+		})
 		proc.on('close', code => {
 			if (code === 0) resolve({ success: true })
 			else resolve({ success: false, error: stderr.slice(-500) })
@@ -393,7 +412,7 @@ async function stitchProgramVideo(
 	audioPath: string | null,
 	perClipDuration: number,
 	totalDuration: number,
-	outputPath: string,
+	outputPath: string
 ): Promise<{ success: boolean; error?: string }> {
 	const ffmpegArgs: string[] = ['-y']
 
@@ -426,11 +445,7 @@ async function stitchProgramVideo(
 		ffmpegArgs.push('-t', String(totalDuration))
 	}
 
-	ffmpegArgs.push(
-		'-c:v', 'libx264', '-preset', 'slow', '-crf', '18',
-		'-pix_fmt', 'yuv420p', '-movflags', '+faststart',
-		outputPath,
-	)
+	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
 
 	logger.info('FFmpeg stitch command', { args: ffmpegArgs.join(' '), clips: n, perClipDuration, totalDuration, hasAudio: !!audioPath })
 
@@ -440,7 +455,9 @@ async function stitchProgramVideo(
 		})
 
 		let stderr = ''
-		proc.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
+		proc.stderr?.on('data', (chunk: Buffer) => {
+			stderr += chunk.toString()
+		})
 		proc.on('close', code => {
 			if (code === 0) resolve({ success: true })
 			else resolve({ success: false, error: stderr.slice(-500) })
@@ -475,7 +492,10 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 	await mkdir(outputDir, { recursive: true })
 
 	const slug = payload.programSlug || programId
-	const ts = new Date().toISOString().replace(/[:T]/g, '-').replace(/\.\d+Z$/, '')
+	const ts = new Date()
+		.toISOString()
+		.replace(/[:T]/g, '-')
+		.replace(/\.\d+Z$/, '')
 
 	// Step 1: Capture screenshots for each clip
 	const screenshotPaths: string[] = []
@@ -511,13 +531,7 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 
 	// Step 3: Stitch screenshots + audio into final video
 	const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`)
-	const stitchResult = await stitchProgramVideo(
-		screenshotPaths,
-		combinedAudioPath,
-		perClipDuration,
-		totalDuration,
-		finalPath,
-	)
+	const stitchResult = await stitchProgramVideo(screenshotPaths, combinedAudioPath, perClipDuration, totalDuration, finalPath)
 
 	// Clean up temp files
 	for (const p of screenshotPaths) await unlink(p).catch(() => {})
@@ -551,6 +565,7 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 		exportPath: string
 		fileNamingPattern: string | null
 		outputFormat: string
+		generateNfo?: boolean
 	}
 
 	const programId = job.programId ?? 'unknown'
@@ -579,6 +594,7 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 			fileNamingPattern: payload.fileNamingPattern ?? undefined,
 		},
 		durationSec: finalDuration,
+		generateNfo: payload.generateNfo ?? true,
 	})
 
 	if (!result.success) {

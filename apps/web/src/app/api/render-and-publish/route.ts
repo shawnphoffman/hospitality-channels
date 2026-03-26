@@ -28,6 +28,10 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: 'Publish profile not found' }, { status: 404 })
 	}
 
+	// Check if .nfo generation is enabled
+	const [nfoSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'generate_nfo')).limit(1)
+	const generateNfo = nfoSetting?.value === 'true'
+
 	// Program render-publish
 	if (programId) {
 		const [program] = await db.select().from(schema.programs).where(eq(schema.programs.id, programId)).limit(1)
@@ -72,6 +76,7 @@ export async function POST(request: Request) {
 				exportPath: profile.exportPath,
 				fileNamingPattern: profile.fileNamingPattern,
 				outputFormat: profile.outputFormat,
+				generateNfo,
 			},
 			status: 'queued',
 			outputPath: null,
@@ -103,6 +108,7 @@ export async function POST(request: Request) {
 			exportPath: profile.exportPath,
 			fileNamingPattern: profile.fileNamingPattern,
 			outputFormat: profile.outputFormat,
+			generateNfo,
 		},
 		status: 'queued',
 		outputPath: null,

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, desc } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
 import { notFound } from 'next/navigation'
 import { ProgramEditor } from './program-editor'
@@ -59,6 +59,26 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 
 	const profiles = await db.select().from(schema.publishProfiles)
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
+	const [tunarrMediaPathSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_path')).limit(1)
+
+	// Load published artifacts for this program
+	const artifacts = await db
+		.select()
+		.from(schema.publishedArtifacts)
+		.where(eq(schema.publishedArtifacts.programId, params.id))
+		.orderBy(desc(schema.publishedArtifacts.publishedAt))
+
+	const artifactsWithProfile = artifacts.map(a => {
+		const profile = profiles.find(p => p.id === a.publishProfileId)
+		return {
+			id: a.id,
+			outputPath: a.outputPath,
+			durationSec: a.durationSec,
+			status: a.status,
+			publishedAt: a.publishedAt,
+			profileName: profile?.name ?? 'Unknown',
+		}
+	})
 
 	// Available clips (not already in program)
 	const usedClipIds = new Set(programClips.map(pc => pc.clipId))
@@ -91,6 +111,8 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			imageAssets={imageAssets}
 			profiles={profiles.map(p => ({ id: p.id, name: p.name, exportPath: p.exportPath, fileNamingPattern: p.fileNamingPattern }))}
 			tunarrConfigured={!!tunarrSetting?.value}
+			tunarrMediaPath={tunarrMediaPathSetting?.value ?? ''}
+			artifacts={artifactsWithProfile}
 		/>
 	)
 }

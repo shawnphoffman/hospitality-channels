@@ -195,49 +195,59 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 		setChannels(prev => prev.map(c => (c.id === ch.id ? { ...c, enabled: !c.enabled } : c)))
 	}
 
+	const fetchProgramming = async (ch: ChannelDef) => {
+		if (!ch.tunarrChannelId) return
+		setLoadingProgramming(ch.id)
+		try {
+			const res = await fetch(`/api/tunarr/channels/${ch.tunarrChannelId}/programming`)
+			if (res.ok) {
+				const data = await res.json()
+				// Handle multiple possible Tunarr response shapes
+				let programList: Array<{ title?: string; duration?: number; originalProgram?: { title?: string; duration?: number } }>
+				if (Array.isArray(data)) {
+					programList = data
+				} else if (Array.isArray(data.programs)) {
+					programList = data.programs
+				} else if (data.lineup && Array.isArray(data.lineup)) {
+					programList = data.lineup
+				} else if (data.programs && typeof data.programs === 'object') {
+					programList = Object.values(data.programs)
+				} else {
+					programList = []
+				}
+				const progs: ProgramInfo[] = programList.map(p => ({
+					title: p.title ?? p.originalProgram?.title ?? 'Untitled',
+					duration: p.duration ?? p.originalProgram?.duration ?? 0,
+				}))
+				setProgramming(prev => ({ ...prev, [ch.id]: progs }))
+			} else {
+				setProgramming(prev => ({ ...prev, [ch.id]: [] }))
+			}
+		} catch {
+			setProgramming(prev => ({ ...prev, [ch.id]: [] }))
+		} finally {
+			setLoadingProgramming(null)
+		}
+	}
+
 	const handleToggleProgramming = async (ch: ChannelDef) => {
 		if (expandedId === ch.id) {
 			setExpandedId(null)
 			return
 		}
 		setExpandedId(ch.id)
-		if (!programming[ch.id] && ch.tunarrChannelId) {
-			setLoadingProgramming(ch.id)
-			try {
-				const res = await fetch(`/api/tunarr/channels/${ch.tunarrChannelId}/programming`)
-				if (res.ok) {
-					const data = await res.json()
-					console.log('Programming response for channel', ch.tunarrChannelId, JSON.stringify(data).slice(0, 500))
-					// Handle multiple possible Tunarr response shapes
-					let programList: Array<{ title?: string; duration?: number; originalProgram?: { title?: string; duration?: number } }>
-					if (Array.isArray(data)) {
-						programList = data
-					} else if (Array.isArray(data.programs)) {
-						programList = data.programs
-					} else if (data.lineup && Array.isArray(data.lineup)) {
-						// Condensed format: lineup entries may contain program info directly
-						programList = data.lineup
-					} else if (data.programs && typeof data.programs === 'object') {
-						programList = Object.values(data.programs)
-					} else {
-						programList = []
-					}
-					const programs: ProgramInfo[] = programList.map(p => ({
-						title: p.title ?? p.originalProgram?.title ?? 'Untitled',
-						duration: p.duration ?? p.originalProgram?.duration ?? 0,
-					}))
-					setProgramming(prev => ({ ...prev, [ch.id]: programs }))
-				} else {
-					console.error('Programming fetch failed:', res.status)
-					setProgramming(prev => ({ ...prev, [ch.id]: [] }))
-				}
-			} catch (err) {
-				console.error('Failed to load programming:', err)
-				setProgramming(prev => ({ ...prev, [ch.id]: [] }))
-			} finally {
-				setLoadingProgramming(null)
-			}
+		if (!programming[ch.id]) {
+			await fetchProgramming(ch)
 		}
+	}
+
+	const handleRefreshProgramming = async (ch: ChannelDef) => {
+		setProgramming(prev => {
+			const next = { ...prev }
+			delete next[ch.id]
+			return next
+		})
+		await fetchProgramming(ch)
 	}
 
 	const handlePush = async (ch: ChannelDef) => {
@@ -599,6 +609,16 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 								{/* Programming panel */}
 								{expandedId === ch.id && (
 									<div className="mt-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+										<div className="mb-2 flex items-center justify-between">
+											<span className="text-xs font-medium text-slate-400">Channel Programming</span>
+											<button
+												onClick={() => handleRefreshProgramming(ch)}
+												disabled={loadingProgramming === ch.id}
+												className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
+											>
+												{loadingProgramming === ch.id ? 'Loading...' : 'Refresh'}
+											</button>
+										</div>
 										{loadingProgramming === ch.id ? (
 											<p className="text-sm text-slate-400">Loading programming...</p>
 										) : programming[ch.id] && programming[ch.id].length > 0 ? (

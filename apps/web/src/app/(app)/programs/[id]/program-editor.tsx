@@ -48,6 +48,15 @@ interface TunarrChannel {
 	name: string
 }
 
+interface ArtifactData {
+	id: string
+	outputPath: string
+	durationSec: number
+	status: string
+	publishedAt: string | null
+	profileName: string
+}
+
 interface ProgramEditorProps {
 	program: ProgramData
 	clips: ProgramClip[]
@@ -57,6 +66,8 @@ interface ProgramEditorProps {
 	imageAssets: { id: string; originalPath: string }[]
 	profiles: { id: string; name: string; exportPath: string; fileNamingPattern: string | null }[]
 	tunarrConfigured?: boolean
+	tunarrMediaPath?: string
+	artifacts?: ArtifactData[]
 }
 
 function formatDuration(sec: number): string {
@@ -75,6 +86,8 @@ export function ProgramEditor({
 	imageAssets,
 	profiles,
 	tunarrConfigured,
+	tunarrMediaPath = '',
+	artifacts: initialArtifacts = [],
 }: ProgramEditorProps) {
 	const router = useRouter()
 
@@ -88,7 +101,11 @@ export function ProgramEditor({
 		const asset = imageAssets.find(a => a.id === program.iconAssetId)
 		return asset ? `/api/assets/serve?path=${encodeURIComponent(asset.originalPath)}` : ''
 	})
-	const [durationMode, setDurationMode] = useState(program.durationMode)
+	// Default duration mode: use saved value, but for new programs default to manual if no audio tracks
+	const [durationMode, setDurationMode] = useState<'auto' | 'manual'>(() => {
+		if (program.durationMode === 'auto' && initialTracks.length === 0) return 'manual'
+		return program.durationMode
+	})
 	const [manualDurationSec, setManualDurationSec] = useState(program.manualDurationSec ?? 60)
 
 	// Resolve iconUrl → asset ID for saving
@@ -120,13 +137,21 @@ export function ProgramEditor({
 	const [rendering, setRendering] = useState(false)
 	const [renderingProfileId, setRenderingProfileId] = useState<string | null>(null)
 
-	// Tunarr push state
-	const [showPush, setShowPush] = useState(false)
+	// Tunarr push state (for artifacts)
+	const [pushingArtifactId, setPushingArtifactId] = useState<string | null>(null)
 	const [tunarrChannels, setTunarrChannels] = useState<TunarrChannel[]>([])
+	const [loadingChannels, setLoadingChannels] = useState(false)
 	const [selectedChannelId, setSelectedChannelId] = useState('')
 	const [pushMode, setPushMode] = useState<'append' | 'replace'>('append')
 	const [pushing, setPushing] = useState(false)
 	const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+	// Auto-switch to auto duration when tracks are added
+	useEffect(() => {
+		if (tracks.length > 0 && durationMode === 'manual' && program.durationMode !== 'manual') {
+			setDurationMode('auto')
+		}
+	}, [tracks.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Computed duration
 	const audioDuration = tracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
@@ -202,7 +227,7 @@ export function ProgramEditor({
 		setError(null)
 		setSuccessMsg(null)
 		setRenderJob(null)
-		setShowPush(false)
+		setPushingArtifactId(null)
 		setPushResult(null)
 		setRenderingProfileId(profileId)
 		try {
@@ -279,7 +304,6 @@ export function ProgramEditor({
 			if (res.ok) {
 				setAddClipId('')
 				router.refresh()
-				// Refetch clips
 				const listRes = await fetch(`/api/programs/${program.id}`)
 				if (listRes.ok) {
 					const data = await listRes.json()
@@ -311,7 +335,6 @@ export function ProgramEditor({
 		const temp = updated[index]
 		updated[index] = updated[newIndex]
 		updated[newIndex] = temp
-		// Update positions
 		const reordered = updated.map((c, i) => ({ ...c, position: i }))
 		setClips(reordered)
 		await fetch(`/api/programs/${program.id}/clips`, {
@@ -327,7 +350,6 @@ export function ProgramEditor({
 		const body: Record<string, unknown> = {}
 		if (addAudioAssetId) {
 			body.assetId = addAudioAssetId
-			// Resolve the URL for the asset
 			body.audioUrl = `/api/assets/serve?path=${encodeURIComponent(audioAssets.find(a => a.id === addAudioAssetId)?.filename ?? '')}`
 		} else {
 			body.audioUrl = addAudioUrl
@@ -380,14 +402,13 @@ export function ProgramEditor({
 		})
 	}
 
-	// Probe assets for missing metadata (duration/dimensions)
+	// Probe assets for missing metadata
 	const [probing, setProbing] = useState(false)
 	const handleProbeAssets = async () => {
 		setProbing(true)
 		try {
 			const res = await fetch('/api/assets/probe', { method: 'POST' })
 			if (res.ok) {
-				// Reload tracks from server to get updated durations
 				const tracksRes = await fetch(`/api/programs/${program.id}/audio-tracks`)
 				if (tracksRes.ok) {
 					const enrichedTracks = await tracksRes.json()
@@ -419,35 +440,44 @@ export function ProgramEditor({
 		}
 	}
 
-	// Tunarr push
-	const handleOpenPush = async () => {
-		setShowPush(true)
+	// Tunarr push for artifacts
+	const handleOpenPush = async (artifactId: string) => {
+		if (pushingArtifactId === artifactId) {
+			setPushingArtifactId(null)
+			return
+		}
+		setPushingArtifactId(artifactId)
 		setPushResult(null)
-		try {
-			const res = await fetch('/api/tunarr/channels')
-			if (res.ok) {
-				const channels: TunarrChannel[] = await res.json()
-				setTunarrChannels(channels)
-				if (channels.length > 0) setSelectedChannelId(channels[0].id)
+		setSelectedChannelId('')
+
+		if (tunarrChannels.length === 0) {
+			setLoadingChannels(true)
+			try {
+				const res = await fetch('/api/tunarr/channels')
+				if (res.ok) {
+					const channels: TunarrChannel[] = await res.json()
+					setTunarrChannels(channels)
+					if (channels.length > 0) setSelectedChannelId(channels[0].id)
+				}
+			} catch {
+				/* empty */
+			} finally {
+				setLoadingChannels(false)
 			}
-		} catch {
-			/* empty */
+		} else if (tunarrChannels.length > 0) {
+			setSelectedChannelId(tunarrChannels[0].id)
 		}
 	}
 
 	const handlePush = async () => {
-		if (!selectedChannelId || !renderJob?.outputPath) return
+		if (!pushingArtifactId || !selectedChannelId) return
 		setPushing(true)
 		setPushResult(null)
 		try {
 			const res = await fetch('/api/tunarr/push', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					artifactOutputPath: renderJob.outputPath,
-					channelId: selectedChannelId,
-					mode: pushMode,
-				}),
+				body: JSON.stringify({ artifactId: pushingArtifactId, channelId: selectedChannelId, mode: pushMode }),
 			})
 			if (res.ok) {
 				const data = await res.json()
@@ -462,6 +492,11 @@ export function ProgramEditor({
 		} finally {
 			setPushing(false)
 		}
+	}
+
+	const isInTunarrPath = (outputPath: string) => {
+		if (!tunarrMediaPath) return false
+		return outputPath.startsWith(tunarrMediaPath)
 	}
 
 	return (
@@ -616,7 +651,6 @@ export function ProgramEditor({
 							<div className="space-y-2">
 								{clips.map((clip, i) => (
 									<div key={clip.programClipId} className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 p-2">
-										{/* Preview thumbnail */}
 										<div className="h-12 w-20 shrink-0 overflow-hidden rounded bg-slate-900">
 											<iframe
 												src={`/clips/${clip.clipId}/render`}
@@ -673,7 +707,6 @@ export function ProgramEditor({
 							</div>
 						)}
 
-						{/* Add clip */}
 						<div className="mt-3 flex gap-2">
 							<select
 								value={addClipId}
@@ -732,7 +765,7 @@ export function ProgramEditor({
 														disabled={probing}
 														className="text-amber-400 underline decoration-amber-400/40 hover:text-amber-300 disabled:opacity-50"
 													>
-														{probing ? 'Detecting duration…' : 'Duration unknown — click to detect'}
+														{probing ? 'Detecting duration...' : 'Duration unknown — click to detect'}
 													</button>
 												)}
 											</p>
@@ -774,7 +807,6 @@ export function ProgramEditor({
 							</div>
 						)}
 
-						{/* Add audio */}
 						<div className="mt-3 space-y-2">
 							{audioAssets.length > 0 && (
 								<div className="flex gap-2">
@@ -845,77 +877,12 @@ export function ProgramEditor({
 							{renderJob.status === 'queued' && 'Render & publish job queued...'}
 							{renderJob.status === 'processing' && 'Rendering and publishing... This may take a few minutes.'}
 							{renderJob.status === 'completed' && (
-								<div className="flex items-center gap-3">
-									<span>
-										Rendered and published!
-										{renderJob.outputPath && <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>}
-									</span>
-									{tunarrConfigured && !showPush && (
-										<button
-											onClick={handleOpenPush}
-											className="rounded border border-purple-700 px-3 py-1 text-xs font-medium text-purple-400 hover:bg-purple-950"
-										>
-											Push to Tunarr
-										</button>
-									)}
-								</div>
+								<span>
+									Rendered and published!
+									{renderJob.outputPath && <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>}
+								</span>
 							)}
 							{renderJob.status === 'failed' && <>Failed{renderJob.error ? `: ${renderJob.error}` : ''}</>}
-						</div>
-					)}
-
-					{/* Tunarr push panel */}
-					{showPush && (
-						<div className="mb-3 rounded-lg border border-purple-800 bg-purple-950/30 p-4">
-							{tunarrChannels.length === 0 ? (
-								<p className="text-sm text-slate-400">No Tunarr channels found.</p>
-							) : (
-								<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-									<select
-										value={selectedChannelId}
-										onChange={e => setSelectedChannelId(e.target.value)}
-										className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none md:w-auto"
-									>
-										{tunarrChannels.map(ch => (
-											<option key={ch.id} value={ch.id}>
-												{ch.number}. {ch.name}
-											</option>
-										))}
-									</select>
-									<div className="flex gap-4">
-										<label className="flex items-center gap-2 text-sm text-slate-300">
-											<input
-												type="radio"
-												name="push-mode"
-												checked={pushMode === 'append'}
-												onChange={() => setPushMode('append')}
-												className="accent-purple-500"
-											/>
-											Add
-										</label>
-										<label className="flex items-center gap-2 text-sm text-slate-300">
-											<input
-												type="radio"
-												name="push-mode"
-												checked={pushMode === 'replace'}
-												onChange={() => setPushMode('replace')}
-												className="accent-purple-500"
-											/>
-											Replace
-										</label>
-									</div>
-									<button
-										onClick={handlePush}
-										disabled={pushing}
-										className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 md:w-auto"
-									>
-										{pushing ? 'Pushing...' : 'Push'}
-									</button>
-									{pushResult && (
-										<span className={`text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</span>
-									)}
-								</div>
-							)}
 						</div>
 					)}
 
@@ -941,6 +908,109 @@ export function ProgramEditor({
 								</button>
 							</div>
 						))}
+					</div>
+				</section>
+			)}
+
+			{/* Artifacts section */}
+			{initialArtifacts.length > 0 && (
+				<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+					<h3 className="mb-3 text-sm font-semibold text-slate-300">Published Artifacts</h3>
+					<div className="space-y-2">
+						{initialArtifacts.map(a => {
+							const showTunarrPush = tunarrConfigured && a.status === 'published' && isInTunarrPath(a.outputPath)
+							return (
+								<div key={a.id} className="rounded-lg border border-slate-700 bg-slate-800 p-3">
+									<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+										<div className="min-w-0 flex-1">
+											<div className="flex flex-wrap items-center gap-2">
+												<span
+													className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+														a.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-slate-700 text-slate-400'
+													}`}
+												>
+													{a.status}
+												</span>
+												<span className="text-xs text-slate-400">
+													{a.profileName} &middot; {a.durationSec}s
+													{a.publishedAt && <> &middot; {new Date(a.publishedAt).toLocaleString()}</>}
+												</span>
+											</div>
+											<p className="mt-0.5 truncate text-xs text-slate-500">{a.outputPath}</p>
+										</div>
+										{showTunarrPush && (
+											<button
+												onClick={() => handleOpenPush(a.id)}
+												className={`w-full rounded-lg px-3 py-1.5 text-xs font-medium transition-colors md:w-auto ${
+													pushingArtifactId === a.id
+														? 'bg-purple-600 text-white'
+														: 'border border-purple-700 text-purple-400 hover:bg-purple-950'
+												}`}
+											>
+												Push to Tunarr
+											</button>
+										)}
+									</div>
+
+									{/* Tunarr push panel */}
+									{pushingArtifactId === a.id && (
+										<div className="mt-3 rounded-lg border border-purple-800 bg-purple-950/30 p-3">
+											{loadingChannels ? (
+												<p className="text-sm text-slate-400">Loading channels...</p>
+											) : tunarrChannels.length === 0 ? (
+												<p className="text-sm text-slate-400">No Tunarr channels found.</p>
+											) : (
+												<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+													<select
+														value={selectedChannelId}
+														onChange={e => setSelectedChannelId(e.target.value)}
+														className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none md:w-auto"
+													>
+														{tunarrChannels.map(ch => (
+															<option key={ch.id} value={ch.id}>
+																{ch.number}. {ch.name}
+															</option>
+														))}
+													</select>
+													<div className="flex gap-4">
+														<label className="flex items-center gap-2 text-sm text-slate-300">
+															<input
+																type="radio"
+																name={`push-mode-${a.id}`}
+																checked={pushMode === 'append'}
+																onChange={() => setPushMode('append')}
+																className="accent-purple-500"
+															/>
+															Add
+														</label>
+														<label className="flex items-center gap-2 text-sm text-slate-300">
+															<input
+																type="radio"
+																name={`push-mode-${a.id}`}
+																checked={pushMode === 'replace'}
+																onChange={() => setPushMode('replace')}
+																className="accent-purple-500"
+															/>
+															Replace
+														</label>
+													</div>
+													<button
+														onClick={handlePush}
+														disabled={pushing}
+														className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 md:w-auto"
+													>
+														{pushing ? 'Pushing...' : 'Push'}
+													</button>
+													{pushResult && (
+														<span className={`text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</span>
+													)}
+												</div>
+											)}
+										</div>
+									)}
+								</div>
+							)
+						})}
 					</div>
 				</section>
 			)}

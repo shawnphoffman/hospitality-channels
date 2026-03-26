@@ -12,27 +12,19 @@ export default async function ChannelsPage() {
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
 	const tunarrConfigured = !!tunarrSetting?.value
 
-	// Find latest artifact per clip/program
-	const tunarrProfile = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.name, 'Tunarr Export')).limit(1)
-	const tunarrProfileId = tunarrProfile[0]?.id
-
-	let artifactsByKey: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
-	if (tunarrProfileId) {
-		const artifacts = await db
-			.select()
-			.from(schema.publishedArtifacts)
-			.where(eq(schema.publishedArtifacts.publishProfileId, tunarrProfileId))
-		for (const a of artifacts) {
-			const key = a.clipId ?? a.programId
-			if (!key) continue
-			const existing = artifactsByKey[key]
-			if (!existing || (a.publishedAt ?? '') > (existing.publishedAt ?? '')) {
-				artifactsByKey[key] = {
-					id: a.id,
-					outputPath: a.outputPath,
-					durationSec: a.durationSec,
-					publishedAt: a.publishedAt,
-				}
+	// Find latest artifact per clip/program (from any profile)
+	const allArtifacts = await db.select().from(schema.publishedArtifacts)
+	const artifactsByKey: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
+	for (const a of allArtifacts) {
+		const key = a.clipId ?? a.programId
+		if (!key) continue
+		const existing = artifactsByKey[key]
+		if (!existing || (a.publishedAt ?? '') > (existing.publishedAt ?? '')) {
+			artifactsByKey[key] = {
+				id: a.id,
+				outputPath: a.outputPath,
+				durationSec: a.durationSec,
+				publishedAt: a.publishedAt,
 			}
 		}
 	}
