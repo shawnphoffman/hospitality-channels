@@ -118,7 +118,7 @@ export function ProgramEditor({
 	// Render state
 	const [renderJob, setRenderJob] = useState<JobData | null>(null)
 	const [rendering, setRendering] = useState(false)
-	const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id ?? '')
+	const [renderingProfileId, setRenderingProfileId] = useState<string | null>(null)
 
 	// Tunarr push state
 	const [showPush, setShowPush] = useState(false)
@@ -196,14 +196,15 @@ export function ProgramEditor({
 		}
 	}
 
-	const handleSaveAndPublish = async () => {
-		if (!title.trim() || !selectedProfileId) return
+	const handleSaveAndPublish = async (profileId: string) => {
+		if (!title.trim() || !profileId) return
 		setSaving(true)
 		setError(null)
 		setSuccessMsg(null)
 		setRenderJob(null)
 		setShowPush(false)
 		setPushResult(null)
+		setRenderingProfileId(profileId)
 		try {
 			// Save first
 			await fetch(`/api/programs/${program.id}`, {
@@ -226,7 +227,7 @@ export function ProgramEditor({
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					programId: program.id,
-					profileId: selectedProfileId,
+					profileId,
 					durationSec: computedDuration,
 				}),
 			})
@@ -473,20 +474,7 @@ export function ProgramEditor({
 						{slug} &middot; {formatDuration(computedDuration)} total &middot; {clips.length} clip{clips.length !== 1 ? 's' : ''}
 					</p>
 				</div>
-				<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-					{profiles.length > 0 && (
-						<select
-							value={selectedProfileId}
-							onChange={e => setSelectedProfileId(e.target.value)}
-							className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none md:w-auto"
-						>
-							{profiles.map(p => (
-								<option key={p.id} value={p.id}>
-									{p.name}
-								</option>
-							))}
-						</select>
-					)}
+				<div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
 					<button
 						onClick={handleSave}
 						disabled={saving}
@@ -494,15 +482,16 @@ export function ProgramEditor({
 					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
-					{profiles.length > 0 && (
+					{profiles.map(p => (
 						<button
-							onClick={handleSaveAndPublish}
-							disabled={saving || rendering || !selectedProfileId || clips.length === 0}
+							key={p.id}
+							onClick={() => handleSaveAndPublish(p.id)}
+							disabled={saving || rendering || clips.length === 0}
 							className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 md:w-auto"
 						>
-							{rendering ? 'Working...' : 'Save & Publish'}
+							{rendering && renderingProfileId === p.id ? 'Working...' : `Save & Publish to ${p.name}`}
 						</button>
-					)}
+					))}
 					<a href="/programs" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">
 						Back
 					</a>

@@ -21,7 +21,7 @@ export function RenderScene({ templateSlug, data }: RenderSceneProps) {
 
 	return (
 		<div style={{ width: 1920, height: 1080, overflow: 'hidden' }}>
-			<Scene data={data} />
+			<Scene data={data} renderMode />
 		</div>
 	)
 }

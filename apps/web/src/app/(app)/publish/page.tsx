@@ -9,34 +9,8 @@ export default async function PublishPage() {
 	const profiles = await db.select().from(schema.publishProfiles)
 	const artifacts = await db.select().from(schema.publishedArtifacts).orderBy(desc(schema.publishedArtifacts.publishedAt))
 
-	const renderJobs = await db.select().from(schema.jobs).where(eq(schema.jobs.type, 'render')).orderBy(desc(schema.jobs.createdAt))
-
-	const completedRenders = renderJobs.filter(j => j.status === 'completed' && j.outputPath)
-
 	const clips = await db.select().from(schema.clips)
 	const programs = await db.select().from(schema.programs)
-
-	const clipsWithRenders = completedRenders
-		.map(job => {
-			const clip = clips.find(c => c.id === job.clipId)
-			if (!clip) return null
-			return {
-				clipId: clip.id,
-				clipTitle: clip.title,
-				clipSlug: clip.slug,
-				renderJobId: job.id,
-				outputPath: job.outputPath!,
-				renderedAt: job.completedAt ?? job.createdAt,
-			}
-		})
-		.filter(Boolean) as Array<{
-		clipId: string
-		clipTitle: string
-		clipSlug: string
-		renderJobId: string
-		outputPath: string
-		renderedAt: string
-	}>
 
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
 	const tunarrConfigured = !!tunarrSetting?.value
@@ -83,7 +57,6 @@ export default async function PublishPage() {
 					exportPath: p.exportPath,
 					fileNamingPattern: p.fileNamingPattern,
 				}))}
-				renderedClips={clipsWithRenders}
 				artifacts={artifactsWithDetails.map(a => ({
 					id: a.id,
 					clipId: a.clipId,
