@@ -3,7 +3,9 @@ import { dequeue, completeJob, failJob } from "./queue.js";
 import {
   handleRenderJob,
   handlePublishJob,
-  handleRenderPublishJob
+  handleRenderPublishJob,
+  handleRenderProgramJob,
+  handleRenderProgramPublishJob,
 } from "./handlers.js";
 
 const logger = createLogger("worker");
@@ -27,6 +29,12 @@ async function processNextJob(): Promise<boolean> {
         break;
       case "render-publish":
         outputPath = await handleRenderPublishJob(job);
+        break;
+      case "render-program":
+        outputPath = await handleRenderProgramJob(job);
+        break;
+      case "render-program-publish":
+        outputPath = await handleRenderProgramPublishJob(job);
         break;
       default:
         throw new Error(`Unknown job type: ${job.type}`);

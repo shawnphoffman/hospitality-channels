@@ -5,7 +5,7 @@ import { RENDER_DEFAULTS, RENDER_RESOLUTION, createLogger } from '@hospitality-c
 
 const logger = createLogger('render-core:capture')
 
-function probeDuration(filePath: string): Promise<number> {
+export function probeDuration(filePath: string): Promise<number> {
 	return new Promise((resolve) => {
 		execFile('ffprobe', [
 			'-v', 'quiet',

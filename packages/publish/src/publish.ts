@@ -7,8 +7,12 @@ const logger = createLogger("publish");
 
 export interface PublishArtifactInput {
   sourcePath: string;
-  clipId: string;
-  clipTitle: string;
+  clipId?: string;
+  clipTitle?: string;
+  programId?: string;
+  programTitle?: string;
+  programDescription?: string;
+  programSummary?: string;
   profile: PublishProfile;
   posterPath?: string;
   durationSec: number;
@@ -27,15 +31,19 @@ function sanitizeFilename(str: string): string {
 }
 
 export async function publishArtifact(input: PublishArtifactInput): Promise<PublishArtifactResult> {
-  const { sourcePath, clipId, clipTitle, profile, posterPath, durationSec } = input;
+  const { sourcePath, clipId, clipTitle, programId, programTitle, programDescription, programSummary, profile, posterPath, durationSec } = input;
+
+  const id = programId ?? clipId ?? 'unknown';
+  const title = programTitle ?? clipTitle ?? 'Untitled';
 
   const baseName = profile.fileNamingPattern
     ? profile.fileNamingPattern
-        .replace("{clipId}", clipId)
-        .replace("{pageId}", clipId)
-        .replace("{title}", sanitizeFilename(clipTitle))
+        .replace("{clipId}", id)
+        .replace("{pageId}", id)
+        .replace("{programId}", programId ?? '')
+        .replace("{title}", sanitizeFilename(title))
         .replace("{timestamp}", Date.now().toString())
-    : `${sanitizeFilename(clipTitle)}-${clipId.slice(0, 8)}.mp4`;
+    : `${sanitizeFilename(title)}-${id.slice(0, 8)}.mp4`;
 
   const outputPath = path.join(profile.exportPath, baseName);
 
@@ -53,16 +61,26 @@ export async function publishArtifact(input: PublishArtifactInput): Promise<Publ
     }
 
     const nfoPath = path.join(profile.exportPath, `${path.basename(outputPath, ".mp4")}.nfo`);
-    const nfoContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<episodedetails>
-  <title>${escapeXml(clipTitle)}</title>
-  <runtime>${Math.round(durationSec)}</runtime>
-  <thumb>${resultPosterPath ? path.basename(resultPosterPath) : ""}</thumb>
-</episodedetails>`;
+    const nfoLines = [
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      '<episodedetails>',
+      `  <title>${escapeXml(title)}</title>`,
+      `  <runtime>${Math.round(durationSec)}</runtime>`,
+      `  <thumb>${resultPosterPath ? path.basename(resultPosterPath) : ""}</thumb>`,
+    ];
+    if (programDescription) {
+      nfoLines.push(`  <plot>${escapeXml(programDescription)}</plot>`);
+    }
+    if (programSummary) {
+      nfoLines.push(`  <outline>${escapeXml(programSummary)}</outline>`);
+    }
+    nfoLines.push(`  <aired>${new Date().toISOString().split('T')[0]}</aired>`);
+    nfoLines.push('</episodedetails>');
+    const nfoContent = nfoLines.join('\n');
 
     await writeFile(nfoPath, nfoContent, "utf-8");
 
-    logger.info("Published artifact", { outputPath, clipId });
+    logger.info("Published artifact", { outputPath, id, title });
 
     return {
       outputPath,

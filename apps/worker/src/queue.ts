@@ -10,6 +10,7 @@ export interface Job {
   id: string;
   type: string;
   clipId: string | null;
+  programId: string | null;
   profileId: string | null;
   payload: Record<string, unknown>;
   status: string;
