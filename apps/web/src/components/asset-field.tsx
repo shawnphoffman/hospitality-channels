@@ -137,7 +137,9 @@ export function AssetField({
 						<div className="flex flex-1 items-center">
 							<span className="truncate text-sm text-slate-400">
 								{value
-									? decodeURIComponent(value.split('path=')[1] ?? '').split('/').pop()
+									? decodeURIComponent(value.split('path=')[1] ?? '')
+											.split('/')
+											.pop()
 									: 'No asset selected'}
 							</span>
 						</div>

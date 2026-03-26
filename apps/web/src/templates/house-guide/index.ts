@@ -1,1 +1,1 @@
-export { HouseGuideScene } from "./scene";
+export { HouseGuideScene } from './scene'

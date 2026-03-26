@@ -13,11 +13,7 @@ export default async function ChannelsPage() {
 	const tunarrConfigured = !!tunarrSetting?.value
 
 	// Find latest artifact per clip/program
-	const tunarrProfile = await db
-		.select()
-		.from(schema.publishProfiles)
-		.where(eq(schema.publishProfiles.name, 'Tunarr Export'))
-		.limit(1)
+	const tunarrProfile = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.name, 'Tunarr Export')).limit(1)
 	const tunarrProfileId = tunarrProfile[0]?.id
 
 	let artifactsByKey: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
@@ -45,7 +41,7 @@ export default async function ChannelsPage() {
 		const clip = ch.clipId ? clips.find(c => c.id === ch.clipId) : null
 		const program = ch.programId ? programs.find(p => p.id === ch.programId) : null
 		const key = ch.programId ?? ch.clipId
-		const artifact = key ? artifactsByKey[key] ?? null : null
+		const artifact = key ? (artifactsByKey[key] ?? null) : null
 		return {
 			...ch,
 			clipTitle: clip?.title ?? null,
@@ -57,12 +53,7 @@ export default async function ChannelsPage() {
 	return (
 		<div>
 			<h2 className="mb-6 text-2xl font-bold text-white">Channels</h2>
-			<ChannelsClient
-				initialChannels={channelsWithDetails}
-				clips={clips}
-				programs={programs}
-				tunarrConfigured={tunarrConfigured}
-			/>
+			<ChannelsClient initialChannels={channelsWithDetails} clips={clips} programs={programs} tunarrConfigured={tunarrConfigured} />
 		</div>
 	)
 }

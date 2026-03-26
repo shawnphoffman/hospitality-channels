@@ -39,10 +39,7 @@ export async function POST(request: Request) {
 			.limit(1)
 
 		if (!latestRender?.outputPath) {
-			return NextResponse.json(
-				{ error: 'No completed render found for this program. Render the program first.' },
-				{ status: 400 }
-			)
+			return NextResponse.json({ error: 'No completed render found for this program. Render the program first.' }, { status: 400 })
 		}
 
 		const job = {

@@ -1,16 +1,16 @@
-"use client";
+'use client'
 
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeSVG } from 'qrcode.react'
 
 interface WifiQrCodeProps {
-  ssid: string;
-  password: string;
-  /** QR code size in pixels (default 160) */
-  size?: number;
+	ssid: string
+	password: string
+	/** QR code size in pixels (default 160) */
+	size?: number
 }
 
 function escapeWifiField(value: string): string {
-  return value.replace(/([\\;,":])/, "\\$1");
+	return value.replace(/([\\;,":])/, '\\$1')
 }
 
 /**
@@ -18,19 +18,11 @@ function escapeWifiField(value: string): string {
  * Uses the standard WIFI: URI scheme (WPA assumed).
  */
 export function WifiQrCode({ ssid, password, size = 160 }: WifiQrCodeProps) {
-  const wifiString = `WIFI:T:WPA;S:${escapeWifiField(ssid)};P:${escapeWifiField(
-    password
-  )};;`;
+	const wifiString = `WIFI:T:WPA;S:${escapeWifiField(ssid)};P:${escapeWifiField(password)};;`
 
-  return (
-    <div className="rounded-xl bg-white p-3" style={{ lineHeight: 0 }}>
-      <QRCodeSVG
-        value={wifiString}
-        size={size}
-        bgColor="#ffffff"
-        fgColor="#0f172a"
-        level="M"
-      />
-    </div>
-  );
+	return (
+		<div className="rounded-xl bg-white p-3" style={{ lineHeight: 0 }}>
+			<QRCodeSVG value={wifiString} size={size} bgColor="#ffffff" fgColor="#0f172a" level="M" />
+		</div>
+	)
 }

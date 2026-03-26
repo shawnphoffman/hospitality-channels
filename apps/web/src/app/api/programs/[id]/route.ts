@@ -27,9 +27,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 	// Enrich clips with clip details
 	const clipIds = clips.map(c => c.clipId)
-	const clipDetails = clipIds.length > 0
-		? await db.select().from(schema.clips)
-		: []
+	const clipDetails = clipIds.length > 0 ? await db.select().from(schema.clips) : []
 
 	const enrichedClips = clips.map(pc => {
 		const clip = clipDetails.find(c => c.id === pc.clipId)
@@ -41,9 +39,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 	// Enrich audio tracks with asset details
 	const assetIds = audioTracks.filter(t => t.assetId).map(t => t.assetId!)
-	const assetDetails = assetIds.length > 0
-		? await db.select().from(schema.assets)
-		: []
+	const assetDetails = assetIds.length > 0 ? await db.select().from(schema.assets) : []
 
 	const enrichedTracks = audioTracks.map(t => {
 		const asset = t.assetId ? assetDetails.find(a => a.id === t.assetId) : null

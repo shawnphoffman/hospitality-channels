@@ -146,18 +146,28 @@ export function ProgramEditor({
 						setRendering(false)
 					}
 				}
-			} catch { /* poll retry */ }
+			} catch {
+				/* poll retry */
+			}
 		}, 2000)
 		return () => clearInterval(interval)
 	}, [renderJob])
 
 	const handleTitleChange = (val: string) => {
 		setTitle(val)
-		setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+		setSlug(
+			val
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/(^-|-$)/g, '')
+		)
 	}
 
 	const handleSave = async () => {
-		if (!title.trim()) { setError('Title is required'); return }
+		if (!title.trim()) {
+			setError('Title is required')
+			return
+		}
 		setSaving(true)
 		setError(null)
 		setSuccessMsg(null)
@@ -225,9 +235,13 @@ export function ProgramEditor({
 			} else {
 				const err = await res.json().catch(() => ({}))
 				setRenderJob({
-					id: '', type: 'render-program-publish', status: 'failed',
-					outputPath: null, error: err.error || 'Failed to start render & publish',
-					createdAt: new Date().toISOString(), completedAt: null,
+					id: '',
+					type: 'render-program-publish',
+					status: 'failed',
+					outputPath: null,
+					error: err.error || 'Failed to start render & publish',
+					createdAt: new Date().toISOString(),
+					completedAt: null,
 				})
 				setRendering(false)
 			}
@@ -268,16 +282,20 @@ export function ProgramEditor({
 				const listRes = await fetch(`/api/programs/${program.id}`)
 				if (listRes.ok) {
 					const data = await listRes.json()
-					setClips(data.clips?.map((c: { id: string; clipId: string; position: number; clip: { title: string; templateId: string } | null }) => ({
-						programClipId: c.id,
-						clipId: c.clipId,
-						position: c.position,
-						title: c.clip?.title ?? 'Unknown',
-						templateName: '',
-					})) ?? [])
+					setClips(
+						data.clips?.map((c: { id: string; clipId: string; position: number; clip: { title: string; templateId: string } | null }) => ({
+							programClipId: c.id,
+							clipId: c.clipId,
+							position: c.position,
+							title: c.clip?.title ?? 'Unknown',
+							templateName: '',
+						})) ?? []
+					)
 				}
 			}
-		} catch { /* empty */ }
+		} catch {
+			/* empty */
+		}
 	}
 
 	const handleRemoveClip = async (clipId: string) => {
@@ -321,20 +339,23 @@ export function ProgramEditor({
 			})
 			if (res.ok) {
 				const track = await res.json()
-				setTracks(prev => [...prev, {
-					id: track.id,
-					position: track.position,
-					assetId: track.assetId,
-					audioUrl: track.audioUrl,
-					durationSec: track.durationSec,
-					filename: addAudioAssetId
-						? audioAssets.find(a => a.id === addAudioAssetId)?.filename ?? 'audio'
-						: addAudioUrl,
-				}])
+				setTracks(prev => [
+					...prev,
+					{
+						id: track.id,
+						position: track.position,
+						assetId: track.assetId,
+						audioUrl: track.audioUrl,
+						durationSec: track.durationSec,
+						filename: addAudioAssetId ? (audioAssets.find(a => a.id === addAudioAssetId)?.filename ?? 'audio') : addAudioUrl,
+					},
+				])
 				setAddAudioAssetId('')
 				setAddAudioUrl('')
 			}
-		} catch { /* empty */ }
+		} catch {
+			/* empty */
+		}
 	}
 
 	const handleRemoveTrack = async (trackId: string) => {
@@ -369,7 +390,9 @@ export function ProgramEditor({
 				setTunarrChannels(channels)
 				if (channels.length > 0) setSelectedChannelId(channels[0].id)
 			}
-		} catch { /* empty */ }
+		} catch {
+			/* empty */
+		}
 	}
 
 	const handlePush = async () => {
@@ -407,26 +430,43 @@ export function ProgramEditor({
 			<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
 				<div className="md:mr-auto">
 					<h2 className="text-xl font-bold text-white">{title || 'Untitled Program'}</h2>
-					<p className="text-xs text-slate-400">{slug} &middot; {formatDuration(computedDuration)} total &middot; {clips.length} clip{clips.length !== 1 ? 's' : ''}</p>
+					<p className="text-xs text-slate-400">
+						{slug} &middot; {formatDuration(computedDuration)} total &middot; {clips.length} clip{clips.length !== 1 ? 's' : ''}
+					</p>
 				</div>
 				<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
 					{profiles.length > 0 && (
-						<select value={selectedProfileId} onChange={e => setSelectedProfileId(e.target.value)}
-							className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none md:w-auto">
-							{profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+						<select
+							value={selectedProfileId}
+							onChange={e => setSelectedProfileId(e.target.value)}
+							className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none md:w-auto"
+						>
+							{profiles.map(p => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
 						</select>
 					)}
-					<button onClick={handleSave} disabled={saving}
-						className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50 md:w-auto">
+					<button
+						onClick={handleSave}
+						disabled={saving}
+						className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50 md:w-auto"
+					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
 					{profiles.length > 0 && (
-						<button onClick={handleSaveAndPublish} disabled={saving || rendering || !selectedProfileId || clips.length === 0}
-							className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 md:w-auto">
+						<button
+							onClick={handleSaveAndPublish}
+							disabled={saving || rendering || !selectedProfileId || clips.length === 0}
+							className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 md:w-auto"
+						>
 							{rendering ? 'Working...' : 'Save & Publish'}
 						</button>
 					)}
-					<a href="/programs" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">Back</a>
+					<a href="/programs" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">
+						Back
+					</a>
 				</div>
 			</div>
 
@@ -436,11 +476,15 @@ export function ProgramEditor({
 
 			{/* Job status */}
 			{renderJob && (
-				<div className={`rounded-lg border px-4 py-3 text-sm ${
-					renderJob.status === 'completed' ? 'border-green-800 bg-green-950 text-green-300'
-					: renderJob.status === 'failed' ? 'border-red-800 bg-red-950 text-red-300'
-					: 'border-blue-800 bg-blue-950 text-blue-300'
-				}`}>
+				<div
+					className={`rounded-lg border px-4 py-3 text-sm ${
+						renderJob.status === 'completed'
+							? 'border-green-800 bg-green-950 text-green-300'
+							: renderJob.status === 'failed'
+								? 'border-red-800 bg-red-950 text-red-300'
+								: 'border-blue-800 bg-blue-950 text-blue-300'
+					}`}
+				>
 					{renderJob.status === 'queued' && 'Render & publish job queued...'}
 					{renderJob.status === 'processing' && 'Rendering and publishing... This may take a few minutes for multi-clip programs.'}
 					{renderJob.status === 'completed' && (
@@ -450,7 +494,10 @@ export function ProgramEditor({
 								{renderJob.outputPath && <span className="ml-2 text-xs text-green-400">{renderJob.outputPath}</span>}
 							</span>
 							{tunarrConfigured && !showPush && (
-								<button onClick={handleOpenPush} className="rounded border border-purple-700 px-3 py-1 text-xs font-medium text-purple-400 hover:bg-purple-950">
+								<button
+									onClick={handleOpenPush}
+									className="rounded border border-purple-700 px-3 py-1 text-xs font-medium text-purple-400 hover:bg-purple-950"
+								>
 									Push to Tunarr
 								</button>
 							)}
@@ -467,22 +514,44 @@ export function ProgramEditor({
 						<p className="text-sm text-slate-400">No Tunarr channels found.</p>
 					) : (
 						<div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-							<select value={selectedChannelId} onChange={e => setSelectedChannelId(e.target.value)}
-								className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none md:w-auto">
-								{tunarrChannels.map(ch => <option key={ch.id} value={ch.id}>{ch.number}. {ch.name}</option>)}
+							<select
+								value={selectedChannelId}
+								onChange={e => setSelectedChannelId(e.target.value)}
+								className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none md:w-auto"
+							>
+								{tunarrChannels.map(ch => (
+									<option key={ch.id} value={ch.id}>
+										{ch.number}. {ch.name}
+									</option>
+								))}
 							</select>
 							<div className="flex gap-4">
 								<label className="flex items-center gap-2 text-sm text-slate-300">
-									<input type="radio" name="push-mode" checked={pushMode === 'append'} onChange={() => setPushMode('append')} className="accent-purple-500" />
+									<input
+										type="radio"
+										name="push-mode"
+										checked={pushMode === 'append'}
+										onChange={() => setPushMode('append')}
+										className="accent-purple-500"
+									/>
 									Add
 								</label>
 								<label className="flex items-center gap-2 text-sm text-slate-300">
-									<input type="radio" name="push-mode" checked={pushMode === 'replace'} onChange={() => setPushMode('replace')} className="accent-purple-500" />
+									<input
+										type="radio"
+										name="push-mode"
+										checked={pushMode === 'replace'}
+										onChange={() => setPushMode('replace')}
+										className="accent-purple-500"
+									/>
 									Replace
 								</label>
 							</div>
-							<button onClick={handlePush} disabled={pushing}
-								className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 md:w-auto">
+							<button
+								onClick={handlePush}
+								disabled={pushing}
+								className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 md:w-auto"
+							>
 								{pushing ? 'Pushing...' : 'Push'}
 							</button>
 							{pushResult && <span className={`text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</span>}
@@ -499,32 +568,54 @@ export function ProgramEditor({
 						<h3 className="mb-3 text-sm font-semibold text-slate-300">Program Info</h3>
 						<div className="space-y-3">
 							<div>
-								<label htmlFor="title" className="block text-xs text-slate-400">Title</label>
-								<input id="title" type="text" value={title} onChange={e => handleTitleChange(e.target.value)}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label htmlFor="title" className="block text-xs text-slate-400">
+									Title
+								</label>
+								<input
+									id="title"
+									type="text"
+									value={title}
+									onChange={e => handleTitleChange(e.target.value)}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
 							</div>
 							<div>
-								<label htmlFor="slug" className="block text-xs text-slate-400">Slug</label>
-								<input id="slug" type="text" value={slug} onChange={e => setSlug(e.target.value)}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label htmlFor="slug" className="block text-xs text-slate-400">
+									Slug
+								</label>
+								<input
+									id="slug"
+									type="text"
+									value={slug}
+									onChange={e => setSlug(e.target.value)}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
 							</div>
 							<div>
-								<label htmlFor="description" className="block text-xs text-slate-400">Description</label>
-								<textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={2}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label htmlFor="description" className="block text-xs text-slate-400">
+									Description
+								</label>
+								<textarea
+									id="description"
+									value={description}
+									onChange={e => setDescription(e.target.value)}
+									rows={2}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
 							</div>
 							<div>
-								<label htmlFor="summary" className="block text-xs text-slate-400">Summary</label>
-								<textarea id="summary" value={summary} onChange={e => setSummary(e.target.value)} rows={2}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label htmlFor="summary" className="block text-xs text-slate-400">
+									Summary
+								</label>
+								<textarea
+									id="summary"
+									value={summary}
+									onChange={e => setSummary(e.target.value)}
+									rows={2}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
 							</div>
-							<ImageField
-								id="icon"
-								label="Icon / Artwork"
-								value={iconUrl}
-								onChange={setIconUrl}
-								placeholder="Select program artwork..."
-							/>
+							<ImageField id="icon" label="Icon / Artwork" value={iconUrl} onChange={setIconUrl} placeholder="Select program artwork..." />
 						</div>
 					</section>
 
@@ -532,23 +623,34 @@ export function ProgramEditor({
 					<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
 						<h3 className="mb-3 text-sm font-semibold text-slate-300">Duration</h3>
 						<div className="flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-0.5">
-							<button type="button" onClick={() => setDurationMode('auto')}
+							<button
+								type="button"
+								onClick={() => setDurationMode('auto')}
 								className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
 									durationMode === 'auto' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'
-								}`}>
+								}`}
+							>
 								Match audio length
 							</button>
-							<button type="button" onClick={() => setDurationMode('manual')}
+							<button
+								type="button"
+								onClick={() => setDurationMode('manual')}
 								className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
 									durationMode === 'manual' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'
-								}`}>
+								}`}
+							>
 								Manual
 							</button>
 						</div>
 						{durationMode === 'manual' && (
-							<input type="number" min={1} value={manualDurationSec} onChange={e => setManualDurationSec(parseInt(e.target.value, 10) || 60)}
+							<input
+								type="number"
+								min={1}
+								value={manualDurationSec}
+								onChange={e => setManualDurationSec(parseInt(e.target.value, 10) || 60)}
 								className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
-								placeholder="Duration in seconds" />
+								placeholder="Duration in seconds"
+							/>
 						)}
 						<div className="mt-2 text-xs text-slate-500">
 							Total: {formatDuration(computedDuration)}
@@ -560,8 +662,11 @@ export function ProgramEditor({
 					</section>
 
 					{/* Delete */}
-					<button onClick={handleDelete} disabled={saving}
-						className="w-full rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50">
+					<button
+						onClick={handleDelete}
+						disabled={saving}
+						className="w-full rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50"
+					>
 						Delete Program
 					</button>
 				</div>
@@ -591,24 +696,43 @@ export function ProgramEditor({
 											<p className="truncate text-sm font-medium text-white">{clip.title}</p>
 											<p className="text-xs text-slate-500">
 												{clip.templateName}
-												{perClipDuration > 0
-													? <> &middot; {formatDuration(perClipDuration)}</>
-													: <span className="ml-1 text-amber-400"> &middot; duration not set</span>
-												}
+												{perClipDuration > 0 ? (
+													<> &middot; {formatDuration(perClipDuration)}</>
+												) : (
+													<span className="ml-1 text-amber-400"> &middot; duration not set</span>
+												)}
 											</p>
 										</div>
 										<div className="flex shrink-0 items-center gap-1">
-											<button onClick={() => handleMoveClip(i, -1)} disabled={i === 0}
-												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30" title="Move up">
-												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="18 15 12 9 6 15" /></svg>
+											<button
+												onClick={() => handleMoveClip(i, -1)}
+												disabled={i === 0}
+												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30"
+												title="Move up"
+											>
+												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+													<polyline points="18 15 12 9 6 15" />
+												</svg>
 											</button>
-											<button onClick={() => handleMoveClip(i, 1)} disabled={i === clips.length - 1}
-												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30" title="Move down">
-												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
+											<button
+												onClick={() => handleMoveClip(i, 1)}
+												disabled={i === clips.length - 1}
+												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30"
+												title="Move down"
+											>
+												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+													<polyline points="6 9 12 15 18 9" />
+												</svg>
 											</button>
-											<button onClick={() => handleRemoveClip(clip.clipId)}
-												className="rounded p-1 text-red-400 hover:bg-red-950 hover:text-red-300" title="Remove">
-												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+											<button
+												onClick={() => handleRemoveClip(clip.clipId)}
+												className="rounded p-1 text-red-400 hover:bg-red-950 hover:text-red-300"
+												title="Remove"
+											>
+												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+													<line x1="18" y1="6" x2="6" y2="18" />
+													<line x1="6" y1="6" x2="18" y2="18" />
+												</svg>
 											</button>
 										</div>
 									</div>
@@ -618,15 +742,23 @@ export function ProgramEditor({
 
 						{/* Add clip */}
 						<div className="mt-3 flex gap-2">
-							<select value={addClipId} onChange={e => setAddClipId(e.target.value)}
-								className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none">
+							<select
+								value={addClipId}
+								onChange={e => setAddClipId(e.target.value)}
+								className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+							>
 								<option value="">Add a clip...</option>
 								{availableClips.map(c => (
-									<option key={c.id} value={c.id}>{c.title}</option>
+									<option key={c.id} value={c.id}>
+										{c.title}
+									</option>
 								))}
 							</select>
-							<button onClick={handleAddClip} disabled={!addClipId}
-								className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50">
+							<button
+								onClick={handleAddClip}
+								disabled={!addClipId}
+								className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+							>
 								Add
 							</button>
 						</div>
@@ -642,30 +774,59 @@ export function ProgramEditor({
 							<div className="space-y-2">
 								{tracks.map((track, i) => (
 									<div key={track.id} className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 p-2">
-										<svg className="h-5 w-5 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-											<path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+										<svg
+											className="h-5 w-5 shrink-0 text-slate-500"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											strokeWidth={1.5}
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+											/>
 										</svg>
 										<div className="min-w-0 flex-1">
 											<p className="truncate text-sm text-white">{track.filename}</p>
 											<p className="text-xs">
-												{track.durationSec
-													? <span className="text-slate-500">{formatDuration(track.durationSec)}</span>
-													: <span className="text-amber-400">Duration unknown &mdash; scan assets to detect</span>
-												}
+												{track.durationSec ? (
+													<span className="text-slate-500">{formatDuration(track.durationSec)}</span>
+												) : (
+													<span className="text-amber-400">Duration unknown &mdash; scan assets to detect</span>
+												)}
 											</p>
 										</div>
 										<div className="flex shrink-0 items-center gap-1">
-											<button onClick={() => handleMoveTrack(i, -1)} disabled={i === 0}
-												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30" title="Move up">
-												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="18 15 12 9 6 15" /></svg>
+											<button
+												onClick={() => handleMoveTrack(i, -1)}
+												disabled={i === 0}
+												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30"
+												title="Move up"
+											>
+												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+													<polyline points="18 15 12 9 6 15" />
+												</svg>
 											</button>
-											<button onClick={() => handleMoveTrack(i, 1)} disabled={i === tracks.length - 1}
-												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30" title="Move down">
-												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
+											<button
+												onClick={() => handleMoveTrack(i, 1)}
+												disabled={i === tracks.length - 1}
+												className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30"
+												title="Move down"
+											>
+												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+													<polyline points="6 9 12 15 18 9" />
+												</svg>
 											</button>
-											<button onClick={() => handleRemoveTrack(track.id)}
-												className="rounded p-1 text-red-400 hover:bg-red-950 hover:text-red-300" title="Remove">
-												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+											<button
+												onClick={() => handleRemoveTrack(track.id)}
+												className="rounded p-1 text-red-400 hover:bg-red-950 hover:text-red-300"
+												title="Remove"
+											>
+												<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+													<line x1="18" y1="6" x2="6" y2="18" />
+													<line x1="6" y1="6" x2="18" y2="18" />
+												</svg>
 											</button>
 										</div>
 									</div>
@@ -677,23 +838,46 @@ export function ProgramEditor({
 						<div className="mt-3 space-y-2">
 							{audioAssets.length > 0 && (
 								<div className="flex gap-2">
-									<select value={addAudioAssetId} onChange={e => { setAddAudioAssetId(e.target.value); if (e.target.value) setAddAudioUrl('') }}
-										className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none">
+									<select
+										value={addAudioAssetId}
+										onChange={e => {
+											setAddAudioAssetId(e.target.value)
+											if (e.target.value) setAddAudioUrl('')
+										}}
+										className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+									>
 										<option value="">Select audio asset...</option>
-										{audioAssets.map(a => <option key={a.id} value={a.id}>{a.filename}</option>)}
+										{audioAssets.map(a => (
+											<option key={a.id} value={a.id}>
+												{a.filename}
+											</option>
+										))}
 									</select>
-									<button onClick={handleAddAudioTrack} disabled={!addAudioAssetId}
-										className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50">
+									<button
+										onClick={handleAddAudioTrack}
+										disabled={!addAudioAssetId}
+										className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+									>
 										Add
 									</button>
 								</div>
 							)}
 							<div className="flex gap-2">
-								<input type="text" value={addAudioUrl} onChange={e => { setAddAudioUrl(e.target.value); if (e.target.value) setAddAudioAssetId('') }}
+								<input
+									type="text"
+									value={addAudioUrl}
+									onChange={e => {
+										setAddAudioUrl(e.target.value)
+										if (e.target.value) setAddAudioAssetId('')
+									}}
 									placeholder="Or paste audio URL..."
-									className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
-								<button onClick={handleAddAudioTrack} disabled={!addAudioUrl}
-									className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50">
+									className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
+								<button
+									onClick={handleAddAudioTrack}
+									disabled={!addAudioUrl}
+									className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+								>
 									Add
 								</button>
 							</div>

@@ -189,9 +189,7 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 								type="button"
 								onClick={() => handleFieldChange('matchAudioDuration', 'true')}
 								className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-									fieldValues.matchAudioDuration === 'true'
-										? 'bg-blue-600 text-white'
-										: 'text-slate-400 hover:text-slate-300'
+									fieldValues.matchAudioDuration === 'true' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'
 								}`}
 							>
 								Match audio length
@@ -200,18 +198,23 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 								type="button"
 								onClick={() => handleFieldChange('matchAudioDuration', 'false')}
 								className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-									fieldValues.matchAudioDuration !== 'true'
-										? 'bg-blue-600 text-white'
-										: 'text-slate-400 hover:text-slate-300'
+									fieldValues.matchAudioDuration !== 'true' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'
 								}`}
 							>
 								Fixed duration
 							</button>
 						</div>
 						{fieldValues.matchAudioDuration !== 'true' && (
-							<input id="duration" type="number" min={1} max={3600} value={durationSec} onChange={e => setDurationSec(parseInt(e.target.value, 10) || 30)}
+							<input
+								id="duration"
+								type="number"
+								min={1}
+								max={3600}
+								value={durationSec}
+								onChange={e => setDurationSec(parseInt(e.target.value, 10) || 30)}
 								placeholder="Duration (seconds)"
-								className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" />
+								className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+							/>
 						)}
 						{fieldValues.matchAudioDuration === 'true' && !fieldValues.backgroundAudioUrl && (
 							<p className="mt-1 text-xs text-amber-400">Add audio above to use this mode</p>

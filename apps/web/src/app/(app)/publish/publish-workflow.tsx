@@ -58,7 +58,13 @@ interface PublishWorkflowProps {
 	channelBindings?: Record<string, ChannelBinding>
 }
 
-export function PublishWorkflow({ profiles: initialProfiles, renderedClips, artifacts, tunarrConfigured, channelBindings = {} }: PublishWorkflowProps) {
+export function PublishWorkflow({
+	profiles: initialProfiles,
+	renderedClips,
+	artifacts,
+	tunarrConfigured,
+	channelBindings = {},
+}: PublishWorkflowProps) {
 	const router = useRouter()
 	const [profiles, setProfiles] = useState(initialProfiles)
 	const [showNewProfile, setShowNewProfile] = useState(false)
@@ -367,7 +373,10 @@ export function PublishWorkflow({ profiles: initialProfiles, renderedClips, arti
 				) : (
 					<div className="space-y-3">
 						{renderedClips.map(rc => (
-							<div key={rc.renderJobId} className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4 md:flex-row md:items-center md:justify-between">
+							<div
+								key={rc.renderJobId}
+								className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4 md:flex-row md:items-center md:justify-between"
+							>
 								<div className="min-w-0 flex-1">
 									<p className="font-medium text-white">{rc.clipTitle}</p>
 									<p className="mt-0.5 text-xs text-slate-400">Rendered {new Date(rc.renderedAt).toLocaleString()}</p>

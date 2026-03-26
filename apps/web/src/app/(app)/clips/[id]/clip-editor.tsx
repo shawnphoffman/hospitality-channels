@@ -57,7 +57,10 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 	const handleTitleChange = useCallback((val: string) => {
 		setTitle(val)
 		setSlug(
-			val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+			val
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/(^-|-$)/g, '')
 		)
 	}, [])
 
@@ -145,7 +148,9 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 			<div className="mb-3 flex shrink-0 flex-col gap-3 md:flex-row md:items-center">
 				<div className="md:mr-auto">
 					<h2 className="text-xl font-bold text-white">{title || 'Untitled'}</h2>
-					<p className="text-xs text-slate-400">{templateName} &middot; {slug}</p>
+					<p className="text-xs text-slate-400">
+						{templateName} &middot; {slug}
+					</p>
 				</div>
 				<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
 					<button
@@ -155,13 +160,17 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
-					<a href="/clips" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">Back</a>
+					<a href="/clips" className="text-center text-sm text-slate-400 hover:text-slate-300 md:text-left">
+						Back
+					</a>
 				</div>
 			</div>
 
 			{/* Status messages */}
 			{error && <div className="mb-3 shrink-0 rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-300">{error}</div>}
-			{successMsg && <div className="mb-3 shrink-0 rounded-lg border border-green-800 bg-green-950 px-4 py-3 text-sm text-green-300">{successMsg}</div>}
+			{successMsg && (
+				<div className="mb-3 shrink-0 rounded-lg border border-green-800 bg-green-950 px-4 py-3 text-sm text-green-300">{successMsg}</div>
+			)}
 
 			{/* Main content: stacked on mobile, side-by-side on desktop */}
 			<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:flex-row lg:overflow-y-hidden">
@@ -172,14 +181,28 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 						<h3 className="mb-3 text-sm font-semibold text-slate-300">Clip Info</h3>
 						<div className="space-y-3">
 							<div>
-								<label htmlFor="title" className="block text-xs text-slate-400">Title</label>
-								<input id="title" type="text" value={title} onChange={e => handleTitleChange(e.target.value)}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label htmlFor="title" className="block text-xs text-slate-400">
+									Title
+								</label>
+								<input
+									id="title"
+									type="text"
+									value={title}
+									onChange={e => handleTitleChange(e.target.value)}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
 							</div>
 							<div>
-								<label htmlFor="slug" className="block text-xs text-slate-400">Slug</label>
-								<input id="slug" type="text" value={slug} onChange={e => setSlug(e.target.value)}
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+								<label htmlFor="slug" className="block text-xs text-slate-400">
+									Slug
+								</label>
+								<input
+									id="slug"
+									type="text"
+									value={slug}
+									onChange={e => setSlug(e.target.value)}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
 							</div>
 							<div>
 								<label className="block text-xs text-slate-400">Template</label>
@@ -194,8 +217,11 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 							<h3 className="mb-2 text-sm font-semibold text-slate-300">Used in Programs</h3>
 							<div className="space-y-1">
 								{programs.map(p => (
-									<a key={p.id} href={`/programs/${p.id}`}
-										className="block rounded-md px-2 py-1.5 text-sm text-blue-400 transition-colors hover:bg-slate-800 hover:text-blue-300">
+									<a
+										key={p.id}
+										href={`/programs/${p.id}`}
+										className="block rounded-md px-2 py-1.5 text-sm text-blue-400 transition-colors hover:bg-slate-800 hover:text-blue-300"
+									>
 										{p.title}
 									</a>
 								))}
@@ -216,8 +242,18 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 									if (field.key === 'wifiSsid' && hasWifiFields && wifiSsidField && wifiPasswordField) {
 										return (
 											<div key="wifi-block" className="space-y-3">
-												<TemplateField field={wifiSsidField} value={fieldValues.wifiSsid ?? ''} onChange={val => handleFieldChange('wifiSsid', val)} idPrefix="field-" />
-												<TemplateField field={wifiPasswordField} value={fieldValues.wifiPassword ?? ''} onChange={val => handleFieldChange('wifiPassword', val)} idPrefix="field-" />
+												<TemplateField
+													field={wifiSsidField}
+													value={fieldValues.wifiSsid ?? ''}
+													onChange={val => handleFieldChange('wifiSsid', val)}
+													idPrefix="field-"
+												/>
+												<TemplateField
+													field={wifiPasswordField}
+													value={fieldValues.wifiPassword ?? ''}
+													onChange={val => handleFieldChange('wifiPassword', val)}
+													idPrefix="field-"
+												/>
 												{showWifiQr && (
 													<div className="flex justify-center">
 														<WifiQrCode ssid={wifiSsid} password={wifiPassword} size={100} />
@@ -227,7 +263,13 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 										)
 									}
 									return (
-										<TemplateField key={field.key} field={field} value={fieldValues[field.key] ?? ''} onChange={val => handleFieldChange(field.key, val)} idPrefix="field-" />
+										<TemplateField
+											key={field.key}
+											field={field}
+											value={fieldValues[field.key] ?? ''}
+											onChange={val => handleFieldChange(field.key, val)}
+											idPrefix="field-"
+										/>
 									)
 								})}
 							</div>
@@ -235,17 +277,29 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 					)}
 
 					{/* Delete */}
-					<button onClick={handleDelete} disabled={saving}
-						className="w-full rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50">
+					<button
+						onClick={handleDelete}
+						disabled={saving}
+						className="w-full rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50"
+					>
 						Delete Clip
 					</button>
 				</div>
 
 				{/* Right panel: Live preview */}
-				<div ref={wrapperRef} className="flex aspect-video min-h-[240px] items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-black lg:aspect-auto lg:min-h-0 lg:flex-1">
+				<div
+					ref={wrapperRef}
+					className="flex aspect-video min-h-[240px] items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-black lg:aspect-auto lg:min-h-0 lg:flex-1"
+				>
 					{scale > 0 && (
-						<div style={{ width: scaledW, height: scaledH }} className="relative shrink-0 overflow-hidden rounded shadow-2xl shadow-black/60">
-							<div style={{ width: SCENE_W, height: SCENE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }} className="absolute left-0 top-0">
+						<div
+							style={{ width: scaledW, height: scaledH }}
+							className="relative shrink-0 overflow-hidden rounded shadow-2xl shadow-black/60"
+						>
+							<div
+								style={{ width: SCENE_W, height: SCENE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+								className="absolute left-0 top-0"
+							>
 								<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
 									{(() => {
 										const entry = getTemplateScenes(templateSlug)

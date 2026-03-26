@@ -46,10 +46,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 	}
 
 	for (const item of body) {
-		await db
-			.update(schema.programAudioTracks)
-			.set({ position: item.position })
-			.where(eq(schema.programAudioTracks.id, item.trackId))
+		await db.update(schema.programAudioTracks).set({ position: item.position }).where(eq(schema.programAudioTracks.id, item.trackId))
 	}
 
 	const updated = await db
@@ -82,10 +79,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 		return NextResponse.json({ error: 'Either assetId or audioUrl is required' }, { status: 400 })
 	}
 
-	const existing = await db
-		.select()
-		.from(schema.programAudioTracks)
-		.where(eq(schema.programAudioTracks.programId, id))
+	const existing = await db.select().from(schema.programAudioTracks).where(eq(schema.programAudioTracks.programId, id))
 
 	// Resolve duration from asset if not provided
 	let durationSec = body.durationSec ?? null
@@ -109,10 +103,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 	await db.insert(schema.programAudioTracks).values(track)
 
 	// Update program's updatedAt
-	await db
-		.update(schema.programs)
-		.set({ updatedAt: new Date().toISOString() })
-		.where(eq(schema.programs.id, id))
+	await db.update(schema.programs).set({ updatedAt: new Date().toISOString() }).where(eq(schema.programs.id, id))
 
 	return NextResponse.json(track, { status: 201 })
 }

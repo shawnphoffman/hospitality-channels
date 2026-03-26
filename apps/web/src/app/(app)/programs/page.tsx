@@ -61,13 +61,15 @@ export default async function ProgramsListPage() {
 								<h3 className="font-semibold text-white">{program.title}</h3>
 								<p className="mt-0.5 text-xs text-slate-400">{program.slug}</p>
 								<div className="mt-1.5 flex items-center gap-4 text-xs text-slate-500">
-									<span>{program.clipCount} clip{program.clipCount !== 1 ? 's' : ''}</span>
-									<span>{program.audioTrackCount} track{program.audioTrackCount !== 1 ? 's' : ''}</span>
+									<span>
+										{program.clipCount} clip{program.clipCount !== 1 ? 's' : ''}
+									</span>
+									<span>
+										{program.audioTrackCount} track{program.audioTrackCount !== 1 ? 's' : ''}
+									</span>
 									<span>{formatDuration(program.computedDuration)}</span>
 								</div>
-								{program.description && (
-									<p className="mt-1.5 line-clamp-1 text-xs text-slate-400">{program.description}</p>
-								)}
+								{program.description && <p className="mt-1.5 line-clamp-1 text-xs text-slate-400">{program.description}</p>}
 							</div>
 						</a>
 					))}

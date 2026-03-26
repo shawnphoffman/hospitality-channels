@@ -48,9 +48,7 @@ export async function POST(request: Request) {
 			.orderBy(asc(schema.programAudioTracks.position))
 
 		const audioDuration = audioTracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
-		const computedDuration = program.durationMode === 'manual'
-			? (program.manualDurationSec ?? 30)
-			: audioDuration
+		const computedDuration = program.durationMode === 'manual' ? (program.manualDurationSec ?? 30) : audioDuration
 
 		const job = {
 			id: generateId(),

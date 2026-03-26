@@ -49,7 +49,11 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			assetId: t.assetId,
 			audioUrl: t.audioUrl,
 			durationSec: t.durationSec ?? asset?.duration ?? null,
-			filename: asset ? asset.originalPath.split('/').pop() ?? 'audio' : (t.audioUrl ? new URL(t.audioUrl, 'http://localhost').pathname.split('/').pop() ?? 'audio' : 'Unknown'),
+			filename: asset
+				? (asset.originalPath.split('/').pop() ?? 'audio')
+				: t.audioUrl
+					? (new URL(t.audioUrl, 'http://localhost').pathname.split('/').pop() ?? 'audio')
+					: 'Unknown',
 		}
 	})
 
@@ -66,9 +70,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 		.map(a => ({ id: a.id, filename: a.originalPath.split('/').pop() ?? 'audio' }))
 
 	// Image assets for icon picker
-	const imageAssets = allAssets
-		.filter(a => a.type !== 'audio' && a.type !== 'video')
-		.map(a => ({ id: a.id, originalPath: a.originalPath }))
+	const imageAssets = allAssets.filter(a => a.type !== 'audio' && a.type !== 'video').map(a => ({ id: a.id, originalPath: a.originalPath }))
 
 	return (
 		<ProgramEditor

@@ -145,9 +145,7 @@ function getLazy(): { client: Client; db: Database } {
 
 async function ensureSeeded(database: Database) {
 	const registry = getTemplateRegistry()
-	const existingSlugs = new Set(
-		(await database.select({ slug: schema.templates.slug }).from(schema.templates)).map(r => r.slug)
-	)
+	const existingSlugs = new Set((await database.select({ slug: schema.templates.slug }).from(schema.templates)).map(r => r.slug))
 
 	for (const tmpl of registry) {
 		if (existingSlugs.has(tmpl.slug)) continue
@@ -197,23 +195,15 @@ async function runDataMigrations(database: Database) {
 	// Migration: Clean up duplicate "Default Tunarr Export" profiles
 	// Legacy seed code created a new profile on every restart. Keep the one
 	// referenced by published artifacts, rename it to "Default Export", delete the rest.
-	const oldProfiles = await database
-		.select()
-		.from(schema.publishProfiles)
-		.where(eq(schema.publishProfiles.name, 'Default Tunarr Export'))
+	const oldProfiles = await database.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.name, 'Default Tunarr Export'))
 	if (oldProfiles.length > 0) {
 		// Find which ones are referenced by artifacts
 		const referencedIds = new Set(
-			(await database.select({ pid: schema.publishedArtifacts.publishProfileId }).from(schema.publishedArtifacts)).map(
-				r => r.pid
-			)
+			(await database.select({ pid: schema.publishedArtifacts.publishProfileId }).from(schema.publishedArtifacts)).map(r => r.pid)
 		)
 		const toKeep = oldProfiles.find(p => referencedIds.has(p.id)) ?? oldProfiles[0]
 		// Rename the kept one
-		await database
-			.update(schema.publishProfiles)
-			.set({ name: 'Default Export' })
-			.where(eq(schema.publishProfiles.id, toKeep.id))
+		await database.update(schema.publishProfiles).set({ name: 'Default Export' }).where(eq(schema.publishProfiles.id, toKeep.id))
 		// Delete the rest
 		const toDeleteIds = oldProfiles.filter(p => p.id !== toKeep.id).map(p => p.id)
 		if (toDeleteIds.length > 0) {
@@ -273,9 +263,7 @@ async function runDataMigrations(database: Database) {
 		// Migrate channel definitions from clipId → programId
 		const channelDefs = await database.select().from(schema.channelDefinitions).where(eq(schema.channelDefinitions.clipId, clip.id))
 		for (const cd of channelDefs) {
-			await database.update(schema.channelDefinitions)
-				.set({ programId, clipId: null })
-				.where(eq(schema.channelDefinitions.id, cd.id))
+			await database.update(schema.channelDefinitions).set({ programId, clipId: null }).where(eq(schema.channelDefinitions.id, cd.id))
 		}
 	}
 }

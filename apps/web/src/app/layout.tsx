@@ -1,24 +1,20 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "Guest TV Pages",
-  description: "Create and publish guest room TV pages as IPTV channels",
-};
+	title: 'Guest TV Pages',
+	description: 'Create and publish guest room TV pages as IPTV channels',
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en" style={{ backgroundColor: "#020617" }}>
-      <body className={inter.className} style={{ backgroundColor: "#020617" }}>
-        {children}
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+	return (
+		<html lang="en" style={{ backgroundColor: '#020617' }}>
+			<body className={inter.className} style={{ backgroundColor: '#020617' }}>
+				{children}
+			</body>
+		</html>
+	)
 }

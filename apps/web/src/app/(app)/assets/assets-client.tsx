@@ -121,9 +121,7 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 					{/* Images */}
 					{imageAssets.length > 0 && (
 						<section>
-							<h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
-								Images ({imageAssets.length})
-							</h3>
+							<h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">Images ({imageAssets.length})</h3>
 							<div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
 								{imageAssets.map(asset => (
 									<div key={asset.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-3">
@@ -155,14 +153,18 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 					{/* Audio */}
 					{audioAssets.length > 0 && (
 						<section>
-							<h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
-								Audio ({audioAssets.length})
-							</h3>
+							<h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">Audio ({audioAssets.length})</h3>
 							<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 								{audioAssets.map(asset => (
 									<div key={asset.id} className="group relative rounded-xl border border-slate-800 bg-slate-900 p-3">
 										<div className="mb-2 flex items-center gap-3 rounded-lg bg-slate-800 p-3">
-											<svg className="h-6 w-6 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+											<svg
+												className="h-6 w-6 shrink-0 text-slate-500"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												strokeWidth={1.5}
+											>
 												<path
 													strokeLinecap="round"
 													strokeLinejoin="round"

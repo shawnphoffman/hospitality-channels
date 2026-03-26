@@ -29,18 +29,11 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
 	}>
 
 	// Find programs that include this clip
-	const programClips = await db
-		.select()
-		.from(schema.programClips)
-		.where(eq(schema.programClips.clipId, clip.id))
+	const programClips = await db.select().from(schema.programClips).where(eq(schema.programClips.clipId, clip.id))
 
 	const programIds = programClips.map(pc => pc.programId)
-	const allPrograms = programIds.length > 0
-		? await db.select().from(schema.programs)
-		: []
-	const clipPrograms = allPrograms
-		.filter(p => programIds.includes(p.id))
-		.map(p => ({ id: p.id, title: p.title }))
+	const allPrograms = programIds.length > 0 ? await db.select().from(schema.programs) : []
+	const clipPrograms = allPrograms.filter(p => programIds.includes(p.id)).map(p => ({ id: p.id, title: p.title }))
 
 	return (
 		<ClipEditor

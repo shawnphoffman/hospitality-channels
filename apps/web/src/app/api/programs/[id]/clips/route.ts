@@ -46,18 +46,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 	}
 
 	// Load all program clips to find IDs by clipId
-	const allProgramClips = await db
-		.select()
-		.from(schema.programClips)
-		.where(eq(schema.programClips.programId, id))
+	const allProgramClips = await db.select().from(schema.programClips).where(eq(schema.programClips.programId, id))
 
 	for (const item of body) {
 		const match = allProgramClips.find(pc => pc.clipId === item.clipId)
 		if (match) {
-			await db
-				.update(schema.programClips)
-				.set({ position: item.position })
-				.where(eq(schema.programClips.id, match.id))
+			await db.update(schema.programClips).set({ position: item.position }).where(eq(schema.programClips.id, match.id))
 		}
 	}
 
@@ -92,10 +86,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 	}
 
 	// Check for duplicate
-	const existing = await db
-		.select()
-		.from(schema.programClips)
-		.where(eq(schema.programClips.programId, id))
+	const existing = await db.select().from(schema.programClips).where(eq(schema.programClips.programId, id))
 
 	if (existing.some(pc => pc.clipId === body.clipId)) {
 		return NextResponse.json({ error: 'Clip already in program' }, { status: 409 })

@@ -1,1 +1,1 @@
-export { WelcomeScene } from "./scene";
+export { WelcomeScene } from './scene'

@@ -13,7 +13,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 	)
 }
 
-const iconProps = { xmlns: 'http://www.w3.org/2000/svg', width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+const iconProps = {
+	xmlns: 'http://www.w3.org/2000/svg',
+	width: 18,
+	height: 18,
+	viewBox: '0 0 24 24',
+	fill: 'none',
+	stroke: 'currentColor',
+	strokeWidth: 2,
+	strokeLinecap: 'round' as const,
+	strokeLinejoin: 'round' as const,
+}
 
 type NavItem = { type: 'link'; href: string; label: string; icon: JSX.Element } | { type: 'separator' }
 
@@ -134,9 +144,7 @@ const navItems: NavItem[] = [
 
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
 	return (
-		<nav
-			className={`shrink-0 border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}
-		>
+		<nav className={`shrink-0 border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
 			<div className="flex items-center justify-between p-4">
 				{!collapsed && (
 					<div className="min-w-0">

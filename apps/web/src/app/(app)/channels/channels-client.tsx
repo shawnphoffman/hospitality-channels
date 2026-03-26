@@ -336,12 +336,24 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 								<div>
 									<label className="block text-sm text-slate-400">Bind to (optional)</label>
 									<div className="mt-1 flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-0.5 mb-2">
-										<button type="button" onClick={() => { setBindType('program'); setBindClipId('') }}
-											className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${bindType === 'program' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}>
+										<button
+											type="button"
+											onClick={() => {
+												setBindType('program')
+												setBindClipId('')
+											}}
+											className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${bindType === 'program' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
+										>
 											Program
 										</button>
-										<button type="button" onClick={() => { setBindType('clip'); setBindProgramId('') }}
-											className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${bindType === 'clip' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}>
+										<button
+											type="button"
+											onClick={() => {
+												setBindType('clip')
+												setBindProgramId('')
+											}}
+											className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${bindType === 'clip' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
+										>
 											Clip (legacy)
 										</button>
 									</div>
@@ -353,7 +365,9 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 										>
 											<option value="">None</option>
 											{programs.map(p => (
-												<option key={p.id} value={p.id}>{p.title}</option>
+												<option key={p.id} value={p.id}>
+													{p.title}
+												</option>
 											))}
 										</select>
 									) : (
@@ -364,7 +378,9 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 										>
 											<option value="">None</option>
 											{clips.map(c => (
-												<option key={c.id} value={c.id}>{c.title}</option>
+												<option key={c.id} value={c.id}>
+													{c.title}
+												</option>
 											))}
 										</select>
 									)}
@@ -429,10 +445,19 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 									{!ch.enabled && <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-500">disabled</span>}
 								</div>
 								<p className="mt-1 text-xs text-slate-400">
-									{ch.programTitle ? `Bound to program: ${ch.programTitle}` : ch.clipTitle ? <><span className="text-amber-400">(legacy)</span> Bound to clip: {ch.clipTitle}</> : 'Unbound'}
+									{ch.programTitle ? (
+										`Bound to program: ${ch.programTitle}`
+									) : ch.clipTitle ? (
+										<>
+											<span className="text-amber-400">(legacy)</span> Bound to clip: {ch.clipTitle}
+										</>
+									) : (
+										'Unbound'
+									)}
 									{ch.latestArtifact && (
 										<span className="ml-2 text-slate-500">
-											&middot; Last published {ch.latestArtifact.publishedAt ? new Date(ch.latestArtifact.publishedAt).toLocaleDateString() : 'unknown'}
+											&middot; Last published{' '}
+											{ch.latestArtifact.publishedAt ? new Date(ch.latestArtifact.publishedAt).toLocaleDateString() : 'unknown'}
 										</span>
 									)}
 								</p>
@@ -451,9 +476,7 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 									<button
 										onClick={() => handleToggleProgramming(ch)}
 										className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-											expandedId === ch.id
-												? 'bg-slate-700 text-white'
-												: 'border border-slate-700 text-slate-400 hover:bg-slate-800'
+											expandedId === ch.id ? 'bg-slate-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'
 										}`}
 									>
 										Programming
@@ -492,12 +515,24 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 										<div>
 											<label className="block text-xs text-slate-400">Bind to</label>
 											<div className="mt-1 flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-0.5 mb-2">
-												<button type="button" onClick={() => { setEditBindType('program'); setEditClipId('') }}
-													className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${editBindType === 'program' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}>
+												<button
+													type="button"
+													onClick={() => {
+														setEditBindType('program')
+														setEditClipId('')
+													}}
+													className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${editBindType === 'program' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
+												>
 													Program
 												</button>
-												<button type="button" onClick={() => { setEditBindType('clip'); setEditProgramId('') }}
-													className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${editBindType === 'clip' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}>
+												<button
+													type="button"
+													onClick={() => {
+														setEditBindType('clip')
+														setEditProgramId('')
+													}}
+													className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${editBindType === 'clip' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
+												>
 													Clip (legacy)
 												</button>
 											</div>
@@ -509,7 +544,9 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 												>
 													<option value="">None</option>
 													{programs.map(p => (
-														<option key={p.id} value={p.id}>{p.title}</option>
+														<option key={p.id} value={p.id}>
+															{p.title}
+														</option>
 													))}
 												</select>
 											) : (
@@ -520,7 +557,9 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 												>
 													<option value="">None</option>
 													{clips.map(c => (
-														<option key={c.id} value={c.id}>{c.title}</option>
+														<option key={c.id} value={c.id}>
+															{c.title}
+														</option>
 													))}
 												</select>
 											)}
