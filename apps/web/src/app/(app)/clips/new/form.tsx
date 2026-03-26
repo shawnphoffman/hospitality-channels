@@ -49,9 +49,8 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 	const recalc = useCallback(() => {
 		const el = wrapperRef.current
 		if (!el) return
-		const pad = 48
-		const s = Math.min((el.clientWidth - pad) / SCENE_W, (el.clientHeight - pad) / SCENE_H, 1)
-		setScale(Math.max(s, 0.1))
+		const s = el.clientWidth / SCENE_W
+		setScale(Math.max(s, 0.05))
 	}, [])
 
 	useEffect(() => {
@@ -141,135 +140,126 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 	}
 
 	return (
-		<form onSubmit={handleSubmit} className="space-y-8">
+		<form onSubmit={handleSubmit} className="space-y-6">
 			{error && <div className="rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-300">{error}</div>}
 
-			<div className="flex flex-col gap-6 lg:flex-row">
-				{/* Left column: form */}
-				<div className="min-w-0 space-y-6 lg:w-[400px] lg:shrink-0">
-					{/* Template Selection */}
-					<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-						<h3 className="mb-4 text-lg font-semibold text-white">Template</h3>
-						<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-							{templates.map(t => (
-								<button
-									key={t.slug}
-									type="button"
-									onClick={() => handleTemplateChange(t.slug)}
-									className={`rounded-lg border p-4 text-left transition-colors ${
-										selectedSlug === t.slug ? 'border-blue-500 bg-blue-950/50' : 'border-slate-700 bg-slate-800 hover:border-slate-600'
-									}`}
-								>
-									<p className="font-medium text-white">{t.name}</p>
-									<p className="mt-1 text-xs text-slate-400">{t.description}</p>
-								</button>
-							))}
-						</div>
-					</section>
-
-					{/* Clip Info */}
-					<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-						<h3 className="mb-4 text-lg font-semibold text-white">Clip Info</h3>
-						<div className="space-y-4">
-							<div>
-								<label htmlFor="title" className="block text-sm text-slate-400">
-									Title <span className="text-red-400">*</span>
-								</label>
-								<input
-									id="title"
-									type="text"
-									value={title}
-									onChange={e => handleTitleChange(e.target.value)}
-									placeholder="e.g. Welcome - Alex Johnson"
-									required
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-								/>
-							</div>
-							<div>
-								<label htmlFor="slug" className="block text-sm text-slate-400">
-									Slug
-								</label>
-								<input
-									id="slug"
-									type="text"
-									value={slug}
-									onChange={e => setSlug(e.target.value)}
-									placeholder="auto-generated from title"
-									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-								/>
-							</div>
-						</div>
-					</section>
-
-					{/* Template Content Fields */}
-					{selectedTemplate && selectedTemplate.fields.length > 0 && (
-						<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-							<h3 className="mb-4 text-lg font-semibold text-white">{selectedTemplate.name} Content</h3>
-							<div className="space-y-4">
-								{selectedTemplate.fields.map(field => {
-									if (field.type === 'asset') return null
-									if (field.key === 'backgroundAudioUrl') return null
-									if (field.key === 'matchAudioDuration') return null
-									return (
-										<TemplateField
-											key={field.key}
-											field={field}
-											value={fieldValues[field.key] ?? ''}
-											onChange={val => handleFieldChange(field.key, val)}
-										/>
-									)
-								})}
-							</div>
-						</section>
-					)}
-
-					{/* Submit */}
-					<div className="flex items-center gap-4">
-						<button
-							type="submit"
-							disabled={saving}
-							className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-						>
-							{saving ? 'Creating...' : 'Create Clip'}
-						</button>
-						<a href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
-							Cancel
-						</a>
-					</div>
-				</div>
-
-				{/* Right column: Live preview */}
-				<div
-					ref={wrapperRef}
-					className="flex aspect-video min-h-[240px] items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-black lg:aspect-auto lg:min-h-0 lg:flex-1"
+			{/* Template Dropdown */}
+			<div className="flex items-center gap-4">
+				<label htmlFor="template-select" className="shrink-0 text-sm font-medium text-slate-300">
+					Template
+				</label>
+				<select
+					id="template-select"
+					value={selectedSlug}
+					onChange={e => handleTemplateChange(e.target.value)}
+					className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
 				>
-					{scale > 0 && selectedTemplate && (
+					{templates.map(t => (
+						<option key={t.slug} value={t.slug}>
+							{t.name}
+						</option>
+					))}
+				</select>
+			</div>
+
+			{/* Full-width Preview */}
+			<div ref={wrapperRef} className="overflow-hidden rounded-xl border border-slate-800 bg-black">
+				{scale > 0 && selectedTemplate && (
+					<div style={{ width: scaledW, height: scaledH }} className="relative overflow-hidden">
 						<div
-							style={{ width: scaledW, height: scaledH }}
-							className="relative shrink-0 overflow-hidden rounded shadow-2xl shadow-black/60"
+							style={{ width: SCENE_W, height: SCENE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+							className="absolute left-0 top-0"
 						>
-							<div
-								style={{ width: SCENE_W, height: SCENE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}
-								className="absolute left-0 top-0"
-							>
-								<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
-									{(() => {
-										const entry = getTemplateScenes(selectedSlug)
-										if (!entry) {
-											return (
-												<div className="flex h-full items-center justify-center text-slate-500">
-													<p style={{ fontSize: 32 }}>Unknown template: {selectedSlug}</p>
-												</div>
-											)
-										}
-										const Scene = entry.scene
-										return <Scene data={fieldValues} />
-									})()}
-								</div>
+							<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
+								{(() => {
+									const entry = getTemplateScenes(selectedSlug)
+									if (!entry) {
+										return (
+											<div className="flex h-full items-center justify-center text-slate-500">
+												<p style={{ fontSize: 32 }}>Unknown template: {selectedSlug}</p>
+											</div>
+										)
+									}
+									const Scene = entry.scene
+									return <Scene data={fieldValues} />
+								})()}
 							</div>
 						</div>
-					)}
-				</div>
+					</div>
+				)}
+			</div>
+
+			{/* Two-column: Clip Info + Content Fields */}
+			<div className="grid gap-6 lg:grid-cols-2">
+				{/* Clip Info */}
+				<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+					<h3 className="mb-4 text-lg font-semibold text-white">Clip Info</h3>
+					<div className="space-y-4">
+						<div>
+							<label htmlFor="title" className="block text-sm text-slate-400">
+								Title <span className="text-red-400">*</span>
+							</label>
+							<input
+								id="title"
+								type="text"
+								value={title}
+								onChange={e => handleTitleChange(e.target.value)}
+								placeholder="e.g. Welcome - Alex Johnson"
+								required
+								className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+							/>
+						</div>
+						<div>
+							<label htmlFor="slug" className="block text-sm text-slate-400">
+								Slug
+							</label>
+							<input
+								id="slug"
+								type="text"
+								value={slug}
+								onChange={e => setSlug(e.target.value)}
+								placeholder="auto-generated from title"
+								className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+							/>
+						</div>
+					</div>
+				</section>
+
+				{/* Template Content Fields */}
+				{selectedTemplate && selectedTemplate.fields.length > 0 && (
+					<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+						<h3 className="mb-4 text-lg font-semibold text-white">{selectedTemplate.name} Content</h3>
+						<div className="space-y-4">
+							{selectedTemplate.fields.map(field => {
+								if (field.type === 'asset') return null
+								if (field.key === 'backgroundAudioUrl') return null
+								if (field.key === 'matchAudioDuration') return null
+								return (
+									<TemplateField
+										key={field.key}
+										field={field}
+										value={fieldValues[field.key] ?? ''}
+										onChange={val => handleFieldChange(field.key, val)}
+									/>
+								)
+							})}
+						</div>
+					</section>
+				)}
+			</div>
+
+			{/* Submit */}
+			<div className="flex items-center gap-4">
+				<button
+					type="submit"
+					disabled={saving}
+					className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+				>
+					{saving ? 'Creating...' : 'Create Clip'}
+				</button>
+				<a href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
+					Cancel
+				</a>
 			</div>
 		</form>
 	)
