@@ -9,6 +9,7 @@ export const contactDirectoryTemplate: Template & { schema: Record<string, unkno
 	version: 1,
 	schema: {
 		fields: [
+			{ key: 'backgroundImageUrl', label: 'Background Image', type: 'image', default: '' },
 			{ key: 'headerText', label: 'Header', type: 'string', default: 'Contact Directory' },
 			{ key: 'contact1Label', label: 'Contact 1 Label', type: 'string', default: 'Front Desk' },
 			{ key: 'contact1Number', label: 'Contact 1 Number', type: 'string', default: '' },

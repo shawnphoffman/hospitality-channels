@@ -9,31 +9,49 @@ export function HouseGuideScene({ data }: TemplateSceneProps) {
 	const hasWifi = Boolean(data.wifiSsid)
 	const hasInfo = Boolean(data.infoImageUrl || data.infoText)
 	const isEmpty = !hasWifi && !hasInfo
+	const backgroundImageUrl = data.backgroundImageUrl
+	const hasBg = Boolean(backgroundImageUrl)
+
+	const cardClass = hasBg
+		? 'rounded-2xl border border-white/10 bg-black/60 backdrop-blur-sm'
+		: 'rounded-2xl border border-slate-800 bg-slate-800/40'
+
+	const dividerClass = hasBg ? 'bg-white/30' : 'bg-indigo-500'
 
 	return (
-		<div className="flex h-full w-full flex-col text-white" style={{ background: 'linear-gradient(to bottom, #0f172a, #020617)' }}>
-			<div className="flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
+		<div
+			className="relative flex h-full w-full flex-col text-white"
+			style={{
+				backgroundImage: hasBg ? `url(${backgroundImageUrl})` : undefined,
+				backgroundSize: 'cover',
+				backgroundPosition: 'center',
+				background: hasBg ? undefined : 'linear-gradient(to bottom, #0f172a, #020617)',
+			}}
+		>
+			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
+
+			<div className="relative z-10 flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
 				<h1 style={{ fontSize: 64 }} className="font-bold tracking-tight">
 					House Guide
 				</h1>
 			</div>
 
-			<div className="mx-auto mt-6 rounded-full bg-indigo-500" style={{ height: 3, width: 120 }} />
+			<div className={`relative z-10 mx-auto mt-6 rounded-full ${dividerClass}`} style={{ height: 3, width: 120 }} />
 
-			<div style={{ padding: '50px 96px 60px' }} className="flex flex-1 flex-col gap-8">
+			<div style={{ padding: '50px 96px 60px' }} className="relative z-10 flex flex-1 flex-col gap-8">
 				{isEmpty ? (
 					<div className="flex flex-1 items-center justify-center">
-						<p style={{ fontSize: 32 }} className="text-slate-500">
+						<p style={{ fontSize: 32 }} className="text-white/50">
 							No house info configured yet.
 						</p>
 					</div>
 				) : (
 					<>
 						{hasWifi && (
-							<div className="flex items-center gap-8 rounded-2xl border border-slate-800 bg-slate-800/40" style={{ padding: '32px 40px' }}>
+							<div className={`flex items-center gap-8 ${cardClass}`} style={{ padding: '32px 40px' }}>
 								{hasWifiQr && <WifiQrCode ssid={data.wifiSsid} password={data.wifiPassword} size={120} />}
 								<div>
-									<p style={{ fontSize: 20, letterSpacing: '0.15em' }} className="uppercase text-slate-400">
+									<p style={{ fontSize: 20, letterSpacing: '0.15em' }} className="uppercase text-white/50">
 										Wi-Fi
 									</p>
 									<p style={{ fontSize: 36 }} className="mt-3 font-semibold leading-snug">
@@ -44,15 +62,12 @@ export function HouseGuideScene({ data }: TemplateSceneProps) {
 						)}
 
 						{hasInfo && (
-							<div
-								className="flex flex-1 items-center gap-12 rounded-2xl border border-slate-800 bg-slate-800/40"
-								style={{ padding: '40px 48px' }}
-							>
+							<div className={`flex flex-1 items-center gap-12 ${cardClass}`} style={{ padding: '40px 48px' }}>
 								{data.infoImageUrl && (
 									<img src={data.infoImageUrl} alt="" className="shrink-0 rounded-xl object-cover" style={{ width: 260, height: 260 }} />
 								)}
 								{data.infoText && (
-									<SimpleMarkdown text={data.infoText} style={{ fontSize: 32 }} className="flex-1 leading-relaxed text-slate-200" />
+									<SimpleMarkdown text={data.infoText} style={{ fontSize: 32 }} className="flex-1 leading-relaxed text-white/80" />
 								)}
 							</div>
 						)}

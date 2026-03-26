@@ -2,7 +2,7 @@
 
 import type { TemplateSceneProps } from '../types'
 
-function InfoBlock({ title, description }: { title: string; description: string }) {
+function InfoBlock({ title, description, hasBg }: { title: string; description: string; hasBg: boolean }) {
 	return (
 		<div className="flex flex-1 flex-col justify-center">
 			{title && (
@@ -11,7 +11,10 @@ function InfoBlock({ title, description }: { title: string; description: string 
 				</h2>
 			)}
 			{description && (
-				<p style={{ fontSize: 28, whiteSpace: 'pre-line' }} className="mt-4 leading-relaxed text-slate-300">
+				<p
+					style={{ fontSize: 28, whiteSpace: 'pre-line' }}
+					className={`mt-4 leading-relaxed ${hasBg ? 'text-white/70' : 'text-slate-300'}`}
+				>
 					{description}
 				</p>
 			)}
@@ -32,61 +35,70 @@ export function LocalInfoScene({ data }: TemplateSceneProps) {
 	const photo2Url = data.photo2Url || ''
 	const title2 = data.title2 || ''
 	const description2 = data.description2 || ''
+	const backgroundImageUrl = data.backgroundImageUrl
+	const hasBg = Boolean(backgroundImageUrl)
 
 	const isEmpty = !photo1Url && !title1 && !description1
 
+	const cardClass = hasBg
+		? 'rounded-2xl border border-white/10 bg-black/60 backdrop-blur-sm'
+		: 'rounded-2xl border border-slate-800 bg-slate-800/40'
+
+	const dividerClass = hasBg ? 'bg-white/30' : 'bg-indigo-500'
+
 	return (
-		<div className="flex h-full w-full flex-col text-white" style={{ background: 'linear-gradient(to bottom, #0f172a, #020617)' }}>
-			<div className="flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
+		<div
+			className="relative flex h-full w-full flex-col text-white"
+			style={{
+				backgroundImage: hasBg ? `url(${backgroundImageUrl})` : undefined,
+				backgroundSize: 'cover',
+				backgroundPosition: 'center',
+				background: hasBg ? undefined : 'linear-gradient(to bottom, #0f172a, #020617)',
+			}}
+		>
+			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
+
+			<div className="relative z-10 flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
 				<h1 style={{ fontSize: 64 }} className="font-bold tracking-tight">
 					{headerText}
 				</h1>
 			</div>
 
-			<div className="mx-auto mt-6 rounded-full bg-indigo-500" style={{ height: 3, width: 120 }} />
+			<div className={`relative z-10 mx-auto mt-6 rounded-full ${dividerClass}`} style={{ height: 3, width: 120 }} />
 
-			<div style={{ padding: '50px 96px 60px' }} className="flex flex-1 flex-col">
+			<div style={{ padding: '50px 96px 60px' }} className="relative z-10 flex flex-1 flex-col">
 				{isEmpty ? (
 					<div className="flex flex-1 items-center justify-center">
-						<p style={{ fontSize: 32 }} className="text-slate-500">
+						<p style={{ fontSize: 32 }} className="text-white/50">
 							No local info configured yet.
 						</p>
 					</div>
 				) : layout === 'two-row' ? (
 					<div className="flex flex-1 flex-col gap-8">
 						{/* Top row */}
-						<div
-							className="flex flex-1 items-center gap-10 rounded-2xl border border-slate-800 bg-slate-800/40"
-							style={{ padding: '32px 40px' }}
-						>
+						<div className={`flex flex-1 items-center gap-10 ${cardClass}`} style={{ padding: '32px 40px' }}>
 							{photo1Url && (
 								<div className="shrink-0" style={{ width: '40%', height: 280 }}>
 									<PhotoBlock src={photo1Url} height={280} />
 								</div>
 							)}
-							<InfoBlock title={title1} description={description1} />
+							<InfoBlock title={title1} description={description1} hasBg={hasBg} />
 						</div>
 
 						{/* Bottom row */}
 						{(photo2Url || title2 || description2) && (
-							<div
-								className="flex flex-1 items-center gap-10 rounded-2xl border border-slate-800 bg-slate-800/40"
-								style={{ padding: '32px 40px' }}
-							>
+							<div className={`flex flex-1 items-center gap-10 ${cardClass}`} style={{ padding: '32px 40px' }}>
 								{photo2Url && (
 									<div className="shrink-0" style={{ width: '40%', height: 280 }}>
 										<PhotoBlock src={photo2Url} height={280} />
 									</div>
 								)}
-								<InfoBlock title={title2} description={description2} />
+								<InfoBlock title={title2} description={description2} hasBg={hasBg} />
 							</div>
 						)}
 					</div>
 				) : (
-					<div
-						className="flex flex-1 items-center gap-12 rounded-2xl border border-slate-800 bg-slate-800/40"
-						style={{ padding: '40px 48px' }}
-					>
+					<div className={`flex flex-1 items-center gap-12 ${cardClass}`} style={{ padding: '40px 48px' }}>
 						{layout === 'photo-left' && photo1Url && (
 							<div className="shrink-0" style={{ width: '40%', height: 420 }}>
 								<PhotoBlock src={photo1Url} height={420} />
@@ -94,7 +106,7 @@ export function LocalInfoScene({ data }: TemplateSceneProps) {
 						)}
 
 						<div className="flex-1" style={{ width: '60%' }}>
-							<InfoBlock title={title1} description={description1} />
+							<InfoBlock title={title1} description={description1} hasBg={hasBg} />
 						</div>
 
 						{layout === 'photo-right' && photo1Url && (

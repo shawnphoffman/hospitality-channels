@@ -10,6 +10,12 @@ export const welcomeTemplate: Template & { schema: Record<string, unknown> } = {
 	schema: {
 		fields: [
 			{
+				key: 'backgroundImageUrl',
+				label: 'Background Image',
+				type: 'image',
+				default: '',
+			},
+			{
 				key: 'guestName',
 				label: 'Guest Name',
 				type: 'string',

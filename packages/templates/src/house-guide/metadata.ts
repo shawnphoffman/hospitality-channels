@@ -10,6 +10,12 @@ export const houseGuideTemplate: Template & { schema: Record<string, unknown> } 
 	schema: {
 		fields: [
 			{
+				key: 'backgroundImageUrl',
+				label: 'Background Image',
+				type: 'image',
+				default: '',
+			},
+			{
 				key: 'wifiSsid',
 				label: 'Wi-Fi SSID',
 				type: 'string',
