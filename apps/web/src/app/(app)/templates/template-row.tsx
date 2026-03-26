@@ -9,26 +9,32 @@ interface TemplateRowProps {
 	description: string
 }
 
+const SAMPLE_BG = '/sample-bg.jpg'
+
 const sampleDataMap: Record<string, Record<string, string>> = {
 	welcome: {
+		backgroundImageUrl: SAMPLE_BG,
 		guestName: 'Sarah & James',
 		welcomeMessage: 'Welcome to your home away from home!',
 		wifiSsid: 'GuestWiFi',
 		wifiPassword: 'welcome2024',
 	},
 	'hotel-welcome': {
+		backgroundImageUrl: SAMPLE_BG,
 		guestName: 'The Johnsons',
 		subtitle: 'Welcome to your stay',
 		wifiSsid: 'Hotel_Guest',
 		wifiPassword: 'staywithus',
 	},
 	'house-guide': {
+		backgroundImageUrl: SAMPLE_BG,
 		wifiSsid: 'Lakehouse_WiFi',
 		wifiPassword: 'lakelife2024',
 		infoText:
 			'## House Rules\n\n- **Check-out** by 11:00 AM\n- No smoking indoors\n- Please be mindful of neighbors\n\n## Amenities\n\n- Pool towels in the closet\n- BBQ grill on the patio\n- Board games in the living room',
 	},
 	'daily-agenda': {
+		backgroundImageUrl: SAMPLE_BG,
 		headerText: "Today's Schedule",
 		date: 'Wednesday, March 26',
 		item1Time: '7:00 AM',
@@ -46,6 +52,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		footerText: 'Ask the concierge for more details',
 	},
 	'local-info': {
+		backgroundImageUrl: SAMPLE_BG,
 		headerText: 'Explore the Area',
 		layout: 'photo-right',
 		title1: 'Downtown Historic District',
@@ -54,6 +61,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		description2: 'A scenic 2-mile walk with ocean views, local vendors, and family-friendly activities.',
 	},
 	amenities: {
+		backgroundImageUrl: SAMPLE_BG,
 		headerText: 'Hotel Amenities',
 		amenity1Name: 'Swimming Pool',
 		amenity1Hours: '6:00 AM — 10:00 PM',
@@ -73,6 +81,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		amenity4Icon: 'business',
 	},
 	checkout: {
+		backgroundImageUrl: SAMPLE_BG,
 		headerText: 'Checkout Information',
 		checkoutTime: '11:00 AM',
 		lateCheckout: 'Available upon request — subject to availability. Contact the front desk by 9:00 AM.',
@@ -82,6 +91,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		additionalInfo: 'We hope you enjoyed your stay!\nPlease leave a review on your booking platform.',
 	},
 	'contact-directory': {
+		backgroundImageUrl: SAMPLE_BG,
 		headerText: 'Guest Services Directory',
 		contact1Label: 'Front Desk',
 		contact1Number: 'Ext. 0',
@@ -98,6 +108,7 @@ const sampleDataMap: Record<string, Record<string, string>> = {
 		footerText: 'Dial 9 for an outside line',
 	},
 	'emergency-info': {
+		backgroundImageUrl: SAMPLE_BG,
 		headerText: 'Emergency Information',
 		emergencyNumber: '911',
 		frontDesk: 'Ext. 0 (24 hours)',
