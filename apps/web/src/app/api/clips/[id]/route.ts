@@ -52,6 +52,24 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
+	// Check for references that would prevent deletion
+	const [programRef] = await db
+		.select({ id: schema.programClips.id })
+		.from(schema.programClips)
+		.where(eq(schema.programClips.clipId, params.id))
+		.limit(1)
+
+	if (programRef) {
+		return NextResponse.json(
+			{ error: 'This clip is used by one or more programs. Remove it from all programs before deleting.' },
+			{ status: 409 }
+		)
+	}
+
+	// Clean up referencing records
+	await db.delete(schema.publishedArtifacts).where(eq(schema.publishedArtifacts.clipId, params.id))
+	await db.delete(schema.jobs).where(eq(schema.jobs.clipId, params.id))
 	await db.delete(schema.clips).where(eq(schema.clips.id, params.id))
+
 	return NextResponse.json({ success: true })
 }

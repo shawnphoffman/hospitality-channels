@@ -18,7 +18,10 @@ export default async function AudioPage() {
 
 	return (
 		<div>
-			<h2 className="mb-6 text-2xl font-bold text-white">Audio</h2>
+			<div className="mb-6">
+				<h2 className="text-2xl font-bold text-white">Audio</h2>
+				<p className="mt-1 text-sm text-slate-500">Music and sound files for program audio tracks</p>
+			</div>
 			<AudioClient initialAssets={audioAssets} />
 		</div>
 	)

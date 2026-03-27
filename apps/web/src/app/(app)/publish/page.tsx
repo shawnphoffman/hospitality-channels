@@ -52,7 +52,10 @@ export default async function ArtifactsPage() {
 
 	return (
 		<div>
-			<h2 className="mb-6 text-2xl font-bold text-white">Artifacts</h2>
+			<div className="mb-6">
+				<h2 className="text-2xl font-bold text-white">Artifacts</h2>
+				<p className="mt-1 text-sm text-slate-500">Rendered videos and published outputs ready for distribution</p>
+			</div>
 			<PublishWorkflow
 				artifacts={artifactsWithDetails.map(a => ({
 					id: a.id,

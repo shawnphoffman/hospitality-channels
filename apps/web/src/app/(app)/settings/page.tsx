@@ -17,7 +17,10 @@ export default async function SettingsPage() {
 
 	return (
 		<div>
-			<h2 className="mb-6 text-2xl font-bold text-white">Settings</h2>
+			<div className="mb-6">
+				<h2 className="text-2xl font-bold text-white">Settings</h2>
+				<p className="mt-1 text-sm text-slate-500">Tunarr integration, publish profiles, and system configuration</p>
+			</div>
 			<SettingsForm
 				initialSettings={settings}
 				initialProfiles={profiles.map(p => ({

@@ -17,7 +17,10 @@ export default async function ImagesPage() {
 
 	return (
 		<div>
-			<h2 className="mb-6 text-2xl font-bold text-white">Images</h2>
+			<div className="mb-6">
+				<h2 className="text-2xl font-bold text-white">Images</h2>
+				<p className="mt-1 text-sm text-slate-500">Background images, logos, and photos for your templates</p>
+			</div>
 			<ImagesClient initialAssets={imageAssets} />
 		</div>
 	)

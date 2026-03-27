@@ -55,7 +55,7 @@ export async function POST() {
 
 	let entries: string[]
 	try {
-		entries = await readdir(assetsDir)
+		entries = (await readdir(assetsDir, { recursive: true })) as string[]
 	} catch {
 		return NextResponse.json({
 			added: 0,

@@ -7,7 +7,10 @@ export default function TemplatesPage() {
 	return (
 		<div>
 			<div className="mb-6 flex items-center justify-between">
-				<h2 className="text-2xl font-bold text-white">Templates</h2>
+				<div>
+					<h2 className="text-2xl font-bold text-white">Templates</h2>
+					<p className="mt-1 text-sm text-slate-500">Pre-built scene layouts for creating clips</p>
+				</div>
 				<a
 					href="/templates/dev"
 					className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
