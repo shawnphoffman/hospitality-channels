@@ -143,8 +143,8 @@ export function AssetField({
 							className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 						/>
 					) : (
-						<div className="flex flex-1 items-center">
-							<span className="truncate text-sm text-slate-400">
+						<div className="flex min-w-0 flex-1 items-center">
+							<span className="block truncate text-sm text-slate-400">
 								{value
 									? (selectedAsset?.name ??
 										decodeURIComponent(value.split('path=')[1] ?? '')
