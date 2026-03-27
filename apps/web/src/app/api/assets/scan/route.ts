@@ -66,9 +66,16 @@ export async function POST() {
 	const existing = await db.select({ originalPath: schema.assets.originalPath }).from(schema.assets)
 	const existingPaths = new Set(existing.map(a => a.originalPath))
 
+	// Directories to skip (cover art is auto-generated, not user assets)
+	const SKIP_DIRS = new Set(['covers'])
+
 	let added = 0
 
 	for (const entry of entries) {
+		// Skip files in excluded directories
+		const parts = entry.split(path.sep)
+		if (parts.some(p => SKIP_DIRS.has(p))) continue
+
 		const ext = path.extname(entry).toLowerCase()
 		if (!SUPPORTED_EXTENSIONS.has(ext)) continue
 
