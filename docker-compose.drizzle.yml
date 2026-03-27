@@ -31,7 +31,7 @@ services:
       - PGID=${PGID:-1000}
 
   drizzle-gateway:
-    image: ghcr.io/drizzle-team/gateway:0.1.1
+    image: ghcr.io/drizzle-team/gateway:latest
     restart: unless-stopped
     ports:
       - '${DRIZZLE_PORT:-4983}:4983'
