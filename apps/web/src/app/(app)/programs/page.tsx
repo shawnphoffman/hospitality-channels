@@ -8,18 +8,28 @@ export default async function ProgramsListPage() {
 	const allProgramClips = await db.select().from(schema.programClips)
 	const allAudioTracks = await db.select().from(schema.programAudioTracks)
 
-	const programsWithDetails = allPrograms.map(p => {
-		const clips = allProgramClips.filter(pc => pc.programId === p.id)
-		const tracks = allAudioTracks.filter(t => t.programId === p.id)
-		const audioDuration = tracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
-		const computedDuration = p.durationMode === 'manual' ? (p.manualDurationSec ?? 0) : audioDuration
-		return {
-			...p,
-			clipCount: clips.length,
-			audioTrackCount: tracks.length,
-			computedDuration,
-		}
-	})
+	const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
+
+	const programsWithDetails = allPrograms
+		.map(p => {
+			const clips = allProgramClips.filter(pc => pc.programId === p.id)
+			const tracks = allAudioTracks.filter(t => t.programId === p.id)
+			const audioDuration = tracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
+			const computedDuration = p.durationMode === 'manual' ? (p.manualDurationSec ?? 0) : audioDuration
+			return {
+				...p,
+				clipCount: clips.length,
+				audioTrackCount: tracks.length,
+				computedDuration,
+			}
+		})
+		.sort((a, b) => {
+			const aEmoji = EMOJI_RE.test(a.title)
+			const bEmoji = EMOJI_RE.test(b.title)
+			if (aEmoji && !bEmoji) return -1
+			if (!aEmoji && bEmoji) return 1
+			return a.title.localeCompare(b.title)
+		})
 
 	function formatDuration(sec: number): string {
 		if (sec <= 0) return '—'

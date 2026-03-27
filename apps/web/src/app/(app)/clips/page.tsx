@@ -2,6 +2,16 @@ export const dynamic = 'force-dynamic'
 
 import { getDb, schema } from '@/db'
 
+const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
+
+function emojiFirstSort(a: string, b: string): number {
+	const aEmoji = EMOJI_RE.test(a)
+	const bEmoji = EMOJI_RE.test(b)
+	if (aEmoji && !bEmoji) return -1
+	if (!aEmoji && bEmoji) return 1
+	return a.localeCompare(b)
+}
+
 function formatDate(dateStr: string | null | undefined): string {
 	if (!dateStr) return ''
 	try {
@@ -22,7 +32,7 @@ export default async function ClipsListPage() {
 			const template = allTemplates.find(t => t.id === clip.templateId)
 			return { ...clip, templateName: template?.name ?? 'Unknown' }
 		})
-		.sort((a, b) => a.title.localeCompare(b.title))
+		.sort((a, b) => emojiFirstSort(a.title, b.title))
 
 	return (
 		<div>

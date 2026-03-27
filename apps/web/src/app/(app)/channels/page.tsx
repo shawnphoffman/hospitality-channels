@@ -29,18 +29,20 @@ export default async function ChannelsPage() {
 		}
 	}
 
-	const channelsWithDetails = channels.map(ch => {
-		const clip = ch.clipId ? clips.find(c => c.id === ch.clipId) : null
-		const program = ch.programId ? programs.find(p => p.id === ch.programId) : null
-		const key = ch.programId ?? ch.clipId
-		const artifact = key ? (artifactsByKey[key] ?? null) : null
-		return {
-			...ch,
-			clipTitle: clip?.title ?? null,
-			programTitle: program?.title ?? null,
-			latestArtifact: artifact,
-		}
-	})
+	const channelsWithDetails = channels
+		.map(ch => {
+			const clip = ch.clipId ? clips.find(c => c.id === ch.clipId) : null
+			const program = ch.programId ? programs.find(p => p.id === ch.programId) : null
+			const key = ch.programId ?? ch.clipId
+			const artifact = key ? (artifactsByKey[key] ?? null) : null
+			return {
+				...ch,
+				clipTitle: clip?.title ?? null,
+				programTitle: program?.title ?? null,
+				latestArtifact: artifact,
+			}
+		})
+		.sort((a, b) => a.channelNumber - b.channelNumber)
 
 	return (
 		<div>
