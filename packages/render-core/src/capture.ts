@@ -88,12 +88,13 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 		const hasVideoBackground = Boolean(options.backgroundVideoPath)
 
 		if (hasVideoBackground) {
-			// Hide <video> elements and make all structural containers transparent.
-			// The render layout, viewport wrapper, and scene root all need to be
-			// transparent so the PNG foreground has alpha for FFmpeg compositing.
-			// Content cards and overlays (rgba tints) inside the scene are preserved.
+			// Make every opaque layer transparent so the PNG has alpha for compositing.
+			// Layers: html/body (root layout + globals.css bg-slate-950),
+			// render layout div (#0f172a), viewport wrapper, scene root.
+			// Content cards and semi-transparent overlays (rgba tints) are preserved.
 			await page.addStyleTag({
 				content: `
+					html, body { background: transparent !important; }
 					video { display: none !important; }
 					div[style*="1920"], div[style*="1920"] > div { background: transparent !important; }
 				`,
