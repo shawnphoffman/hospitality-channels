@@ -116,6 +116,17 @@ const navItems: NavItem[] = [
 			</svg>
 		),
 	},
+	{
+		type: 'link',
+		href: '/videos',
+		label: 'Videos',
+		icon: (
+			<svg {...iconProps}>
+				<path d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72" />
+				<rect x="2.25" y="5.25" width="13.5" height="13.5" rx="2.25" />
+			</svg>
+		),
+	},
 	{ type: 'separator' },
 	{
 		type: 'link',
