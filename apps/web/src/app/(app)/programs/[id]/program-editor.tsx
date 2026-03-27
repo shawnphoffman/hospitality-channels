@@ -65,7 +65,7 @@ interface ProgramEditorProps {
 	clips: ProgramClip[]
 	audioTracks: AudioTrack[]
 	availableClips: { id: string; title: string }[]
-	audioAssets: { id: string; filename: string }[]
+	audioAssets: { id: string; filename: string; originalPath: string }[]
 	imageAssets: { id: string; name: string | null; originalPath: string }[]
 	profiles: { id: string; name: string; exportPath: string; fileNamingPattern: string | null }[]
 	tunarrConfigured?: boolean
@@ -377,7 +377,7 @@ export function ProgramEditor({
 		const body: Record<string, unknown> = {}
 		if (addAudioAssetId) {
 			body.assetId = addAudioAssetId
-			body.audioUrl = `/api/assets/serve?path=${encodeURIComponent(audioAssets.find(a => a.id === addAudioAssetId)?.filename ?? '')}`
+			body.audioUrl = `/api/assets/serve?path=${encodeURIComponent(audioAssets.find(a => a.id === addAudioAssetId)?.originalPath ?? '')}`
 		} else {
 			body.audioUrl = addAudioUrl
 		}

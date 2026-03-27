@@ -529,6 +529,74 @@ async function stitchProgramVideo(
 	})
 }
 
+/**
+ * Stitches a mix of video segments (.mp4) and static images (.png) into a final video.
+ * Videos are used as-is; images are looped for perClipDuration seconds.
+ */
+async function stitchMixedSegments(
+	segments: string[],
+	audioPath: string | null,
+	perClipDuration: number,
+	totalDuration: number,
+	outputPath: string
+): Promise<{ success: boolean; error?: string }> {
+	const ffmpegArgs: string[] = ['-y']
+	const inputLabels: string[] = []
+
+	// Add each segment as an input
+	for (let i = 0; i < segments.length; i++) {
+		const seg = segments[i]
+		if (seg.endsWith('.mp4')) {
+			ffmpegArgs.push('-t', String(perClipDuration), '-i', seg)
+		} else {
+			ffmpegArgs.push('-loop', '1', '-t', String(perClipDuration), '-framerate', '30', '-i', seg)
+		}
+		inputLabels.push(`[${i}:v]`)
+	}
+
+	if (audioPath) {
+		ffmpegArgs.push('-i', audioPath)
+	}
+
+	const n = segments.length
+	const filterComplex = `${inputLabels.join('')}concat=n=${n}:v=1:a=0[outv]`
+
+	ffmpegArgs.push('-filter_complex', filterComplex)
+	ffmpegArgs.push('-map', '[outv]')
+
+	if (audioPath) {
+		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k', '-shortest')
+	} else {
+		ffmpegArgs.push('-t', String(totalDuration))
+	}
+
+	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
+
+	logger.info('FFmpeg mixed stitch command', {
+		args: ffmpegArgs.join(' '),
+		segments: n,
+		perClipDuration,
+		totalDuration,
+		hasAudio: !!audioPath,
+	})
+
+	return new Promise(resolve => {
+		const proc = spawn('ffmpeg', ffmpegArgs, {
+			stdio: ['ignore', 'pipe', 'pipe'],
+		})
+
+		let stderr = ''
+		proc.stderr?.on('data', (chunk: Buffer) => {
+			stderr += chunk.toString()
+		})
+		proc.on('close', code => {
+			if (code === 0) resolve({ success: true })
+			else resolve({ success: false, error: stderr.slice(-500) })
+		})
+		proc.on('error', err => resolve({ success: false, error: err.message }))
+	})
+}
+
 export async function handleRenderProgramJob(job: Job): Promise<string> {
 	const payload = job.payload as {
 		durationSec: number
@@ -560,26 +628,50 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 		.replace(/[:T]/g, '-')
 		.replace(/\.\d+Z$/, '')
 
-	// Step 1: Capture screenshots for each clip
-	const screenshotPaths: string[] = []
+	// Step 1: Render each clip — use capturePageVideo for clips with video backgrounds,
+	// captureScreenshot for static clips
+	const clipSegments: string[] = []
+	const tempFiles: string[] = []
+	let hasAnyVideoBackground = false
+
 	for (let i = 0; i < clipIds.length; i++) {
 		const url = `${WEB_URL}/programs/${programId}/render?clipIndex=${i}`
-		const screenshotPath = path.join(outputDir, `_program-${programId}-clip${i}-${Date.now()}.png`)
+		const video = await resolveVideoForClip(clipIds[i])
+
 		try {
-			await captureScreenshot({ url, outputPath: screenshotPath })
-			screenshotPaths.push(screenshotPath)
+			if (video.videoPath) {
+				// Clip has a video background — render as a composited video segment
+				hasAnyVideoBackground = true
+				const segmentPath = path.join(outputDir, `_program-${programId}-clip${i}-${Date.now()}.mp4`)
+				const result = await capturePageVideo({
+					url,
+					outputPath: segmentPath,
+					durationSec: perClipDuration,
+					backgroundVideoPath: video.videoPath,
+				})
+				if (video.tempFile) tempFiles.push(video.tempFile)
+				if (!result.success) {
+					throw new Error(`Capture failed: ${result.error}`)
+				}
+				clipSegments.push(segmentPath)
+				tempFiles.push(segmentPath)
+			} else {
+				// Static clip — capture screenshot
+				const screenshotPath = path.join(outputDir, `_program-${programId}-clip${i}-${Date.now()}.png`)
+				await captureScreenshot({ url, outputPath: screenshotPath })
+				clipSegments.push(screenshotPath)
+				tempFiles.push(screenshotPath)
+			}
 		} catch (err) {
-			logger.error('Failed to capture clip screenshot', { programId, clipIndex: i, error: String(err) })
-			// Clean up already-captured screenshots
-			for (const p of screenshotPaths) await unlink(p).catch(() => {})
-			throw new Error(`Failed to capture clip ${i}: ${err instanceof Error ? err.message : String(err)}`)
+			logger.error('Failed to render clip segment', { programId, clipIndex: i, error: String(err) })
+			for (const p of tempFiles) await unlink(p).catch(() => {})
+			throw new Error(`Failed to render clip ${i}: ${err instanceof Error ? err.message : String(err)}`)
 		}
 	}
 
 	// Step 2: Resolve and concatenate audio tracks
 	const audioResult = await resolveAudioTracks(payload.audioTracks)
 	let combinedAudioPath: string | null = null
-	const tempAudioFiles = [...audioResult.tempFiles]
 
 	if (audioResult.paths.length > 0) {
 		combinedAudioPath = path.join(outputDir, `_program-audio-${programId}-${Date.now()}.mp3`)
@@ -588,17 +680,25 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 			logger.warn('Audio concatenation failed, rendering without audio', { programId })
 			combinedAudioPath = null
 		} else {
-			tempAudioFiles.push(combinedAudioPath)
+			tempFiles.push(combinedAudioPath)
 		}
 	}
+	for (const p of audioResult.tempFiles) tempFiles.push(p)
 
-	// Step 3: Stitch screenshots + audio into final video
+	// Step 3: Stitch clip segments + audio into final video
 	const finalPath = path.join(outputDir, `${slug}_${ts}.mp4`)
-	const stitchResult = await stitchProgramVideo(screenshotPaths, combinedAudioPath, perClipDuration, totalDuration, finalPath)
+	let stitchResult: { success: boolean; error?: string }
+
+	if (hasAnyVideoBackground) {
+		// Mixed pipeline: some clips are .mp4, some are .png — use stitchMixedSegments
+		stitchResult = await stitchMixedSegments(clipSegments, combinedAudioPath, perClipDuration, totalDuration, finalPath)
+	} else {
+		// All static screenshots — use existing fast path
+		stitchResult = await stitchProgramVideo(clipSegments, combinedAudioPath, perClipDuration, totalDuration, finalPath)
+	}
 
 	// Clean up temp files
-	for (const p of screenshotPaths) await unlink(p).catch(() => {})
-	for (const p of tempAudioFiles) await unlink(p).catch(() => {})
+	for (const p of tempFiles) await unlink(p).catch(() => {})
 
 	if (!stitchResult.success) {
 		throw new Error(`Program video stitch failed: ${stitchResult.error}`)

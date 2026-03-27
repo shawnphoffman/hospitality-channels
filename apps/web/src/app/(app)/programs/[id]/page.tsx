@@ -93,7 +93,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 	// Available audio assets
 	const audioAssets = allAssets
 		.filter(a => a.type === 'audio')
-		.map(a => ({ id: a.id, filename: a.name ?? a.originalPath.split('/').pop() ?? 'audio' }))
+		.map(a => ({ id: a.id, filename: a.name ?? a.originalPath.split('/').pop() ?? 'audio', originalPath: a.originalPath }))
 
 	// Image assets for icon picker
 	const imageAssets = allAssets
