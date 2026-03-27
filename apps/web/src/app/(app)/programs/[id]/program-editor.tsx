@@ -873,7 +873,7 @@ export function ProgramEditor({
 											setAddAudioAssetId(e.target.value)
 											if (e.target.value) setAddAudioUrl('')
 										}}
-										className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+										className="min-w-0 flex-1 truncate rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
 									>
 										<option value="">Select audio asset...</option>
 										{audioAssets.map(a => (
