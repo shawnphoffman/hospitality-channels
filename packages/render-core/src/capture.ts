@@ -105,6 +105,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 
 		if (hasVideoBackground) {
 			// Composite: loop background video + overlay transparent foreground PNG
+			// Normalize the background video framerate to avoid inheriting high-fps sources
 			ffmpegArgs.push('-stream_loop', '-1', '-i', options.backgroundVideoPath!)
 			ffmpegArgs.push('-loop', '1', '-framerate', String(fps), '-i', screenshotPath)
 
@@ -112,9 +113,11 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 				ffmpegArgs.push('-i', options.audioPath)
 			}
 
+			// fps= normalizes source framerate (e.g. 240fps .mov → 30fps)
+			// format=rgba ensures pixel format compatibility before overlay (ProRes, etc.)
 			ffmpegArgs.push(
 				'-filter_complex',
-				`[0:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2[bg];[1:v]format=rgba[fg];[bg][fg]overlay=0:0:format=auto[outv]`,
+				`[0:v]fps=${fps},scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,format=rgba[bg];[1:v]format=rgba[fg];[bg][fg]overlay=0:0:format=auto[outv]`,
 				'-map',
 				'[outv]'
 			)
@@ -131,7 +134,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 				ffmpegArgs.push('-t', String(durationSec))
 			}
 
-			ffmpegArgs.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '18')
+			ffmpegArgs.push('-r', String(fps), '-c:v', 'libx264', '-preset', 'slow', '-crf', '18')
 		} else {
 			// Standard single-frame loop approach
 			ffmpegArgs.push('-loop', '1', '-framerate', String(fps), '-i', screenshotPath)

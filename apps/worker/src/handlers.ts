@@ -6,7 +6,7 @@ import { createLogger, PATHS } from '@hospitality-channels/common'
 import { capturePageVideo, captureScreenshot, probeDuration } from '@hospitality-channels/render-core'
 import { publishArtifact } from '@hospitality-channels/publish'
 import { eq } from 'drizzle-orm'
-import { db, clips, publishedArtifacts } from './db.js'
+import { db, clips, assets, publishedArtifacts } from './db.js'
 import type { Job } from './queue.js'
 
 const logger = createLogger('worker:handlers')
@@ -39,8 +39,23 @@ async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string
 		const rendersDir = path.resolve(PATHS.renders)
 		await import('node:fs/promises').then(fs => fs.mkdir(rendersDir, { recursive: true }))
 
-		// If it's an internal asset serve URL, download via the web server
+		// If it's an internal asset serve URL, try direct filesystem access first
 		if (audioUrl.startsWith('/api/assets/serve')) {
+			const parsedUrl = new URL(audioUrl, 'http://localhost')
+			const assetPath = parsedUrl.searchParams.get('path')
+			if (assetPath) {
+				const assetsDir = path.resolve(PATHS.assets)
+				const resolved = path.isAbsolute(assetPath) ? assetPath : path.resolve(assetsDir, assetPath)
+				try {
+					const { access } = await import('node:fs/promises')
+					await access(resolved)
+					logger.info('resolveAudio: using direct filesystem path', { resolved })
+					return { audioPath: resolved, matchAudioDuration: matchDuration }
+				} catch {
+					logger.info('resolveAudio: direct path not accessible, falling back to HTTP', { resolved })
+				}
+			}
+
 			const fullUrl = `${WEB_URL}${audioUrl}`
 			logger.info('resolveAudio: fetching internal asset', { fullUrl })
 			const res = await fetch(fullUrl)
@@ -50,7 +65,7 @@ async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string
 			}
 			const buffer = Buffer.from(await res.arrayBuffer())
 			logger.info('resolveAudio: downloaded internal asset', { bytes: buffer.length })
-			const ext = path.extname(new URL(fullUrl, 'http://localhost').searchParams.get('path') ?? '.mp3') || '.mp3'
+			const ext = path.extname(assetPath ?? '.mp3') || '.mp3'
 			const tempPath = path.join(rendersDir, `_audio-${Date.now()}${ext}`)
 			await writeFile(tempPath, buffer)
 			return { audioPath: tempPath, matchAudioDuration: matchDuration, tempFile: tempPath }
@@ -101,7 +116,25 @@ async function resolveVideoForClip(clipId: string): Promise<{ videoPath?: string
 		const rendersDir = path.resolve(PATHS.renders)
 		await mkdir(rendersDir, { recursive: true })
 
+		// For internal asset URLs, try direct filesystem access first (avoids large HTTP transfer)
 		if (videoUrl.startsWith('/api/assets/serve')) {
+			const parsedUrl = new URL(videoUrl, 'http://localhost')
+			const assetPath = parsedUrl.searchParams.get('path')
+			if (assetPath) {
+				// Try the path directly (it may be an absolute path or relative to assets dir)
+				const assetsDir = path.resolve(PATHS.assets)
+				const resolved = path.isAbsolute(assetPath) ? assetPath : path.resolve(assetsDir, assetPath)
+				try {
+					const { access } = await import('node:fs/promises')
+					await access(resolved)
+					logger.info('resolveVideo: using direct filesystem path', { resolved })
+					return { videoPath: resolved }
+				} catch {
+					logger.info('resolveVideo: direct path not accessible, falling back to HTTP', { resolved })
+				}
+			}
+
+			// Fallback: download via HTTP
 			const fullUrl = `${WEB_URL}${videoUrl}`
 			const res = await fetch(fullUrl)
 			if (!res.ok) {
@@ -109,7 +142,7 @@ async function resolveVideoForClip(clipId: string): Promise<{ videoPath?: string
 				return {}
 			}
 			const buffer = Buffer.from(await res.arrayBuffer())
-			const ext = path.extname(new URL(fullUrl, 'http://localhost').searchParams.get('path') ?? '.mp4') || '.mp4'
+			const ext = path.extname(assetPath ?? '.mp4') || '.mp4'
 			const tempPath = path.join(rendersDir, `_bgvideo-${Date.now()}${ext}`)
 			await writeFile(tempPath, buffer)
 			return { videoPath: tempPath, tempFile: tempPath }
@@ -365,6 +398,22 @@ async function resolveAudioTracks(tracks: AudioTrackPayload[]): Promise<{ paths:
 	await mkdir(rendersDir, { recursive: true })
 
 	for (const track of tracks) {
+		// First try: resolve directly via assetId (most reliable — avoids HTTP round-trip)
+		if (track.assetId) {
+			try {
+				const [asset] = await db.select().from(assets).where(eq(assets.id, track.assetId)).limit(1)
+				if (asset) {
+					const { access } = await import('node:fs/promises')
+					await access(asset.originalPath)
+					logger.info('resolveAudioTracks: resolved via assetId', { assetId: track.assetId, path: asset.originalPath })
+					paths.push(asset.originalPath)
+					continue
+				}
+			} catch {
+				logger.warn('resolveAudioTracks: assetId lookup failed, falling back to audioUrl', { assetId: track.assetId })
+			}
+		}
+
 		const audioUrl = track.audioUrl
 		if (!audioUrl) {
 			logger.warn('resolveAudioTracks: track has no audioUrl, skipping', { position: track.position })
@@ -551,7 +600,6 @@ async function stitchMixedSegments(
 		} else {
 			ffmpegArgs.push('-loop', '1', '-t', String(perClipDuration), '-framerate', '30', '-i', seg)
 		}
-		inputLabels.push(`[${i}:v]`)
 	}
 
 	if (audioPath) {
@@ -559,7 +607,18 @@ async function stitchMixedSegments(
 	}
 
 	const n = segments.length
-	const filterComplex = `${inputLabels.join('')}concat=n=${n}:v=1:a=0[outv]`
+	// Normalize all segments to 30fps and consistent size before concatenation
+	let filterComplex = ''
+	for (let i = 0; i < n; i++) {
+		const seg = segments[i]
+		if (seg.endsWith('.mp4')) {
+			filterComplex += `[${i}:v]fps=30,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1[v${i}];`
+		} else {
+			filterComplex += `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1[v${i}];`
+		}
+		inputLabels.push(`[v${i}]`)
+	}
+	filterComplex += `${inputLabels.join('')}concat=n=${n}:v=1:a=0[outv]`
 
 	ffmpegArgs.push('-filter_complex', filterComplex)
 	ffmpegArgs.push('-map', '[outv]')
@@ -570,7 +629,21 @@ async function stitchMixedSegments(
 		ffmpegArgs.push('-t', String(totalDuration))
 	}
 
-	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
+	ffmpegArgs.push(
+		'-r',
+		'30',
+		'-c:v',
+		'libx264',
+		'-preset',
+		'slow',
+		'-crf',
+		'18',
+		'-pix_fmt',
+		'yuv420p',
+		'-movflags',
+		'+faststart',
+		outputPath
+	)
 
 	logger.info('FFmpeg mixed stitch command', {
 		args: ffmpegArgs.join(' '),
