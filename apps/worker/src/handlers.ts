@@ -23,10 +23,20 @@ async function triggerTunarrRescan(): Promise<void> {
 		const [urlSetting] = await db.select().from(settings).where(eq(settings.key, 'tunarr_url')).limit(1)
 		const [sourceIdSetting] = await db.select().from(settings).where(eq(settings.key, 'tunarr_media_source_id')).limit(1)
 
-		if (!urlSetting?.value || !sourceIdSetting?.value) return
+		if (!urlSetting?.value || !sourceIdSetting?.value) {
+			logger.warn('Tunarr rescan skipped — missing settings', {
+				hasUrl: !!urlSetting?.value,
+				hasSourceId: !!sourceIdSetting?.value,
+			})
+			return
+		}
 
-		logger.info('Triggering Tunarr media source rescan after publish')
+		logger.info('Triggering Tunarr media source rescan after publish', {
+			tunarrUrl: urlSetting.value,
+			sourceId: sourceIdSetting.value,
+		})
 		await scanMediaSource(urlSetting.value, sourceIdSetting.value)
+		logger.info('Tunarr media source rescan triggered successfully')
 	} catch (err) {
 		logger.warn('Tunarr rescan failed (non-fatal)', { error: String(err) })
 	}

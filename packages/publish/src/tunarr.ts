@@ -92,6 +92,8 @@ export async function scanMediaSource(tunarrUrl: string, sourceId: string): Prom
 	if (!res.ok) {
 		const text = await res.text().catch(() => '')
 		logger.warn('Media source scan failed', { sourceId, status: res.status, body: text })
+	} else {
+		logger.info('Media source scan request accepted', { sourceId, status: res.status })
 	}
 }
 
