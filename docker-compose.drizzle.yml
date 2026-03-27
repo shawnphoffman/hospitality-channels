@@ -1,0 +1,53 @@
+# =================================================================
+# Example docker-compose with Drizzle Gateway
+#
+# Extends the base setup with a Drizzle Gateway container for
+# browser-based database administration.
+#
+# Usage:
+#   docker compose -f docker-compose.drizzle.yml up -d
+#
+# Drizzle Gateway UI: http://<host>:4983
+# Login with your DRIZZLE_MASTERPASS, then add a SQLite connection
+# pointing to /data/guest-tv-pages.db
+# =================================================================
+
+services:
+  hospitality-channels:
+    image: ghcr.io/YOUR_ORG/hospitality-channels:latest
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3000}:3000'
+    volumes:
+      # Application data (SQLite database, assets, etc.)
+      - app-data:/data
+      # Media export directory — mount wherever Tunarr can read from
+      - exports:/exports
+      # Optional: mount a host path if Tunarr reads from a local directory
+      # - /path/to/media:/library-local:rw
+    environment:
+      - TZ=${TZ:-UTC}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+
+  drizzle-gateway:
+    image: ghcr.io/drizzle-team/gateway:0.1.1
+    restart: unless-stopped
+    ports:
+      - '${DRIZZLE_PORT:-4983}:4983'
+    volumes:
+      # Persistent storage for sessions, connection configs, query history
+      - drizzle-data:/app
+      # Share app-data so Gateway can access the SQLite database
+      # NOTE: Mounted read-only to avoid SQLite locking conflicts.
+      # Remove :ro if you need to edit data, but be aware of potential
+      # SQLITE_BUSY errors during active renders/publishes.
+      - app-data:/data:ro
+    environment:
+      # Admin password for Drizzle Gateway only — not related to the app
+      - MASTERPASS=${DRIZZLE_MASTERPASS:-admin}
+
+volumes:
+  app-data:
+  exports:
+  drizzle-data:
