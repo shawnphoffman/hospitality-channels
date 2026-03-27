@@ -2,6 +2,16 @@
 
 import { useState, useRef, type ReactNode } from 'react'
 
+const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
+
+function emojiFirstSort(a: string, b: string): number {
+	const aEmoji = EMOJI_RE.test(a)
+	const bEmoji = EMOJI_RE.test(b)
+	if (aEmoji && !bEmoji) return -1
+	if (!aEmoji && bEmoji) return 1
+	return a.localeCompare(b)
+}
+
 export interface AssetData {
 	id: string
 	name?: string | null
@@ -64,7 +74,7 @@ export function AssetField({
 			const res = await fetch('/api/assets')
 			if (res.ok) {
 				const data: AssetData[] = await res.json()
-				setAssets(data.filter(assetFilter))
+				setAssets(data.filter(assetFilter).sort((a, b) => emojiFirstSort(a.name ?? a.originalPath, b.name ?? b.originalPath)))
 			}
 		} catch {
 			// ignore

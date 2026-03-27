@@ -5,6 +5,16 @@ import { getDb, schema } from '@/db'
 import { notFound } from 'next/navigation'
 import { ProgramEditor } from './program-editor'
 
+const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
+
+function emojiFirstSort(a: string, b: string): number {
+	const aEmoji = EMOJI_RE.test(a)
+	const bEmoji = EMOJI_RE.test(b)
+	if (aEmoji && !bEmoji) return -1
+	if (!aEmoji && bEmoji) return 1
+	return a.localeCompare(b)
+}
+
 export default async function ProgramPage({ params }: { params: { id: string } }) {
 	const db = await getDb()
 
@@ -88,17 +98,19 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 
 	// Available clips (not already in program)
 	const usedClipIds = new Set(programClips.map(pc => pc.clipId))
-	const availableClips = allClips.map(c => ({ id: c.id, title: c.title }))
+	const availableClips = allClips.map(c => ({ id: c.id, title: c.title })).sort((a, b) => emojiFirstSort(a.title, b.title))
 
 	// Available audio assets
 	const audioAssets = allAssets
 		.filter(a => a.type === 'audio')
 		.map(a => ({ id: a.id, filename: a.name ?? a.originalPath.split('/').pop() ?? 'audio', originalPath: a.originalPath }))
+		.sort((a, b) => emojiFirstSort(a.filename, b.filename))
 
 	// Image assets for icon picker
 	const imageAssets = allAssets
 		.filter(a => a.type !== 'audio' && a.type !== 'video')
 		.map(a => ({ id: a.id, name: a.name ?? null, originalPath: a.originalPath }))
+		.sort((a, b) => emojiFirstSort(a.name ?? a.originalPath, b.name ?? b.originalPath))
 
 	return (
 		<ProgramEditor
