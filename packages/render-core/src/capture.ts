@@ -91,12 +91,15 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 			// Make every opaque layer transparent so the PNG has alpha for compositing.
 			// Layers: html/body (root layout + globals.css bg-slate-950),
 			// render layout div (#0f172a), viewport wrapper, scene root.
-			// Content cards and semi-transparent overlays (rgba tints) are preserved.
+			// Also hide the full-screen rgba overlay — its darkening effect will be
+			// applied via FFmpeg drawbox so it composites correctly with the video.
+			// The overlay uses inline style rgba(0,0,0,...); card bgs use Tailwind classes.
 			await page.addStyleTag({
 				content: `
 					html, body { background: transparent !important; }
 					video { display: none !important; }
 					div[style*="1920"], div[style*="1920"] > div { background: transparent !important; }
+					[style*="rgba(0,0,0,"] { background: transparent !important; }
 				`,
 			})
 			await new Promise(resolve => setTimeout(resolve, 200))
@@ -122,9 +125,11 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 
 			// fps= normalizes source framerate (e.g. 240fps .mov → 30fps)
 			// format=rgba ensures pixel format compatibility before overlay (ProRes, etc.)
+			// drawbox applies the same ~50% darkening tint that the CSS overlay provides
+			// for image backgrounds, so the visual treatment matches.
 			ffmpegArgs.push(
 				'-filter_complex',
-				`[0:v]fps=${fps},scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,format=rgba[bg];[1:v]format=rgba[fg];[bg][fg]overlay=0:0:format=auto[outv]`,
+				`[0:v]fps=${fps},scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,drawbox=0:0:iw:ih:black@0.5:t=fill,format=rgba[bg];[1:v]format=rgba[fg];[bg][fg]overlay=0:0:format=auto[outv]`,
 				'-map',
 				'[outv]'
 			)
