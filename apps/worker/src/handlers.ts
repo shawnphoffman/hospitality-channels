@@ -4,9 +4,9 @@ import { spawn } from 'node:child_process'
 import { writeFile, unlink, mkdir } from 'node:fs/promises'
 import { createLogger, PATHS } from '@hospitality-channels/common'
 import { capturePageVideo, captureScreenshot, probeDuration } from '@hospitality-channels/render-core'
-import { publishArtifact } from '@hospitality-channels/publish'
+import { publishArtifact, scanMediaSource } from '@hospitality-channels/publish'
 import { eq } from 'drizzle-orm'
-import { db, clips, assets, publishedArtifacts } from './db.js'
+import { db, clips, assets, publishedArtifacts, settings } from './db.js'
 import type { Job } from './queue.js'
 
 const logger = createLogger('worker:handlers')
@@ -16,6 +16,21 @@ function generateId(): string {
 }
 
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3000'
+
+/** Trigger a Tunarr media source rescan so newly published files are indexed. */
+async function triggerTunarrRescan(): Promise<void> {
+	try {
+		const [urlSetting] = await db.select().from(settings).where(eq(settings.key, 'tunarr_url')).limit(1)
+		const [sourceIdSetting] = await db.select().from(settings).where(eq(settings.key, 'tunarr_media_source_id')).limit(1)
+
+		if (!urlSetting?.value || !sourceIdSetting?.value) return
+
+		logger.info('Triggering Tunarr media source rescan after publish')
+		await scanMediaSource(urlSetting.value, sourceIdSetting.value)
+	} catch (err) {
+		logger.warn('Tunarr rescan failed (non-fatal)', { error: String(err) })
+	}
+}
 
 async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string; matchAudioDuration?: boolean; tempFile?: string }> {
 	try {
@@ -375,6 +390,10 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 	})
 
 	logger.info('Render+publish complete', { clipId, outputPath: result.outputPath, artifactId })
+
+	// Trigger Tunarr rescan so the new file is indexed immediately
+	await triggerTunarrRescan()
+
 	return result.outputPath
 }
 
@@ -852,5 +871,9 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 	})
 
 	logger.info('Program render+publish complete', { programId, outputPath: result.outputPath, artifactId })
+
+	// Trigger Tunarr rescan so the new file is indexed immediately
+	await triggerTunarrRescan()
+
 	return result.outputPath
 }

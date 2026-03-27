@@ -101,5 +101,11 @@ export const assets = sqliteTable('assets', {
 	checksum: text('checksum'),
 })
 
-const schema = { jobs, clips, publishProfiles, publishedArtifacts, programs, programClips, programAudioTracks, assets }
+export const settings = sqliteTable('settings', {
+	key: text('key').primaryKey(),
+	value: text('value'),
+	updatedAt: text('updated_at').notNull(),
+})
+
+const schema = { jobs, clips, publishProfiles, publishedArtifacts, programs, programClips, programAudioTracks, assets, settings }
 export const db = drizzle(client, { schema })
