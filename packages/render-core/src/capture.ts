@@ -88,9 +88,15 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 		const hasVideoBackground = Boolean(options.backgroundVideoPath)
 
 		if (hasVideoBackground) {
-			// Hide <video> elements and make scene root transparent for compositing
+			// Hide <video> elements and make all structural containers transparent.
+			// The render layout, viewport wrapper, and scene root all need to be
+			// transparent so the PNG foreground has alpha for FFmpeg compositing.
+			// Content cards and overlays (rgba tints) inside the scene are preserved.
 			await page.addStyleTag({
-				content: 'video { display: none !important; } div[style*="1920"] > div { background: transparent !important; }',
+				content: `
+					video { display: none !important; }
+					div[style*="1920"], div[style*="1920"] > div { background: transparent !important; }
+				`,
 			})
 			await new Promise(resolve => setTimeout(resolve, 200))
 		}
