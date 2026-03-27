@@ -115,13 +115,34 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 		}
 	}
 
+	const handleDuplicate = async () => {
+		setSaving(true)
+		setError(null)
+		try {
+			const res = await fetch(`/api/clips/${clip.id}/duplicate`, { method: 'POST' })
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				throw new Error(data.error || `Failed to duplicate (${res.status})`)
+			}
+			const newClip = await res.json()
+			router.push(`/clips/${newClip.id}`)
+			router.refresh()
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Something went wrong')
+			setSaving(false)
+		}
+	}
+
 	const handleDelete = async () => {
 		if (!confirm('Are you sure you want to delete this clip?')) return
 		setSaving(true)
 		setError(null)
 		try {
 			const res = await fetch(`/api/clips/${clip.id}`, { method: 'DELETE' })
-			if (!res.ok) throw new Error('Failed to delete clip')
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				throw new Error(data.error || 'Failed to delete clip')
+			}
 			router.push('/clips')
 			router.refresh()
 		} catch (err) {
@@ -313,13 +334,22 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 						Back
 					</a>
 				</div>
-				<button
-					onClick={handleDelete}
-					disabled={saving}
-					className="rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50"
-				>
-					Delete Clip
-				</button>
+				<div className="flex items-center gap-3">
+					<button
+						onClick={handleDuplicate}
+						disabled={saving}
+						className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-50"
+					>
+						Duplicate
+					</button>
+					<button
+						onClick={handleDelete}
+						disabled={saving}
+						className="rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 disabled:opacity-50"
+					>
+						Delete
+					</button>
+				</div>
 			</div>
 		</div>
 	)
