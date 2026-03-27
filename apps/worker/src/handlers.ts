@@ -557,7 +557,7 @@ async function stitchProgramVideo(
 		ffmpegArgs.push('-t', String(totalDuration))
 	}
 
-	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
+	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
 
 	logger.info('FFmpeg stitch command', { args: ffmpegArgs.join(' '), clips: n, perClipDuration, totalDuration, hasAudio: !!audioPath })
 
@@ -635,7 +635,7 @@ async function stitchMixedSegments(
 		'-c:v',
 		'libx264',
 		'-preset',
-		'slow',
+		'fast',
 		'-crf',
 		'18',
 		'-pix_fmt',

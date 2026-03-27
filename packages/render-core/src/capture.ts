@@ -141,7 +141,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 				ffmpegArgs.push('-t', String(durationSec))
 			}
 
-			ffmpegArgs.push('-r', String(fps), '-c:v', 'libx264', '-preset', 'slow', '-crf', '18')
+			ffmpegArgs.push('-r', String(fps), '-c:v', 'libx264', '-preset', 'fast', '-crf', '18')
 		} else {
 			// Standard single-frame loop approach
 			ffmpegArgs.push('-loop', '1', '-framerate', String(fps), '-i', screenshotPath)
@@ -150,7 +150,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 				ffmpegArgs.push('-i', options.audioPath)
 			}
 
-			ffmpegArgs.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-tune', 'stillimage')
+			ffmpegArgs.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-tune', 'stillimage')
 
 			if (options.audioPath) {
 				ffmpegArgs.push('-c:a', 'aac', '-b:a', '192k')
