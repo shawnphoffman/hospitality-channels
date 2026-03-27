@@ -30,11 +30,11 @@ export function WelcomeScene({ data }: TemplateSceneProps) {
 							: 'linear-gradient(to bottom right, #0f172a, #1e293b, #1e1b4b)',
 			}}
 		>
-			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} />}
-
 			{hasVideo && (
 				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
 			)}
+
+			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} />}
 
 			{!hasBg && (
 				<div

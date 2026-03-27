@@ -35,11 +35,11 @@ export function ContactDirectoryScene({ data }: TemplateSceneProps) {
 							: 'linear-gradient(to bottom, #0f172a, #020617)',
 			}}
 		>
-			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
-
 			{hasVideo && (
 				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
 			)}
+
+			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
 
 			<div className="relative z-10 flex items-center justify-center" style={{ paddingTop: 80, paddingInline: 96 }}>
 				<h1 style={{ fontSize: 64 }} className="font-bold tracking-tight">

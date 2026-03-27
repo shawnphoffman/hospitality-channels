@@ -27,11 +27,11 @@ export function HouseGuideImageRightScene({ data }: TemplateSceneProps) {
 							: 'linear-gradient(to bottom, #0f172a, #020617)',
 			}}
 		>
-			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
-
 			{hasVideo && (
 				<video src={backgroundVideoUrl} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
 			)}
+
+			{hasBg && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />}
 
 			{/* Left: Title + WiFi + Text */}
 			<div className="relative z-10 flex w-[55%] flex-col justify-center" style={{ padding: '60px 20px 60px 80px' }}>
