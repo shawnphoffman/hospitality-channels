@@ -8,6 +8,7 @@ import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
 import { PATHS } from '@hospitality-channels/common'
 import { extractCoverArt } from '@/lib/cover-art'
+import { extractVideoThumbnail } from '@/lib/video-thumbnail'
 
 function probeFile(filePath: string): Promise<{ duration?: number; width?: number; height?: number }> {
 	return new Promise(resolve => {
@@ -82,10 +83,12 @@ export async function POST(request: Request) {
 	// Probe media metadata
 	const probe = await probeFile(filePath)
 
-	// Extract cover art for audio files
+	// Extract cover art for audio files, thumbnails for video files
 	let derivedPath: string | null = null
 	if (assetType === 'audio') {
 		derivedPath = await extractCoverArt(filePath, id)
+	} else if (assetType === 'video') {
+		derivedPath = await extractVideoThumbnail(filePath, id)
 	}
 
 	const db = await getDb()

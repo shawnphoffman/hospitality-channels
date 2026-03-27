@@ -7,6 +7,7 @@ export interface AssetData {
 	name?: string | null
 	type: string
 	originalPath: string
+	derivedPath?: string | null
 }
 
 interface AssetFieldProps {
@@ -27,6 +28,11 @@ interface AssetFieldProps {
 
 export function assetServeUrl(asset: AssetData) {
 	return `/api/assets/serve?path=${encodeURIComponent(asset.originalPath)}`
+}
+
+export function assetThumbnailUrl(asset: AssetData): string | null {
+	if (!asset.derivedPath) return null
+	return `/api/assets/serve?path=${encodeURIComponent(asset.derivedPath)}`
 }
 
 export function AssetField({

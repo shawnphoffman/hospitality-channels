@@ -1,6 +1,6 @@
 'use client'
 
-import { AssetField, type AssetData } from './asset-field'
+import { AssetField, assetThumbnailUrl, type AssetData } from './asset-field'
 
 interface VideoFieldProps {
 	id: string
@@ -33,12 +33,19 @@ export function VideoField(props: VideoFieldProps) {
 					</button>
 				</div>
 			)}
-			renderPickerItem={(asset, assetUrl) => (
-				<div className="overflow-hidden rounded-lg border border-slate-700 transition-colors hover:border-blue-500">
-					<video src={assetUrl} muted loop autoPlay playsInline className="aspect-video w-full object-cover" />
-					<p className="truncate px-2 py-1 text-xs text-slate-400">{asset.name ?? asset.originalPath.split('/').pop()}</p>
-				</div>
-			)}
+			renderPickerItem={(asset, assetUrl) => {
+				const thumbUrl = assetThumbnailUrl(asset)
+				return (
+					<div className="overflow-hidden rounded-lg border border-slate-700 transition-colors hover:border-blue-500">
+						{thumbUrl ? (
+							<img src={thumbUrl} alt="" className="aspect-video w-full object-cover" />
+						) : (
+							<video src={assetUrl} muted loop autoPlay playsInline className="aspect-video w-full object-cover" />
+						)}
+						<p className="truncate px-2 py-1 text-xs text-slate-400">{asset.name ?? asset.originalPath.split('/').pop()}</p>
+					</div>
+				)
+			}}
 		/>
 	)
 }

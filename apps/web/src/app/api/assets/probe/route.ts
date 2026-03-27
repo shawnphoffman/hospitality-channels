@@ -6,6 +6,7 @@ import { access, constants } from 'node:fs/promises'
 import { eq, isNull, or, and } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
 import { extractCoverArt } from '@/lib/cover-art'
+import { extractVideoThumbnail } from '@/lib/video-thumbnail'
 
 interface ProbeResult {
 	duration?: number
@@ -104,6 +105,26 @@ export async function POST() {
 		}
 	}
 
+	// Extract thumbnails for video assets that don't have them yet
+	let thumbnailsExtracted = 0
+	const videoCandidates = await db
+		.select()
+		.from(schema.assets)
+		.where(and(eq(schema.assets.type, 'video'), isNull(schema.assets.derivedPath)))
+
+	for (const asset of videoCandidates) {
+		try {
+			await access(asset.originalPath, constants.R_OK)
+		} catch {
+			continue
+		}
+		const thumbPath = await extractVideoThumbnail(asset.originalPath, asset.id)
+		if (thumbPath) {
+			await db.update(schema.assets).set({ derivedPath: thumbPath }).where(eq(schema.assets.id, asset.id))
+			thumbnailsExtracted++
+		}
+	}
+
 	// Backfill program_audio_tracks that reference assets with newly detected durations
 	const nullDurationTracks = await db.select().from(schema.programAudioTracks).where(isNull(schema.programAudioTracks.durationSec))
 
@@ -123,5 +144,6 @@ export async function POST() {
 		assetsSkipped: skipped,
 		tracksUpdated,
 		coversExtracted,
+		thumbnailsExtracted,
 	})
 }
