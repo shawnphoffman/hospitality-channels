@@ -277,11 +277,16 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 					<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
 						<h3 className="mb-4 text-lg font-semibold text-white">{templateName} Content</h3>
 						<div className="space-y-4">
-							{fields.map(field => {
+							{fields.map((field, fieldIndex) => {
 								if (field.type === 'asset') return null
 								if (field.key === 'backgroundAudioUrl') return null
 								if (field.key === 'matchAudioDuration') return null
 								if (field.key === 'wifiPassword') return null
+
+								// Add a divider before numbered item groups (item2Time, item3Time, etc.)
+								const itemGroupMatch = field.key.match(/^item(\d+)Time$/)
+								const showGroupDivider = itemGroupMatch && parseInt(itemGroupMatch[1]) > 1
+
 								if (field.key === 'wifiSsid' && hasWifiFields && wifiSsidField && wifiPasswordField) {
 									return (
 										<div key="wifi-block" className="space-y-4">
@@ -306,13 +311,15 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 									)
 								}
 								return (
-									<TemplateField
-										key={field.key}
-										field={field}
-										value={fieldValues[field.key] ?? ''}
-										onChange={val => handleFieldChange(field.key, val)}
-										idPrefix="field-"
-									/>
+									<div key={field.key}>
+										{showGroupDivider && <hr className="my-2 border-slate-700" />}
+										<TemplateField
+											field={field}
+											value={fieldValues[field.key] ?? ''}
+											onChange={val => handleFieldChange(field.key, val)}
+											idPrefix="field-"
+										/>
+									</div>
 								)
 							})}
 						</div>

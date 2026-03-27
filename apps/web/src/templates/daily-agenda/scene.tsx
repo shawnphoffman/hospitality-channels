@@ -1,6 +1,7 @@
 'use client'
 
 import type { TemplateSceneProps } from '../types'
+import { SimpleMarkdown } from '../../lib/markdown'
 
 interface AgendaItem {
 	time: string
@@ -92,23 +93,29 @@ export function DailyAgendaScene({ data }: TemplateSceneProps) {
 						) : (
 							<div className="flex flex-1 flex-col gap-5">
 								{items.map((item, index) => (
-									<div key={index} className={`flex items-start gap-8 ${cardClass}`} style={{ padding: '28px 40px' }}>
-										{item.time && (
-											<div className="shrink-0" style={{ minWidth: 160 }}>
-												<p style={{ fontSize: 32 }} className={`font-semibold ${timeColor}`}>
-													{item.time}
-												</p>
-											</div>
+									<div key={index}>
+										{index > 0 && (
+											<div
+												className={`mb-5 ${hasBg ? 'bg-white/15' : 'bg-slate-700/50'} ${hasImage ? '' : 'mx-auto'}`}
+												style={{ height: 1, width: '100%' }}
+											/>
 										)}
-										<div className="flex-1">
-											<p style={{ fontSize: 32 }} className="font-semibold leading-snug">
-												{item.title}
-											</p>
-											{item.description && (
-												<p style={{ fontSize: 24 }} className="mt-2 leading-relaxed text-white/70">
-													{item.description}
-												</p>
+										<div className={`flex items-start gap-8 ${cardClass}`} style={{ padding: '28px 40px' }}>
+											{item.time && (
+												<div className="shrink-0" style={{ minWidth: 160 }}>
+													<p style={{ fontSize: 32 }} className={`font-semibold ${timeColor}`}>
+														{item.time}
+													</p>
+												</div>
 											)}
+											<div className="flex-1">
+												<p style={{ fontSize: 32 }} className="font-semibold leading-snug">
+													{item.title}
+												</p>
+												{item.description && (
+													<SimpleMarkdown text={item.description} style={{ fontSize: 24 }} className="mt-2 leading-relaxed text-white/70" />
+												)}
+											</div>
 										</div>
 									</div>
 								))}

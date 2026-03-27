@@ -2,15 +2,27 @@ export const dynamic = 'force-dynamic'
 
 import { getDb, schema } from '@/db'
 
+function formatDate(dateStr: string | null | undefined): string {
+	if (!dateStr) return ''
+	try {
+		const d = new Date(dateStr)
+		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+	} catch {
+		return ''
+	}
+}
+
 export default async function ClipsListPage() {
 	const db = await getDb()
 	const allClips = await db.select().from(schema.clips)
 	const allTemplates = await db.select().from(schema.templates)
 
-	const clipsWithDetails = allClips.map(clip => {
-		const template = allTemplates.find(t => t.id === clip.templateId)
-		return { ...clip, templateName: template?.name ?? 'Unknown' }
-	})
+	const clipsWithDetails = allClips
+		.map(clip => {
+			const template = allTemplates.find(t => t.id === clip.templateId)
+			return { ...clip, templateName: template?.name ?? 'Unknown' }
+		})
+		.sort((a, b) => a.title.localeCompare(b.title))
 
 	return (
 		<div>
@@ -48,6 +60,10 @@ export default async function ClipsListPage() {
 								<h3 className="font-semibold text-white">{clip.title}</h3>
 								<p className="mt-0.5 text-xs text-slate-400">
 									{clip.templateName} &middot; {clip.slug}
+								</p>
+								<p className="mt-1 text-xs text-slate-500">
+									Created {formatDate(clip.createdAt)}
+									{clip.updatedAt && clip.updatedAt !== clip.createdAt && <> &middot; Modified {formatDate(clip.updatedAt)}</>}
 								</p>
 							</div>
 							<div className="h-[54px] w-24 shrink-0 overflow-hidden rounded bg-slate-950">
