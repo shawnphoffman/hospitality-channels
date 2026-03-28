@@ -627,18 +627,16 @@ async function stitchProgramVideo(
 	if (audioPath) {
 		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k')
 		if (ssOffset) {
-			// Loop transition: trim front instead of using -shortest so audio stays aligned
-			ffmpegArgs.push('-ss', String(ssOffset))
+			// Loop transition: trim front and cap duration so output matches totalDuration
+			ffmpegArgs.push('-ss', String(ssOffset), '-t', String(totalDuration))
 		} else {
 			ffmpegArgs.push('-shortest')
 		}
 	} else {
 		ffmpegArgs.push('-t', String(totalDuration))
-	}
-
-	// If loop transition, trim from the front of the output
-	if (ssOffset && !audioPath) {
-		ffmpegArgs.push('-ss', String(ssOffset))
+		if (ssOffset) {
+			ffmpegArgs.push('-ss', String(ssOffset))
+		}
 	}
 
 	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
@@ -719,7 +717,8 @@ async function stitchMixedSegments(
 	if (audioPath) {
 		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k')
 		if (ssOffset) {
-			ffmpegArgs.push('-ss', String(ssOffset))
+			// Loop transition: trim front and cap duration so output matches totalDuration
+			ffmpegArgs.push('-ss', String(ssOffset), '-t', String(totalDuration))
 		} else {
 			ffmpegArgs.push('-shortest')
 		}
