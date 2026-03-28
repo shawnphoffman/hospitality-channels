@@ -85,15 +85,17 @@ export async function getMediaSource(tunarrUrl: string, sourceId: string): Promi
 	return tunarrFetch<TunarrMediaSource>(tunarrUrl, `/media-sources/${sourceId}`)
 }
 
-export async function scanMediaSource(tunarrUrl: string, sourceId: string): Promise<void> {
-	logger.info('Triggering media source scan', { sourceId })
-	const url = `${tunarrUrl.replace(/\/+$/, '')}/api/media-sources/${sourceId}/scan?_t=${Date.now()}`
+export async function scanMediaSource(tunarrUrl: string, sourceId: string, libraryId?: string): Promise<void> {
+	logger.info('Triggering media source scan', { sourceId, libraryId })
+	const base = tunarrUrl.replace(/\/+$/, '')
+	const path = libraryId ? `/api/media-sources/${sourceId}/libraries/${libraryId}/scan` : `/api/media-sources/${sourceId}/scan`
+	const url = `${base}${path}?_t=${Date.now()}`
 	const res = await fetch(url, { method: 'POST' })
 	if (!res.ok) {
 		const text = await res.text().catch(() => '')
-		logger.warn('Media source scan failed', { sourceId, status: res.status, body: text })
+		logger.warn('Media source scan failed', { sourceId, libraryId, status: res.status, body: text })
 	} else {
-		logger.info('Media source scan request accepted', { sourceId, status: res.status })
+		logger.info('Media source scan request accepted', { sourceId, libraryId, status: res.status })
 	}
 }
 
@@ -124,7 +126,7 @@ export async function scanAndFindProgram(
 	if (sourceId && libraryId) {
 		// Use configured source + library directly
 		logger.info('Using configured media source and library', { sourceId, libraryId, externalKey })
-		await scanMediaSource(tunarrUrl, sourceId)
+		await scanMediaSource(tunarrUrl, sourceId, libraryId)
 	} else {
 		// Auto-discover from path
 		const sources = await listMediaSources(tunarrUrl)
