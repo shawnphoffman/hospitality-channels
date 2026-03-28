@@ -94,12 +94,12 @@ export function DailyAgendaScene({ data }: TemplateSceneProps) {
 							<div className="flex flex-1 flex-col gap-5">
 								{items.map((item, index) => (
 									<div key={index}>
-										{index > 0 && (
+										{/* {index > 0 && (
 											<div
 												className={`mb-5 ${hasBg ? 'bg-white/15' : 'bg-slate-700/50'} ${hasImage ? '' : 'mx-auto'}`}
 												style={{ height: 1, width: '100%' }}
 											/>
-										)}
+										)} */}
 										<div className={`flex items-start gap-8 ${cardClass}`} style={{ padding: '28px 40px' }}>
 											{item.time && (
 												<div className="shrink-0" style={{ minWidth: 160 }}>
