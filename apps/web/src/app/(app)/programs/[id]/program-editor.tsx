@@ -71,6 +71,8 @@ interface ProgramEditorProps {
 	tunarrConfigured?: boolean
 	tunarrMediaPath?: string
 	artifacts?: ArtifactData[]
+	boundTunarrChannelId?: string
+	boundPushMode?: 'append' | 'replace'
 }
 
 function formatDuration(sec: number): string {
@@ -91,6 +93,8 @@ export function ProgramEditor({
 	tunarrConfigured,
 	tunarrMediaPath = '',
 	artifacts: initialArtifacts = [],
+	boundTunarrChannelId,
+	boundPushMode,
 }: ProgramEditorProps) {
 	const router = useRouter()
 
@@ -147,7 +151,7 @@ export function ProgramEditor({
 	const [tunarrChannels, setTunarrChannels] = useState<TunarrChannel[]>([])
 	const [loadingChannels, setLoadingChannels] = useState(false)
 	const [selectedChannelId, setSelectedChannelId] = useState('')
-	const [pushMode, setPushMode] = useState<'append' | 'replace'>('append')
+	const [pushMode, setPushMode] = useState<'append' | 'replace'>(boundPushMode ?? 'append')
 	const [pushing, setPushing] = useState(false)
 	const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null)
 
@@ -485,15 +489,21 @@ export function ProgramEditor({
 				if (res.ok) {
 					const channels: TunarrChannel[] = await res.json()
 					setTunarrChannels(channels)
-					if (channels.length > 0) setSelectedChannelId(channels[0].id)
+					const defaultId =
+						boundTunarrChannelId && channels.some(c => c.id === boundTunarrChannelId) ? boundTunarrChannelId : (channels[0]?.id ?? '')
+					setSelectedChannelId(defaultId)
 				}
 			} catch {
 				/* empty */
 			} finally {
 				setLoadingChannels(false)
 			}
-		} else if (tunarrChannels.length > 0) {
-			setSelectedChannelId(tunarrChannels[0].id)
+		} else {
+			const defaultId =
+				boundTunarrChannelId && tunarrChannels.some(c => c.id === boundTunarrChannelId)
+					? boundTunarrChannelId
+					: (tunarrChannels[0]?.id ?? '')
+			setSelectedChannelId(defaultId)
 		}
 	}
 

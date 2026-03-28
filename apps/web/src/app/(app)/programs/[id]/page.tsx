@@ -106,6 +106,13 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 		.map(a => ({ id: a.id, filename: a.name ?? a.originalPath.split('/').pop() ?? 'audio', originalPath: a.originalPath }))
 		.sort((a, b) => emojiFirstSort(a.filename, b.filename))
 
+	// Look up channel binding for this program
+	const [boundChannel] = await db
+		.select({ tunarrChannelId: schema.channelDefinitions.tunarrChannelId, pushMode: schema.channelDefinitions.pushMode })
+		.from(schema.channelDefinitions)
+		.where(eq(schema.channelDefinitions.programId, params.id))
+		.limit(1)
+
 	// Image assets for icon picker
 	const imageAssets = allAssets
 		.filter(a => a.type !== 'audio' && a.type !== 'video')
@@ -134,6 +141,8 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			tunarrConfigured={!!tunarrSetting?.value}
 			tunarrMediaPath={tunarrMediaPathSetting?.value ?? ''}
 			artifacts={artifactsWithProfile}
+			boundTunarrChannelId={boundChannel?.tunarrChannelId ?? undefined}
+			boundPushMode={(boundChannel?.pushMode as 'append' | 'replace') ?? undefined}
 		/>
 	)
 }
