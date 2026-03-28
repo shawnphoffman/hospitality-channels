@@ -26,11 +26,27 @@ export default async function ClipsListPage() {
 	const db = await getDb()
 	const allClips = await db.select().from(schema.clips)
 	const allTemplates = await db.select().from(schema.templates)
+	const allAssets = await db.select().from(schema.assets)
+
+	// Build a lookup from original asset path to derived (thumbnail) path
+	const thumbnailByPath = new Map<string, string>()
+	for (const asset of allAssets) {
+		if (asset.derivedPath) {
+			thumbnailByPath.set(asset.originalPath, asset.derivedPath)
+		}
+	}
 
 	const clipsWithDetails = allClips
 		.map(clip => {
 			const template = allTemplates.find(t => t.id === clip.templateId)
-			return { ...clip, templateName: template?.name ?? 'Unknown' }
+			const data = clip.dataJson as Record<string, unknown> | null
+			const bgVideoUrl = (data?.backgroundVideoUrl as string) ?? ''
+			// Extract original path from serve URL: /api/assets/serve?path=...
+			const pathMatch = bgVideoUrl.match(/[?&]path=([^&]+)/)
+			const originalPath = pathMatch ? decodeURIComponent(pathMatch[1]) : ''
+			const thumbnailPath = originalPath ? thumbnailByPath.get(originalPath) : undefined
+			const bgImageUrl = (data?.backgroundImageUrl as string) ?? ''
+			return { ...clip, templateName: template?.name ?? 'Unknown', thumbnailPath, bgImageUrl }
 		})
 		.sort((a, b) => emojiFirstSort(a.title, b.title))
 
@@ -77,12 +93,24 @@ export default async function ClipsListPage() {
 								</p>
 							</div>
 							<div className="h-[54px] w-24 shrink-0 overflow-hidden rounded bg-slate-950">
-								<iframe
-									src={`/clips/${clip.id}/render`}
-									className="pointer-events-none"
-									style={{ width: 1920, height: 1080, transform: 'scale(0.05)', transformOrigin: 'top left' }}
-									tabIndex={-1}
-								/>
+								{clip.thumbnailPath ? (
+									/* eslint-disable-next-line @next/next/no-img-element */
+									<img
+										src={`/api/assets/serve?path=${encodeURIComponent(clip.thumbnailPath)}`}
+										alt=""
+										className="h-full w-full object-cover"
+									/>
+								) : clip.bgImageUrl ? (
+									/* eslint-disable-next-line @next/next/no-img-element */
+									<img src={clip.bgImageUrl} alt="" className="h-full w-full object-cover" />
+								) : (
+									<iframe
+										src={`/clips/${clip.id}/render`}
+										className="pointer-events-none"
+										style={{ width: 1920, height: 1080, transform: 'scale(0.05)', transformOrigin: 'top left' }}
+										tabIndex={-1}
+									/>
+								)}
 							</div>
 						</a>
 					))}
