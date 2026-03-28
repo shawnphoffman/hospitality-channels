@@ -97,6 +97,8 @@ export const programs = sqliteTable('programs', {
 	durationMode: text('duration_mode').notNull().default('auto'),
 	manualDurationSec: integer('manual_duration_sec'),
 	minClipDurationSec: integer('min_clip_duration_sec'),
+	transitionType: text('transition_type').notNull().default('none'),
+	transitionSec: real('transition_sec').notNull().default(0.5),
 	createdAt: text('created_at').notNull(),
 	updatedAt: text('updated_at').notNull(),
 })

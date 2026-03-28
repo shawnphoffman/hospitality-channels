@@ -14,6 +14,8 @@ interface ProgramData {
 	durationMode: 'auto' | 'manual'
 	manualDurationSec: number | null
 	minClipDurationSec: number | null
+	transitionType: string
+	transitionSec: number
 }
 
 interface ProgramClip {
@@ -115,6 +117,8 @@ export function ProgramEditor({
 	})
 	const [manualDurationSec, setManualDurationSec] = useState(program.manualDurationSec ?? 60)
 	const [minClipDurationSec, setMinClipDurationSec] = useState(program.minClipDurationSec ?? null)
+	const [transitionType, setTransitionType] = useState(program.transitionType ?? 'none')
+	const [transitionSec, setTransitionSec] = useState(program.transitionSec ?? 0.5)
 
 	// Resolve iconUrl → asset ID for saving
 	const resolveIconAssetId = (url: string): string | null => {
@@ -238,6 +242,8 @@ export function ProgramEditor({
 					durationMode,
 					manualDurationSec: durationMode === 'manual' ? manualDurationSec : null,
 					minClipDurationSec: minClipDurationSec ?? null,
+					transitionType,
+					transitionSec,
 				}),
 			})
 			if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to save')
@@ -274,6 +280,8 @@ export function ProgramEditor({
 					durationMode,
 					manualDurationSec: durationMode === 'manual' ? manualDurationSec : null,
 					minClipDurationSec: minClipDurationSec ?? null,
+					transitionType,
+					transitionSec,
 				}),
 			})
 			// Then render & publish
@@ -693,6 +701,47 @@ export function ProgramEditor({
 							<p className="mt-1 text-xs text-slate-500">
 								If set, each clip will be shown for at least this many seconds, extending total duration if needed.
 							</p>
+						</div>
+
+						{/* Clip Transitions */}
+						<div className="mt-3">
+							<label htmlFor="transitionType" className="block text-xs text-slate-400">
+								Clip transition
+							</label>
+							<select
+								id="transitionType"
+								value={transitionType}
+								onChange={e => setTransitionType(e.target.value)}
+								className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+							>
+								<option value="none">None (hard cut)</option>
+								<option value="fade">Fade</option>
+								<option value="wipeup">Wipe Up</option>
+								<option value="wipedown">Wipe Down</option>
+								<option value="wipeleft">Wipe Left</option>
+								<option value="wiperight">Wipe Right</option>
+								<option value="slideup">Slide Up</option>
+								<option value="slidedown">Slide Down</option>
+								<option value="slideleft">Slide Left</option>
+								<option value="slideright">Slide Right</option>
+							</select>
+							{transitionType !== 'none' && (
+								<div className="mt-2">
+									<label htmlFor="transitionSec" className="block text-xs text-slate-400">
+										Transition duration (seconds)
+									</label>
+									<input
+										id="transitionSec"
+										type="number"
+										min={0.25}
+										max={2}
+										step={0.25}
+										value={transitionSec}
+										onChange={e => setTransitionSec(parseFloat(e.target.value) || 0.5)}
+										className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+									/>
+								</div>
+							)}
 						</div>
 					</section>
 				</div>

@@ -81,6 +81,8 @@ export async function POST(request: Request) {
 				fileNamingPattern: profile.fileNamingPattern,
 				outputFormat: profile.outputFormat,
 				generateNfo,
+				transitionType: program.transitionType,
+				transitionSec: program.transitionSec,
 			},
 			status: 'queued',
 			outputPath: null,

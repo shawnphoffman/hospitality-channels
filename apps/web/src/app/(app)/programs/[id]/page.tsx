@@ -131,6 +131,8 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 				durationMode: program.durationMode as 'auto' | 'manual',
 				manualDurationSec: program.manualDurationSec,
 				minClipDurationSec: program.minClipDurationSec,
+				transitionType: program.transitionType,
+				transitionSec: program.transitionSec,
 			}}
 			clips={enrichedClips}
 			audioTracks={enrichedTracks}
