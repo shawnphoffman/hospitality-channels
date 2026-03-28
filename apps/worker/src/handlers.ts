@@ -5,7 +5,7 @@ import { writeFile, unlink, mkdir } from 'node:fs/promises'
 import { createLogger, PATHS } from '@hospitality-channels/common'
 import { capturePageVideo, captureScreenshot, probeDuration } from '@hospitality-channels/render-core'
 import { publishArtifact, scanMediaSource } from '@hospitality-channels/publish'
-import { eq } from 'drizzle-orm'
+import { eq, count } from 'drizzle-orm'
 import { db, clips, assets, publishedArtifacts, settings } from './db.js'
 import type { Job } from './queue.js'
 
@@ -16,6 +16,12 @@ function generateId(): string {
 }
 
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3000'
+
+/** Get the next sequence number for a publish profile (count of existing artifacts + 1). */
+async function getNextSequenceNumber(profileId: string): Promise<number> {
+	const [result] = await db.select({ total: count() }).from(publishedArtifacts).where(eq(publishedArtifacts.publishProfileId, profileId))
+	return (result?.total ?? 0) + 1
+}
 
 /** Trigger a Tunarr media source rescan so newly published files are indexed. */
 async function triggerTunarrRescan(): Promise<void> {
@@ -275,6 +281,7 @@ export async function handlePublishJob(job: Job): Promise<string> {
 
 	logger.info('Starting publish', { clipId, exportPath: payload.exportPath })
 
+	const seqNum = await getNextSequenceNumber(profileId)
 	const result = await publishArtifact({
 		sourcePath: payload.sourcePath,
 		clipId,
@@ -287,6 +294,7 @@ export async function handlePublishJob(job: Job): Promise<string> {
 		},
 		durationSec: payload.durationSec,
 		generateNfo: payload.generateNfo ?? true,
+		sequenceNumber: seqNum,
 	})
 
 	if (!result.success) {
@@ -370,6 +378,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 	const actualDuration = captureResult.durationSec
 
 	// Step 2: Publish
+	const seqNum = await getNextSequenceNumber(profileId)
 	const result = await publishArtifact({
 		sourcePath: renderPath,
 		clipId,
@@ -382,6 +391,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		},
 		durationSec: actualDuration,
 		generateNfo: payload.generateNfo ?? true,
+		sequenceNumber: seqNum,
 	})
 
 	if (!result.success) {
@@ -902,6 +912,7 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 	logger.info('Program render complete, publishing...', { programId, renderPath, actualDuration: finalDuration })
 
 	// Step 2: Publish
+	const seqNum = await getNextSequenceNumber(profileId)
 	const result = await publishArtifact({
 		sourcePath: renderPath,
 		programId,
@@ -916,6 +927,7 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 		},
 		durationSec: finalDuration,
 		generateNfo: payload.generateNfo ?? true,
+		sequenceNumber: seqNum,
 	})
 
 	if (!result.success) {

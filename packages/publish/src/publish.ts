@@ -17,6 +17,7 @@ export interface PublishArtifactInput {
 	posterPath?: string
 	durationSec: number
 	generateNfo?: boolean
+	sequenceNumber?: number
 }
 
 export interface PublishArtifactResult {
@@ -38,14 +39,25 @@ export async function publishArtifact(input: PublishArtifactInput): Promise<Publ
 	const id = programId ?? clipId ?? 'unknown'
 	const title = programTitle ?? clipTitle ?? 'Untitled'
 
+	const now = new Date()
+	const dateStr = now.toISOString().split('T')[0] // YYYY-MM-DD
+	const datetimeStr = now
+		.toISOString()
+		.replace(/[:T]/g, '-')
+		.replace(/\.\d+Z$/, '') // YYYY-MM-DD-HH-mm-ss
+	const seqStr = input.sequenceNumber != null ? String(input.sequenceNumber).padStart(3, '0') : ''
+
 	const baseName = profile.fileNamingPattern
 		? profile.fileNamingPattern
-				.replace('{clipId}', id)
-				.replace('{pageId}', id)
+				.replace('{clipId}', clipId ?? '')
+				.replace('{pageId}', clipId ?? '')
 				.replace('{programId}', programId ?? '')
 				.replace('{title}', sanitizeFilename(title))
 				.replace('{timestamp}', Date.now().toString())
-		: `${sanitizeFilename(title)}-${id.slice(0, 8)}.mp4`
+				.replace('{date}', dateStr)
+				.replace('{datetime}', datetimeStr)
+				.replace('{seq}', seqStr)
+		: `${sanitizeFilename(title)}.mp4`
 
 	const outputPath = path.join(profile.exportPath, baseName)
 

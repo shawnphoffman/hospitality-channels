@@ -44,7 +44,7 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 	const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
 	const [newProfileName, setNewProfileName] = useState('')
 	const [newProfilePath, setNewProfilePath] = useState('')
-	const [newProfilePattern, setNewProfilePattern] = useState('{title}-{programId}.mp4')
+	const [newProfilePattern, setNewProfilePattern] = useState('{title}.mp4')
 	const [savingProfile, setSavingProfile] = useState(false)
 	const [profileError, setProfileError] = useState<string | null>(null)
 
@@ -181,7 +181,7 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 				setShowNewProfile(false)
 				setNewProfileName('')
 				setNewProfilePath('')
-				setNewProfilePattern('{title}-{programId}.mp4')
+				setNewProfilePattern('{title}.mp4')
 			}
 		} catch {
 			setProfileError('Failed to create profile')
@@ -310,12 +310,10 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 								type="text"
 								value={newProfilePattern}
 								onChange={e => setNewProfilePattern(e.target.value)}
-								placeholder="{title}-{programId}.mp4"
+								placeholder="{title}.mp4"
 								className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 							/>
-							<p className="mt-1 text-xs text-slate-500">
-								Tokens: {'{title}'}, {'{clipId}'}, {'{programId}'}, {'{timestamp}'}
-							</p>
+							<TokenReference />
 						</div>
 						<button
 							onClick={handleCreateProfile}
@@ -503,9 +501,10 @@ function ProfileEditForm({
 					type="text"
 					value={pattern}
 					onChange={e => setPattern(e.target.value)}
-					placeholder="{title}-{programId}.mp4"
+					placeholder="{title}.mp4"
 					className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
 				/>
+				<TokenReference />
 			</div>
 			<div className="flex gap-2">
 				<button
@@ -519,6 +518,57 @@ function ProfileEditForm({
 					Cancel
 				</button>
 			</div>
+		</div>
+	)
+}
+
+const FILENAME_TOKENS = [
+	{ token: '{title}', description: 'Clip or program title (sanitized)' },
+	{ token: '{clipId}', description: 'Clip identifier' },
+	{ token: '{programId}', description: 'Program identifier' },
+	{ token: '{date}', description: 'Publish date (YYYY-MM-DD)' },
+	{ token: '{datetime}', description: 'Publish date and time (YYYY-MM-DD-HH-mm-ss)' },
+	{ token: '{seq}', description: 'Sequence number, zero-padded (001, 002, ...)' },
+	{ token: '{timestamp}', description: 'Unix timestamp in milliseconds' },
+] as const
+
+function TokenReference() {
+	const [open, setOpen] = useState(false)
+
+	return (
+		<div className="mt-1.5">
+			<button type="button" onClick={() => setOpen(!open)} className="text-xs text-blue-400 hover:text-blue-300">
+				{open ? 'Hide' : 'Show'} available tokens
+			</button>
+			{open && (
+				<div className="mt-2 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+					<table className="w-full text-xs">
+						<thead>
+							<tr className="text-left text-slate-400">
+								<th className="pb-1.5 pr-4 font-medium">Token</th>
+								<th className="pb-1.5 font-medium">Description</th>
+							</tr>
+						</thead>
+						<tbody className="text-slate-300">
+							{FILENAME_TOKENS.map(({ token, description }) => (
+								<tr key={token}>
+									<td className="pr-4 py-0.5">
+										<code className="rounded bg-slate-700 px-1.5 py-0.5 text-blue-300">{token}</code>
+									</td>
+									<td className="py-0.5 text-slate-400">{description}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+					<p className="mt-2 text-xs text-slate-500">
+						Example:{' '}
+						<code className="rounded bg-slate-700 px-1 text-slate-300">
+							{'{title}'}-{'{date}'}.mp4
+						</code>{' '}
+						→ <code className="rounded bg-slate-700 px-1 text-slate-300">Welcome-2026-03-28.mp4</code>
+					</p>
+				</div>
+			)}
 		</div>
 	)
 }
