@@ -147,9 +147,6 @@ export async function scanAndFindProgram(
 			libraryCount: fullSource.libraries?.length,
 		})
 
-		// Trigger scan
-		await scanMediaSource(tunarrUrl, fullSource.id)
-
 		// Find the matching library from the full source details
 		const matchingLibrary =
 			fullSource.libraries?.find(l => l.externalKey && externalKey.startsWith(l.externalKey)) ?? fullSource.libraries?.[0]
@@ -170,6 +167,9 @@ export async function scanAndFindProgram(
 		}
 
 		logger.info('Using library for program lookup', { libraryId, libraryName: matchingLibrary?.name })
+
+		// Trigger scan with library ID
+		await scanMediaSource(tunarrUrl, fullSource.id, libraryId)
 	}
 
 	// Poll for the program to appear (scan may take a moment)
