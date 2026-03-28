@@ -189,6 +189,7 @@ const MIGRATIONS_SQL = [
 	'ALTER TABLE programs ADD COLUMN min_clip_duration_sec INTEGER',
 	"ALTER TABLE programs ADD COLUMN transition_type TEXT NOT NULL DEFAULT 'none'",
 	'ALTER TABLE programs ADD COLUMN transition_sec REAL NOT NULL DEFAULT 0.5',
+	'ALTER TABLE programs ADD COLUMN loop_transition INTEGER NOT NULL DEFAULT 0',
 ]
 
 /**

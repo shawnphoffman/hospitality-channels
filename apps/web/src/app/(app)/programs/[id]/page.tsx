@@ -133,6 +133,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 				minClipDurationSec: program.minClipDurationSec,
 				transitionType: program.transitionType,
 				transitionSec: program.transitionSec,
+				loopTransition: program.loopTransition,
 			}}
 			clips={enrichedClips}
 			audioTracks={enrichedTracks}

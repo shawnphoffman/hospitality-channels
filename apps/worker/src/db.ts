@@ -70,6 +70,7 @@ export const programs = sqliteTable('programs', {
 	manualDurationSec: integer('manual_duration_sec'),
 	transitionType: text('transition_type').notNull().default('none'),
 	transitionSec: real('transition_sec').notNull().default(0.5),
+	loopTransition: integer('loop_transition', { mode: 'boolean' }).notNull().default(false),
 	createdAt: text('created_at').notNull(),
 	updatedAt: text('updated_at').notNull(),
 })

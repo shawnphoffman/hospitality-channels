@@ -83,6 +83,7 @@ export async function POST(request: Request) {
 				generateNfo,
 				transitionType: program.transitionType,
 				transitionSec: program.transitionSec,
+				loopTransition: program.loopTransition,
 			},
 			status: 'queued',
 			outputPath: null,

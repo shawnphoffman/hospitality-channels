@@ -565,17 +565,19 @@ async function concatenateAudio(audioPaths: string[], outputPath: string): Promi
  *   [0:v][1:v]xfade=transition=fade:duration=0.5:offset=9.5[xf0];
  *   [xf0][2:v]xfade=transition=fade:duration=0.5:offset=19.0[outv]
  */
-function buildXfadeFilter(n: number, perClipDuration: number, transitionType: string, transitionSec: number, labelPrefix?: string): string {
+function buildXfadeFilter(n: number, durations: number[], transitionType: string, transitionSec: number, labelPrefix?: string): string {
 	let filter = ''
+	// Track cumulative output time to compute each transition's offset
+	let cumulativeTime = durations[0]
 	for (let i = 0; i < n - 1; i++) {
 		const inputA = i === 0 ? (labelPrefix ? `[${labelPrefix}0]` : '[0:v]') : `[xf${i - 1}]`
 		const inputB = labelPrefix ? `[${labelPrefix}${i + 1}]` : `[${i + 1}:v]`
 		const outputLabel = i === n - 2 ? '[outv]' : `[xf${i}]`
-		// offset = time in the output stream where the transition starts
-		// Each clip contributes perClipDuration, but each transition overlaps by transitionSec
-		const offset = (i + 1) * perClipDuration - (i + 1) * transitionSec
+		const offset = cumulativeTime - transitionSec
 		filter += `${inputA}${inputB}xfade=transition=${transitionType}:duration=${transitionSec}:offset=${offset.toFixed(3)}${outputLabel}`
 		if (i < n - 2) filter += ';'
+		// After this transition, combined duration grows by next clip minus overlap
+		cumulativeTime = offset + durations[i + 1]
 	}
 	return filter
 }
@@ -587,16 +589,17 @@ function buildXfadeFilter(n: number, perClipDuration: number, transitionType: st
 async function stitchProgramVideo(
 	screenshotPaths: string[],
 	audioPath: string | null,
-	perClipDuration: number,
+	segmentDurations: number[],
 	totalDuration: number,
 	outputPath: string,
-	transition?: { type: string; sec: number }
+	transition?: { type: string; sec: number },
+	ssOffset?: number
 ): Promise<{ success: boolean; error?: string }> {
 	const ffmpegArgs: string[] = ['-y']
 
 	// Add each screenshot as an input with its duration
-	for (const screenshot of screenshotPaths) {
-		ffmpegArgs.push('-loop', '1', '-t', String(perClipDuration), '-framerate', '30', '-i', screenshot)
+	for (let i = 0; i < screenshotPaths.length; i++) {
+		ffmpegArgs.push('-loop', '1', '-t', String(segmentDurations[i]), '-framerate', '30', '-i', screenshotPaths[i])
 	}
 
 	// Add audio if available
@@ -609,7 +612,7 @@ async function stitchProgramVideo(
 
 	if (transition && n >= 2) {
 		// Build chained xfade filter for transitions between clips
-		filterComplex = buildXfadeFilter(n, perClipDuration, transition.type, transition.sec)
+		filterComplex = buildXfadeFilter(n, segmentDurations, transition.type, transition.sec)
 	} else {
 		// Simple concat — no transitions
 		for (let i = 0; i < n; i++) {
@@ -622,16 +625,25 @@ async function stitchProgramVideo(
 	ffmpegArgs.push('-map', '[outv]')
 
 	if (audioPath) {
-		ffmpegArgs.push('-map', `${n}:a`)
-		ffmpegArgs.push('-c:a', 'aac', '-b:a', '192k')
-		ffmpegArgs.push('-shortest')
+		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k')
+		if (ssOffset) {
+			// Loop transition: trim front instead of using -shortest so audio stays aligned
+			ffmpegArgs.push('-ss', String(ssOffset))
+		} else {
+			ffmpegArgs.push('-shortest')
+		}
 	} else {
 		ffmpegArgs.push('-t', String(totalDuration))
 	}
 
+	// If loop transition, trim from the front of the output
+	if (ssOffset && !audioPath) {
+		ffmpegArgs.push('-ss', String(ssOffset))
+	}
+
 	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
 
-	logger.info('FFmpeg stitch command', { args: ffmpegArgs.join(' '), clips: n, perClipDuration, totalDuration, hasAudio: !!audioPath })
+	logger.info('FFmpeg stitch command', { args: ffmpegArgs.join(' '), clips: n, totalDuration, hasAudio: !!audioPath, ssOffset })
 
 	return new Promise(resolve => {
 		const proc = spawn('ffmpeg', ffmpegArgs, {
@@ -657,20 +669,22 @@ async function stitchProgramVideo(
 async function stitchMixedSegments(
 	segments: string[],
 	audioPath: string | null,
-	perClipDuration: number,
+	segmentDurations: number[],
 	totalDuration: number,
 	outputPath: string,
-	transition?: { type: string; sec: number }
+	transition?: { type: string; sec: number },
+	ssOffset?: number
 ): Promise<{ success: boolean; error?: string }> {
 	const ffmpegArgs: string[] = ['-y']
 
 	// Add each segment as an input
 	for (let i = 0; i < segments.length; i++) {
 		const seg = segments[i]
+		const dur = segmentDurations[i]
 		if (seg.endsWith('.mp4')) {
-			ffmpegArgs.push('-t', String(perClipDuration), '-i', seg)
+			ffmpegArgs.push('-t', String(dur), '-i', seg)
 		} else {
-			ffmpegArgs.push('-loop', '1', '-t', String(perClipDuration), '-framerate', '30', '-i', seg)
+			ffmpegArgs.push('-loop', '1', '-t', String(dur), '-framerate', '30', '-i', seg)
 		}
 	}
 
@@ -692,7 +706,7 @@ async function stitchMixedSegments(
 
 	if (transition && n >= 2) {
 		// Build chained xfade filter using normalized labels [v0], [v1], etc.
-		filterComplex += buildXfadeFilter(n, perClipDuration, transition.type, transition.sec, 'v')
+		filterComplex += buildXfadeFilter(n, segmentDurations, transition.type, transition.sec, 'v')
 	} else {
 		// Simple concat
 		for (let i = 0; i < n; i++) filterComplex += `[v${i}]`
@@ -703,9 +717,17 @@ async function stitchMixedSegments(
 	ffmpegArgs.push('-map', '[outv]')
 
 	if (audioPath) {
-		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k', '-shortest')
+		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k')
+		if (ssOffset) {
+			ffmpegArgs.push('-ss', String(ssOffset))
+		} else {
+			ffmpegArgs.push('-shortest')
+		}
 	} else {
 		ffmpegArgs.push('-t', String(totalDuration))
+		if (ssOffset) {
+			ffmpegArgs.push('-ss', String(ssOffset))
+		}
 	}
 
 	ffmpegArgs.push(
@@ -727,9 +749,9 @@ async function stitchMixedSegments(
 	logger.info('FFmpeg mixed stitch command', {
 		args: ffmpegArgs.join(' '),
 		segments: n,
-		perClipDuration,
 		totalDuration,
 		hasAudio: !!audioPath,
+		ssOffset,
 	})
 
 	return new Promise(resolve => {
@@ -758,6 +780,7 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 		audioTracks: AudioTrackPayload[]
 		transitionType?: string
 		transitionSec?: number
+		loopTransition?: boolean
 	}
 
 	const programId = job.programId ?? 'unknown'
@@ -766,6 +789,7 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 	const transitionType = payload.transitionType ?? 'none'
 	const transitionSec = payload.transitionSec ?? 0.5
 	const useTransitions = transitionType !== 'none' && clipIds.length >= 2
+	const loopTransition = payload.loopTransition === true && useTransitions
 
 	// When transitions are enabled, each clip needs extra time to account for xfade overlap
 	const perClipDuration =
@@ -782,6 +806,7 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 		perClipDuration,
 		transitionType,
 		transitionSec: useTransitions ? transitionSec : 0,
+		loopTransition,
 		audioTrackCount: payload.audioTracks.length,
 	})
 
@@ -835,6 +860,47 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 		}
 	}
 
+	// Step 1b: If loop transition is enabled, render a short copy of the first clip
+	// to append at the end. This gives the xfade material to transition from the
+	// last clip back into the first clip's opening frames.
+	const loopTailDuration = transitionSec * 2
+	if (loopTransition && clipSegments.length >= 2) {
+		const firstClipId = clipIds[0]
+		const url = `${WEB_URL}/programs/${programId}/render?clipIndex=0`
+		const video = await resolveVideoForClip(firstClipId)
+
+		try {
+			if (video.videoPath) {
+				hasAnyVideoBackground = true
+				const segmentPath = path.join(outputDir, `_program-${programId}-looptail-${Date.now()}.mp4`)
+				const result = await capturePageVideo({
+					url,
+					outputPath: segmentPath,
+					durationSec: loopTailDuration,
+					backgroundVideoPath: video.videoPath,
+				})
+				if (video.tempFile) tempFiles.push(video.tempFile)
+				if (!result.success) {
+					logger.warn('Loop tail video capture failed, skipping loop transition', { programId })
+				} else {
+					clipSegments.push(segmentPath)
+					tempFiles.push(segmentPath)
+				}
+			} else {
+				const screenshotPath = path.join(outputDir, `_program-${programId}-looptail-${Date.now()}.png`)
+				await captureScreenshot({ url, outputPath: screenshotPath })
+				clipSegments.push(screenshotPath)
+				tempFiles.push(screenshotPath)
+			}
+			logger.info('Rendered loop tail segment', { programId, loopTailDuration })
+		} catch (err) {
+			logger.warn('Failed to render loop tail segment, skipping loop transition', {
+				programId,
+				error: String(err),
+			})
+		}
+	}
+
 	// Step 2: Resolve and concatenate audio tracks
 	const audioResult = await resolveAudioTracks(payload.audioTracks)
 	let combinedAudioPath: string | null = null
@@ -857,12 +923,39 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 
 	const transition = useTransitions ? { type: transitionType, sec: transitionSec } : undefined
 
+	// Build per-segment durations array — the loop tail (if present) is shorter than regular clips
+	const hasLoopTail = loopTransition && clipSegments.length > clipIds.length
+	const segmentDurations = clipSegments.map((_, i) => {
+		if (hasLoopTail && i === clipSegments.length - 1) return loopTailDuration
+		return perClipDuration
+	})
+
+	// When loop transition is active, trim transitionSec from the front of the output
+	// so the loop point aligns with where the tail transition ends
+	const ssOffset = hasLoopTail ? transitionSec : undefined
+
 	if (hasAnyVideoBackground) {
 		// Mixed pipeline: some clips are .mp4, some are .png — use stitchMixedSegments
-		stitchResult = await stitchMixedSegments(clipSegments, combinedAudioPath, perClipDuration, totalDuration, finalPath, transition)
+		stitchResult = await stitchMixedSegments(
+			clipSegments,
+			combinedAudioPath,
+			segmentDurations,
+			totalDuration,
+			finalPath,
+			transition,
+			ssOffset
+		)
 	} else {
 		// All static screenshots — use existing fast path
-		stitchResult = await stitchProgramVideo(clipSegments, combinedAudioPath, perClipDuration, totalDuration, finalPath, transition)
+		stitchResult = await stitchProgramVideo(
+			clipSegments,
+			combinedAudioPath,
+			segmentDurations,
+			totalDuration,
+			finalPath,
+			transition,
+			ssOffset
+		)
 	}
 
 	// Clean up temp files

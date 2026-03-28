@@ -16,6 +16,7 @@ interface ProgramData {
 	minClipDurationSec: number | null
 	transitionType: string
 	transitionSec: number
+	loopTransition: boolean
 }
 
 interface ProgramClip {
@@ -119,6 +120,7 @@ export function ProgramEditor({
 	const [minClipDurationSec, setMinClipDurationSec] = useState(program.minClipDurationSec ?? null)
 	const [transitionType, setTransitionType] = useState(program.transitionType ?? 'none')
 	const [transitionSec, setTransitionSec] = useState(program.transitionSec ?? 0.5)
+	const [loopTransition, setLoopTransition] = useState(program.loopTransition ?? false)
 
 	// Resolve iconUrl → asset ID for saving
 	const resolveIconAssetId = (url: string): string | null => {
@@ -244,6 +246,7 @@ export function ProgramEditor({
 					minClipDurationSec: minClipDurationSec ?? null,
 					transitionType,
 					transitionSec,
+					loopTransition,
 				}),
 			})
 			if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to save')
@@ -282,6 +285,7 @@ export function ProgramEditor({
 					minClipDurationSec: minClipDurationSec ?? null,
 					transitionType,
 					transitionSec,
+					loopTransition,
 				}),
 			})
 			// Then render & publish
@@ -726,21 +730,39 @@ export function ProgramEditor({
 								<option value="slideright">Slide Right</option>
 							</select>
 							{transitionType !== 'none' && (
-								<div className="mt-2">
-									<label htmlFor="transitionSec" className="block text-xs text-slate-400">
-										Transition duration (seconds)
+								<>
+									<div className="mt-2">
+										<label htmlFor="transitionSec" className="block text-xs text-slate-400">
+											Transition duration (seconds)
+										</label>
+										<input
+											id="transitionSec"
+											type="number"
+											min={0.25}
+											max={2}
+											step={0.25}
+											value={transitionSec}
+											onChange={e => setTransitionSec(parseFloat(e.target.value) || 0.5)}
+											className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+										/>
+									</div>
+									<label className="mt-2 flex items-center gap-2 cursor-pointer">
+										<div className="relative">
+											<input
+												type="checkbox"
+												checked={loopTransition}
+												onChange={e => setLoopTransition(e.target.checked)}
+												className="peer sr-only"
+											/>
+											<div className="h-5 w-9 rounded-full bg-slate-700 transition-colors peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-slate-900" />
+											<div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-slate-400 transition-all peer-checked:translate-x-4 peer-checked:bg-white" />
+										</div>
+										<div>
+											<span className="text-xs text-slate-300">Seamless loop</span>
+											<p className="text-xs text-slate-500">Adds a transition from the last clip back to the first for seamless looping</p>
+										</div>
 									</label>
-									<input
-										id="transitionSec"
-										type="number"
-										min={0.25}
-										max={2}
-										step={0.25}
-										value={transitionSec}
-										onChange={e => setTransitionSec(parseFloat(e.target.value) || 0.5)}
-										className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
-									/>
-								</div>
+								</>
 							)}
 						</div>
 					</section>

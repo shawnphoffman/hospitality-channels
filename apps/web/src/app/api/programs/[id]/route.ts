@@ -96,6 +96,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 			minClipDurationSec: body.minClipDurationSec !== undefined ? body.minClipDurationSec : existing.minClipDurationSec,
 			transitionType: body.transitionType !== undefined ? body.transitionType : existing.transitionType,
 			transitionSec: body.transitionSec !== undefined ? body.transitionSec : existing.transitionSec,
+			loopTransition: body.loopTransition !== undefined ? body.loopTransition : existing.loopTransition,
 			updatedAt: now,
 		})
 		.where(eq(schema.programs.id, id))
