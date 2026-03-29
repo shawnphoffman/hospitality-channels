@@ -791,13 +791,10 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 	const useTransitions = transitionType !== 'none' && clipIds.length >= 2
 	const loopTransition = payload.loopTransition === true && useTransitions
 
-	// When transitions are enabled, each clip needs extra time to account for xfade overlap
-	const perClipDuration =
-		clipIds.length > 0
-			? useTransitions
-				? (totalDuration + (clipIds.length - 1) * transitionSec) / clipIds.length
-				: totalDuration / clipIds.length
-			: totalDuration
+	// When transitions are enabled, each clip needs extra time to account for xfade overlap.
+	// With loop transition there's one extra transition (last→tail) plus a front trim of transitionSec.
+	const transitionOverlaps = useTransitions ? (loopTransition ? clipIds.length * transitionSec : (clipIds.length - 1) * transitionSec) : 0
+	const perClipDuration = clipIds.length > 0 ? (totalDuration + transitionOverlaps) / clipIds.length : totalDuration
 
 	logger.info('Starting program render', {
 		programId,
@@ -863,7 +860,7 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 	// Step 1b: If loop transition is enabled, render a short copy of the first clip
 	// to append at the end. This gives the xfade material to transition from the
 	// last clip back into the first clip's opening frames.
-	const loopTailDuration = transitionSec * 2
+	const loopTailDuration = transitionSec
 	if (loopTransition && clipSegments.length >= 2) {
 		const firstClipId = clipIds[0]
 		const url = `${WEB_URL}/programs/${programId}/render?clipIndex=0`
