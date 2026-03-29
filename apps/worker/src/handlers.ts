@@ -565,14 +565,22 @@ async function concatenateAudio(audioPaths: string[], outputPath: string): Promi
  *   [0:v][1:v]xfade=transition=fade:duration=0.5:offset=9.5[xf0];
  *   [xf0][2:v]xfade=transition=fade:duration=0.5:offset=19.0[outv]
  */
-function buildXfadeFilter(n: number, durations: number[], transitionType: string, transitionSec: number, labelPrefix?: string): string {
+function buildXfadeFilter(
+	n: number,
+	durations: number[],
+	transitionType: string,
+	transitionSec: number,
+	labelPrefix?: string,
+	preTrimOutput?: boolean
+): string {
 	let filter = ''
 	// Track cumulative output time to compute each transition's offset
 	let cumulativeTime = durations[0]
 	for (let i = 0; i < n - 1; i++) {
 		const inputA = i === 0 ? (labelPrefix ? `[${labelPrefix}0]` : '[0:v]') : `[xf${i - 1}]`
 		const inputB = labelPrefix ? `[${labelPrefix}${i + 1}]` : `[${i + 1}:v]`
-		const outputLabel = i === n - 2 ? '[outv]' : `[xf${i}]`
+		const finalLabel = preTrimOutput ? '[pretrim]' : '[outv]'
+		const outputLabel = i === n - 2 ? finalLabel : `[xf${i}]`
 		const offset = cumulativeTime - transitionSec
 		filter += `${inputA}${inputB}xfade=transition=${transitionType}:duration=${transitionSec}:offset=${offset.toFixed(3)}${outputLabel}`
 		if (i < n - 2) filter += ';'
@@ -612,7 +620,7 @@ async function stitchProgramVideo(
 
 	if (transition && n >= 2) {
 		// Build chained xfade filter for transitions between clips
-		filterComplex = buildXfadeFilter(n, segmentDurations, transition.type, transition.sec)
+		filterComplex = buildXfadeFilter(n, segmentDurations, transition.type, transition.sec, undefined, !!ssOffset)
 	} else {
 		// Simple concat — no transitions
 		for (let i = 0; i < n; i++) {
@@ -621,22 +629,19 @@ async function stitchProgramVideo(
 		filterComplex += `concat=n=${n}:v=1:a=0[outv]`
 	}
 
+	// For loop transition, trim the front inside the filter graph so the loop point is seamless
+	if (ssOffset) {
+		filterComplex += `;[pretrim]trim=start=${ssOffset},setpts=PTS-STARTPTS[outv]`
+	}
+
 	ffmpegArgs.push('-filter_complex', filterComplex)
 	ffmpegArgs.push('-map', '[outv]')
 
 	if (audioPath) {
 		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k')
-		if (ssOffset) {
-			// Loop transition: trim front and cap duration so output matches totalDuration
-			ffmpegArgs.push('-ss', String(ssOffset), '-t', String(totalDuration))
-		} else {
-			ffmpegArgs.push('-shortest')
-		}
+		ffmpegArgs.push('-shortest')
 	} else {
 		ffmpegArgs.push('-t', String(totalDuration))
-		if (ssOffset) {
-			ffmpegArgs.push('-ss', String(ssOffset))
-		}
 	}
 
 	ffmpegArgs.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputPath)
@@ -704,29 +709,25 @@ async function stitchMixedSegments(
 
 	if (transition && n >= 2) {
 		// Build chained xfade filter using normalized labels [v0], [v1], etc.
-		filterComplex += buildXfadeFilter(n, segmentDurations, transition.type, transition.sec, 'v')
+		filterComplex += buildXfadeFilter(n, segmentDurations, transition.type, transition.sec, 'v', !!ssOffset)
 	} else {
 		// Simple concat
 		for (let i = 0; i < n; i++) filterComplex += `[v${i}]`
 		filterComplex += `concat=n=${n}:v=1:a=0[outv]`
 	}
 
+	// For loop transition, trim the front inside the filter graph so the loop point is seamless
+	if (ssOffset) {
+		filterComplex += `;[pretrim]trim=start=${ssOffset},setpts=PTS-STARTPTS[outv]`
+	}
+
 	ffmpegArgs.push('-filter_complex', filterComplex)
 	ffmpegArgs.push('-map', '[outv]')
 
 	if (audioPath) {
-		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k')
-		if (ssOffset) {
-			// Loop transition: trim front and cap duration so output matches totalDuration
-			ffmpegArgs.push('-ss', String(ssOffset), '-t', String(totalDuration))
-		} else {
-			ffmpegArgs.push('-shortest')
-		}
+		ffmpegArgs.push('-map', `${n}:a`, '-c:a', 'aac', '-b:a', '192k', '-shortest')
 	} else {
 		ffmpegArgs.push('-t', String(totalDuration))
-		if (ssOffset) {
-			ffmpegArgs.push('-ss', String(ssOffset))
-		}
 	}
 
 	ffmpegArgs.push(
