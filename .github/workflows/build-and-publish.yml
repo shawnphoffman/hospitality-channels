@@ -20,8 +20,10 @@ jobs:
         include:
           - target: runner
             suffix: ''
+            description: 'Hospitality TV channel management — minimal fonts (Latin/common scripts)'
           - target: runner-fonts
             suffix: '-fonts'
+            description: 'Hospitality TV channel management — full Unicode fonts (emoji, CJK, symbols)'
 
     steps:
       - name: Checkout
@@ -42,6 +44,10 @@ jobs:
           tags: |
             type=sha,suffix=${{ matrix.suffix }}
             type=raw,value=latest${{ matrix.suffix }}
+          labels: |
+            org.opencontainers.image.title=hospitality-channels${{ matrix.suffix || '' }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
