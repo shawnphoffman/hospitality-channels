@@ -2,8 +2,10 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
-import { readFile, access } from 'node:fs/promises'
+import { createReadStream } from 'node:fs'
+import { access, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { Readable } from 'node:stream'
 import { getDb, schema } from '@/db'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -31,14 +33,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 		return NextResponse.json({ error: 'File not found on disk' }, { status: 404 })
 	}
 
-	const data = await readFile(filePath)
+	const fileStat = await stat(filePath)
 	const filename = path.basename(filePath)
+	const stream = createReadStream(filePath)
+	const webStream = Readable.toWeb(stream) as ReadableStream
 
-	return new NextResponse(data, {
+	return new Response(webStream, {
 		headers: {
 			'Content-Type': 'video/mp4',
 			'Content-Disposition': `attachment; filename="${filename}"`,
-			'Content-Length': String(data.byteLength),
+			'Content-Length': String(fileStat.size),
 		},
 	})
 }

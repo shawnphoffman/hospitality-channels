@@ -67,7 +67,7 @@ FROM base AS runner
 
 LABEL org.opencontainers.image.source="https://github.com/shawnphoffman/hospitality-channels"
 LABEL org.opencontainers.image.description="Hospitality TV channel management — minimal fonts (Latin/common scripts)"
-LABEL org.opencontainers.image.licenses="UNLICENSED"
+LABEL org.opencontainers.image.licenses="AGPL-3.0-only"
 
 ENV NODE_ENV=production
 WORKDIR /app
