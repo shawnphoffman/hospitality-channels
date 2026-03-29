@@ -44,6 +44,7 @@ export default async function ArtifactsPage() {
 			clipTitle: clip?.title ?? null,
 			programTitle: program?.title ?? null,
 			profileName: profile?.name ?? a.publishProfileId,
+			allowDownload: profile?.allowDownload ?? false,
 		}
 	})
 
@@ -68,6 +69,7 @@ export default async function ArtifactsPage() {
 					durationSec: a.durationSec,
 					status: a.status,
 					publishedAt: a.publishedAt,
+					allowDownload: a.allowDownload,
 				}))}
 				supersededCount={supersededCount}
 				tunarrConfigured={tunarrConfigured}

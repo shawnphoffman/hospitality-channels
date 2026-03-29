@@ -92,6 +92,7 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 			status: a.status,
 			publishedAt: a.publishedAt,
 			profileName: profile?.name ?? 'Unknown',
+			allowDownload: profile?.allowDownload ?? false,
 			superseded,
 		}
 	})

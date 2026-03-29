@@ -14,6 +14,7 @@ interface Artifact {
 	durationSec: number
 	status: string
 	publishedAt: string | null
+	allowDownload?: boolean
 }
 
 interface TunarrChannel {
@@ -286,6 +287,24 @@ export function PublishWorkflow({
 												>
 													Push to Tunarr
 												</button>
+											)}
+											{a.allowDownload && a.status === 'published' && (
+												<a
+													href={`/api/artifacts/${a.id}/download`}
+													download
+													className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+												>
+													<span className="flex items-center gap-1.5">
+														<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+															<path
+																strokeLinecap="round"
+																strokeLinejoin="round"
+																d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+															/>
+														</svg>
+														Download
+													</span>
+												</a>
 											)}
 											<button
 												onClick={() => handleDeleteArtifact(a.id)}

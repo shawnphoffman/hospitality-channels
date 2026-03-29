@@ -28,6 +28,7 @@ export default async function SettingsPage() {
 					name: p.name,
 					exportPath: p.exportPath,
 					fileNamingPattern: p.fileNamingPattern,
+					allowDownload: p.allowDownload,
 				}))}
 			/>
 		</div>

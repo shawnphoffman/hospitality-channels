@@ -22,6 +22,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 			outputFormat: body.outputFormat ?? existing.outputFormat,
 			lineupType: body.lineupType !== undefined ? body.lineupType : existing.lineupType,
 			fileNamingPattern: body.fileNamingPattern !== undefined ? body.fileNamingPattern : existing.fileNamingPattern,
+			allowDownload: body.allowDownload !== undefined ? body.allowDownload : existing.allowDownload,
 		})
 		.where(eq(schema.publishProfiles.id, params.id))
 

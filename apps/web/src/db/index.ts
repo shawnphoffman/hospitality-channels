@@ -190,6 +190,7 @@ const MIGRATIONS_SQL = [
 	"ALTER TABLE programs ADD COLUMN transition_type TEXT NOT NULL DEFAULT 'none'",
 	'ALTER TABLE programs ADD COLUMN transition_sec REAL NOT NULL DEFAULT 0.5',
 	'ALTER TABLE programs ADD COLUMN loop_transition INTEGER NOT NULL DEFAULT 0',
+	'ALTER TABLE publish_profiles ADD COLUMN allow_download INTEGER NOT NULL DEFAULT 0',
 ]
 
 /**

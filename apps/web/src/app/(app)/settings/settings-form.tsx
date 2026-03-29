@@ -7,6 +7,7 @@ interface Profile {
 	name: string
 	exportPath: string
 	fileNamingPattern: string | null
+	allowDownload: boolean
 }
 
 interface MediaLibrary {
@@ -45,6 +46,7 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 	const [newProfileName, setNewProfileName] = useState('')
 	const [newProfilePath, setNewProfilePath] = useState('')
 	const [newProfilePattern, setNewProfilePattern] = useState('{title}.mp4')
+	const [newProfileAllowDownload, setNewProfileAllowDownload] = useState(false)
 	const [savingProfile, setSavingProfile] = useState(false)
 	const [profileError, setProfileError] = useState<string | null>(null)
 
@@ -173,6 +175,7 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 					name: newProfileName,
 					exportPath: newProfilePath,
 					fileNamingPattern: newProfilePattern || null,
+					allowDownload: newProfileAllowDownload,
 				}),
 			})
 			if (res.ok) {
@@ -182,6 +185,7 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 				setNewProfileName('')
 				setNewProfilePath('')
 				setNewProfilePattern('{title}.mp4')
+				setNewProfileAllowDownload(false)
 			}
 		} catch {
 			setProfileError('Failed to create profile')
@@ -200,6 +204,7 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 					name: profile.name,
 					exportPath: profile.exportPath,
 					fileNamingPattern: profile.fileNamingPattern,
+					allowDownload: profile.allowDownload,
 				}),
 			})
 			if (res.ok) {
@@ -315,6 +320,22 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 							/>
 							<TokenReference />
 						</div>
+						<label className="flex items-center gap-3 cursor-pointer">
+							<div className="relative">
+								<input
+									type="checkbox"
+									checked={newProfileAllowDownload}
+									onChange={e => setNewProfileAllowDownload(e.target.checked)}
+									className="peer sr-only"
+								/>
+								<div className="h-5 w-9 rounded-full bg-slate-700 transition-colors peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-slate-900" />
+								<div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-slate-400 transition-all peer-checked:translate-x-4 peer-checked:bg-white" />
+							</div>
+							<div>
+								<span className="text-sm text-slate-300">Allow web downloads</span>
+								<p className="text-xs text-slate-500">Enable downloading published artifacts from the browser</p>
+							</div>
+						</label>
 						<button
 							onClick={handleCreateProfile}
 							disabled={savingProfile || !newProfileName.trim() || !newProfilePath.trim()}
@@ -346,7 +367,14 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 							) : (
 								<div key={p.id} className="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-800 p-3">
 									<div className="min-w-0 flex-1">
-										<p className="text-sm font-medium text-white">{p.name}</p>
+										<div className="flex items-center gap-2">
+											<p className="text-sm font-medium text-white">{p.name}</p>
+											{p.allowDownload && (
+												<span className="inline-block rounded-full bg-blue-900/50 px-1.5 py-0.5 text-[10px] font-medium text-blue-300">
+													Downloads
+												</span>
+											)}
+										</div>
 										<p className="mt-0.5 text-xs text-slate-400">{p.exportPath}</p>
 										{p.fileNamingPattern && <p className="mt-0.5 text-xs text-slate-500">{p.fileNamingPattern}</p>}
 									</div>
@@ -474,6 +502,7 @@ function ProfileEditForm({
 	const [name, setName] = useState(profile.name)
 	const [exportPath, setExportPath] = useState(profile.exportPath)
 	const [pattern, setPattern] = useState(profile.fileNamingPattern ?? '')
+	const [allowDownload, setAllowDownload] = useState(profile.allowDownload)
 
 	return (
 		<div className="space-y-3 rounded-lg border border-blue-800 bg-slate-800 p-3">
@@ -506,9 +535,20 @@ function ProfileEditForm({
 				/>
 				<TokenReference />
 			</div>
+			<label className="flex items-center gap-3 cursor-pointer">
+				<div className="relative">
+					<input type="checkbox" checked={allowDownload} onChange={e => setAllowDownload(e.target.checked)} className="peer sr-only" />
+					<div className="h-5 w-9 rounded-full bg-slate-700 transition-colors peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-slate-900" />
+					<div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-slate-400 transition-all peer-checked:translate-x-4 peer-checked:bg-white" />
+				</div>
+				<div>
+					<span className="text-sm text-slate-300">Allow web downloads</span>
+					<p className="text-xs text-slate-500">Enable downloading published artifacts from the browser</p>
+				</div>
+			</label>
 			<div className="flex gap-2">
 				<button
-					onClick={() => onSave({ ...profile, name, exportPath, fileNamingPattern: pattern || null })}
+					onClick={() => onSave({ ...profile, name, exportPath, fileNamingPattern: pattern || null, allowDownload })}
 					disabled={saving || !name.trim() || !exportPath.trim()}
 					className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
 				>

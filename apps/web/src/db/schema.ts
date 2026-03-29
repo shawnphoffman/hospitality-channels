@@ -47,6 +47,7 @@ export const publishProfiles = sqliteTable('publish_profiles', {
 	outputFormat: text('output_format').notNull().default('mp4'),
 	lineupType: text('lineup_type'),
 	fileNamingPattern: text('file_naming_pattern'),
+	allowDownload: integer('allow_download', { mode: 'boolean' }).notNull().default(false),
 })
 
 export const publishedArtifacts = sqliteTable('published_artifacts', {

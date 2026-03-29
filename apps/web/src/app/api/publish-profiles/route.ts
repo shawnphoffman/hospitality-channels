@@ -25,6 +25,7 @@ export async function POST(request: Request) {
 		outputFormat: body.outputFormat || 'mp4',
 		lineupType: body.lineupType || null,
 		fileNamingPattern: body.fileNamingPattern || null,
+		allowDownload: body.allowDownload === true,
 	}
 
 	await db.insert(schema.publishProfiles).values(profile)

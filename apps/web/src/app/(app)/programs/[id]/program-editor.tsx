@@ -60,6 +60,7 @@ interface ArtifactData {
 	status: string
 	publishedAt: string | null
 	profileName: string
+	allowDownload: boolean
 	superseded?: boolean
 }
 
@@ -1085,18 +1086,36 @@ export function ProgramEditor({
 											</div>
 											<p className="mt-0.5 truncate text-xs text-slate-500">{a.outputPath}</p>
 										</div>
-										{showTunarrPush && (
-											<button
-												onClick={() => handleOpenPush(a.id)}
-												className={`w-full rounded-lg px-3 py-1.5 text-xs font-medium transition-colors md:w-auto ${
-													pushingArtifactId === a.id
-														? 'bg-purple-600 text-white'
-														: 'border border-purple-700 text-purple-400 hover:bg-purple-950'
-												}`}
-											>
-												Push to Tunarr
-											</button>
-										)}
+										<div className="flex gap-2">
+											{a.allowDownload && a.status === 'published' && !a.superseded && (
+												<a
+													href={`/api/artifacts/${a.id}/download`}
+													download
+													className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-800"
+												>
+													<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"
+														/>
+													</svg>
+													Download
+												</a>
+											)}
+											{showTunarrPush && (
+												<button
+													onClick={() => handleOpenPush(a.id)}
+													className={`w-full rounded-lg px-3 py-1.5 text-xs font-medium transition-colors md:w-auto ${
+														pushingArtifactId === a.id
+															? 'bg-purple-600 text-white'
+															: 'border border-purple-700 text-purple-400 hover:bg-purple-950'
+													}`}
+												>
+													Push to Tunarr
+												</button>
+											)}
+										</div>
 									</div>
 
 									{/* Tunarr push panel */}
