@@ -1,3 +1,15 @@
+# =============================================================================
+# Worker Dockerfile: Playwright + FFmpeg render worker
+#
+# Build targets:
+#   runner       — default, minimal fonts (Latin/common scripts)
+#   runner-fonts — adds full Unicode coverage (emoji, CJK, symbols)
+#
+# Usage:
+#   docker build --target runner       -f Dockerfile.worker -t worker:latest .
+#   docker build --target runner-fonts -f Dockerfile.worker -t worker:fonts .
+# =============================================================================
+
 FROM node:20-bookworm AS base
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 
@@ -42,7 +54,7 @@ RUN pnpm run build --filter=@hospitality-channels/worker
 # Remove source files and build cache to slim down the copy
 RUN rm -rf .turbo apps/worker/src packages/*/src apps/web docs
 
-# --- Production runner ---
+# --- Production runner (default — minimal fonts) ---
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
@@ -54,3 +66,13 @@ HEALTHCHECK --interval=5m --timeout=10s --retries=5 --start-period=1m \
   CMD pgrep -f "apps/worker/dist/index.js" > /dev/null || exit 1
 
 CMD ["node", "apps/worker/dist/index.js"]
+
+# --- Extended runner with full Unicode font coverage ---
+FROM runner AS runner-fonts
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    fonts-noto-color-emoji \
+    fonts-noto-cjk \
+    fonts-noto-core \
+    && rm -rf /var/lib/apt/lists/* \
+    && fc-cache -f -v 2>/dev/null || true

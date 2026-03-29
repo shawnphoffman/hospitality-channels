@@ -1,5 +1,13 @@
 # =============================================================================
 # Unified Dockerfile: Next.js web server + worker (Playwright/FFmpeg) in one
+#
+# Build targets:
+#   runner       — default, minimal fonts (Latin/common scripts)
+#   runner-fonts — adds full Unicode coverage (emoji, CJK, symbols)
+#
+# Usage:
+#   docker build --target runner       -t hospitality-channels:latest .
+#   docker build --target runner-fonts -t hospitality-channels:fonts .
 # =============================================================================
 
 # --- Base with system deps for Chromium + FFmpeg ---
@@ -54,7 +62,7 @@ RUN cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static 
 # Slim down: remove source files, docs, build caches
 RUN rm -rf .turbo apps/worker/src packages/*/src docs .github .git
 
-# --- Production runner ---
+# --- Production runner (default — minimal fonts) ---
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
@@ -85,3 +93,15 @@ HEALTHCHECK --interval=5m --timeout=10s --retries=5 --start-period=1m \
   CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/entrypoint.sh"]
+
+# --- Extended runner with full Unicode font coverage ---
+FROM runner AS runner-fonts
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    fonts-noto-color-emoji \
+    fonts-noto-cjk \
+    fonts-noto-core \
+    && rm -rf /var/lib/apt/lists/* \
+    && fc-cache -f -v 2>/dev/null || true
+USER appuser
