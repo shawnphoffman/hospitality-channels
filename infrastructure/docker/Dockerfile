@@ -64,6 +64,11 @@ RUN rm -rf .turbo apps/worker/src packages/*/src docs .github .git
 
 # --- Production runner (default — minimal fonts) ---
 FROM base AS runner
+
+LABEL org.opencontainers.image.source="https://github.com/shawnphoffman/hospitality-channels"
+LABEL org.opencontainers.image.description="Hospitality TV channel management — minimal fonts (Latin/common scripts)"
+LABEL org.opencontainers.image.licenses="UNLICENSED"
+
 ENV NODE_ENV=production
 WORKDIR /app
 
@@ -96,6 +101,9 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # --- Extended runner with full Unicode font coverage ---
 FROM runner AS runner-fonts
+
+LABEL org.opencontainers.image.description="Hospitality TV channel management — full Unicode fonts (emoji, CJK, symbols)"
+
 USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
