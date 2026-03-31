@@ -104,7 +104,6 @@ FROM runner AS runner-fonts
 
 LABEL org.opencontainers.image.description="Hospitality TV channel management — full Unicode fonts (emoji, CJK, symbols)"
 
-USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     fonts-noto-color-emoji \
@@ -112,4 +111,3 @@ RUN apt-get update && \
     fonts-noto-core \
     && rm -rf /var/lib/apt/lists/* \
     && fc-cache -f -v 2>/dev/null || true
-USER appuser
