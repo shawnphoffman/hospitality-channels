@@ -6,9 +6,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false)
 
 	return (
-		<div className="flex min-h-screen">
+		<div className="flex h-screen overflow-hidden">
 			<Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-			<main className="flex-1 p-8">{children}</main>
+			<main className="flex-1 overflow-y-auto p-8">{children}</main>
 		</div>
 	)
 }
@@ -155,7 +155,7 @@ const navItems: NavItem[] = [
 
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
 	return (
-		<nav className={`shrink-0 border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
+		<nav className={`flex shrink-0 flex-col border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
 			<div className="flex items-center justify-between p-4">
 				{!collapsed && (
 					<div className="flex min-w-0 items-center gap-2">
@@ -174,7 +174,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 					</svg>
 				</button>
 			</div>
-			<ul className="space-y-1 px-2">
+			<ul className="flex-1 space-y-1 overflow-y-auto px-2">
 				{navItems.map((item, i) => {
 					if (item.type === 'separator') {
 						return (
