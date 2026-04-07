@@ -10,6 +10,8 @@ export const templates = sqliteTable('templates', {
 	previewImage: text('preview_image'),
 	version: integer('version').default(1),
 	status: text('status').notNull().default('active'),
+	type: text('type').notNull().default('builtin'),
+	layoutJson: text('layout_json', { mode: 'json' }),
 })
 
 export const clips = sqliteTable('pages', {

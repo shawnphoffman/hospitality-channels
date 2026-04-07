@@ -1,5 +1,40 @@
 import { z } from "zod";
 
+export const templateFieldSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  type: z.enum(["string", "textarea", "markdown", "image", "video", "audio", "boolean"]),
+  default: z.string().default(""),
+  required: z.boolean().optional(),
+});
+
+export const composableSectionSchema = z.object({
+  id: z.string(),
+  type: z.enum(["header", "text-card", "image-block", "qr-code"]),
+  enabled: z.boolean().default(true),
+  order: z.number(),
+  config: z.record(z.unknown()).default({}),
+  fields: z.array(templateFieldSchema).default([]),
+});
+
+export const composableStyleSchema = z.object({
+  fontFamily: z.string().default("Inter"),
+  accentColor: z.string().default("#6366f1"),
+  background: z.object({
+    type: z.enum(["color", "gradient", "image"]),
+    value: z.string().optional(),
+    from: z.string().optional(),
+    to: z.string().optional(),
+  }).default({ type: "gradient", from: "#0f172a", to: "#020617" }),
+  overlayOpacity: z.number().min(0).max(1).default(0.55),
+});
+
+export const composableLayoutSchema = z.object({
+  version: z.number().default(1),
+  style: composableStyleSchema.default({}),
+  sections: z.array(composableSectionSchema).default([]),
+});
+
 export const templateSchema = z.object({
   id: z.string().optional(),
   slug: z.string(),
@@ -9,7 +44,9 @@ export const templateSchema = z.object({
   schema: z.record(z.unknown()).optional(),
   previewImage: z.string().optional(),
   version: z.number().optional(),
-  status: z.enum(["draft", "active", "archived"]).default("active")
+  status: z.enum(["draft", "active", "archived"]).default("active"),
+  type: z.enum(["builtin", "composable"]).optional(),
+  layoutJson: composableLayoutSchema.optional().nullable(),
 });
 
 export const clipSchema = z.object({
@@ -125,6 +162,10 @@ export const programAudioTrackSchema = z.object({
 });
 
 export type Template = z.infer<typeof templateSchema>;
+export type TemplateField = z.infer<typeof templateFieldSchema>;
+export type ComposableSection = z.infer<typeof composableSectionSchema>;
+export type ComposableStyle = z.infer<typeof composableStyleSchema>;
+export type ComposableLayout = z.infer<typeof composableLayoutSchema>;
 export type Clip = z.infer<typeof clipSchema>;
 export type Asset = z.infer<typeof assetSchema>;
 export type PublishProfile = z.infer<typeof publishProfileSchema>;

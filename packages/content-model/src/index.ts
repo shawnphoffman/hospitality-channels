@@ -1,5 +1,9 @@
 export {
 	templateSchema,
+	templateFieldSchema,
+	composableSectionSchema,
+	composableStyleSchema,
+	composableLayoutSchema,
 	clipSchema,
 	assetSchema,
 	publishProfileSchema,
@@ -12,6 +16,10 @@ export {
 
 export type {
 	Template,
+	TemplateField,
+	ComposableSection,
+	ComposableStyle,
+	ComposableLayout,
 	Clip,
 	Asset,
 	PublishProfile,

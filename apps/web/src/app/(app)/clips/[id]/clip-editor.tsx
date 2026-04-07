@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getTemplateScenes } from '@/templates/registry'
+import { ComposableScene } from '@/components/composable-scene'
 import { WifiQrCode } from '@/templates/wifi-qr-code'
 import { TemplateField } from '@/components/template-field'
+import type { ComposableLayout } from '@hospitality-channels/content-model'
 
 interface TemplateFieldDef {
 	key: string
@@ -34,12 +36,14 @@ interface ClipEditorProps {
 	templateSlug: string
 	fields: TemplateFieldDef[]
 	programs?: ProgramRef[]
+	templateType?: string
+	layoutJson?: ComposableLayout | null
 }
 
 const SCENE_W = 1920
 const SCENE_H = 1080
 
-export function ClipEditor({ clip, templateName, templateSlug, fields, programs }: ClipEditorProps) {
+export function ClipEditor({ clip, templateName, templateSlug, fields, programs, templateType, layoutJson }: ClipEditorProps) {
 	const router = useRouter()
 
 	// Form state
@@ -200,6 +204,9 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs 
 						>
 							<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
 								{(() => {
+									if (templateType === 'composable' && layoutJson) {
+										return <ComposableScene layout={layoutJson} data={fieldValues} />
+									}
 									const entry = getTemplateScenes(templateSlug)
 									if (!entry) {
 										return (

@@ -5,6 +5,7 @@ import { getDb, schema } from '@/db'
 import { getTemplateRegistry, getTemplateBySlug } from '@hospitality-channels/templates'
 import { notFound } from 'next/navigation'
 import { ClipEditor } from './clip-editor'
+import type { ComposableLayout } from '@hospitality-channels/content-model'
 
 export default async function ClipPage({ params }: { params: { id: string } }) {
 	const db = await getDb()
@@ -16,17 +17,30 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
 
 	if (!dbTemplate) notFound()
 
-	const registryTemplates = getTemplateRegistry()
-	const matchedTemplate = registryTemplates.find(t => t.slug === dbTemplate.slug)
-	const registryTemplate = getTemplateBySlug(dbTemplate.slug)
+	const templateType = (dbTemplate as Record<string, unknown>).type as string | undefined
+	const layoutJson = (dbTemplate as Record<string, unknown>).layoutJson as ComposableLayout | null | undefined
 
-	const fields = (matchedTemplate?.schema?.fields ?? []) as Array<{
-		key: string
-		label: string
-		type: string
-		default: unknown
-		required?: boolean
-	}>
+	let fields: Array<{ key: string; label: string; type: string; default: unknown; required?: boolean }>
+
+	if (templateType === 'composable' && layoutJson) {
+		// Derive fields from enabled sections in the layout
+		fields = layoutJson.sections
+			.filter(s => s.enabled)
+			.sort((a, b) => a.order - b.order)
+			.flatMap(s => s.fields.map(f => ({
+				key: f.key,
+				label: f.label,
+				type: f.type,
+				default: f.default ?? '',
+				required: f.required,
+			})))
+	} else {
+		const registryTemplates = getTemplateRegistry()
+		const matchedTemplate = registryTemplates.find(t => t.slug === dbTemplate.slug)
+		fields = (matchedTemplate?.schema?.fields ?? []) as typeof fields
+	}
+
+	const registryTemplate = getTemplateBySlug(dbTemplate.slug)
 
 	// Find programs that include this clip
 	const programClips = await db.select().from(schema.programClips).where(eq(schema.programClips.clipId, clip.id))
@@ -49,6 +63,8 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
 			templateSlug={dbTemplate.slug}
 			fields={fields}
 			programs={clipPrograms}
+			templateType={templateType}
+			layoutJson={layoutJson}
 		/>
 	)
 }

@@ -24,7 +24,9 @@ const CREATE_TABLES_SQL = [
     schema TEXT,
     preview_image TEXT,
     version INTEGER DEFAULT 1,
-    status TEXT NOT NULL DEFAULT 'active'
+    status TEXT NOT NULL DEFAULT 'active',
+    type TEXT NOT NULL DEFAULT 'builtin',
+    layout_json TEXT
   )`,
 	`CREATE TABLE IF NOT EXISTS pages (
     id TEXT PRIMARY KEY,
@@ -191,6 +193,8 @@ const MIGRATIONS_SQL = [
 	'ALTER TABLE programs ADD COLUMN transition_sec REAL NOT NULL DEFAULT 0.5',
 	'ALTER TABLE programs ADD COLUMN loop_transition INTEGER NOT NULL DEFAULT 0',
 	'ALTER TABLE publish_profiles ADD COLUMN allow_download INTEGER NOT NULL DEFAULT 0',
+	"ALTER TABLE templates ADD COLUMN type TEXT NOT NULL DEFAULT 'builtin'",
+	'ALTER TABLE templates ADD COLUMN layout_json TEXT',
 ]
 
 /**

@@ -25,10 +25,16 @@ const sceneRegistry: Record<string, TemplateSceneEntry> = {
 	'emergency-info': { scene: EmergencyInfoScene },
 }
 
+/** Returns the scene entry for a builtin template slug. Returns undefined for composable templates. */
 export function getTemplateScenes(slug: string): TemplateSceneEntry | undefined {
 	return sceneRegistry[slug]
 }
 
 export function getRegisteredTemplateSlugs(): string[] {
 	return Object.keys(sceneRegistry)
+}
+
+/** Check if a slug belongs to a builtin template */
+export function isBuiltinTemplate(slug: string): boolean {
+	return slug in sceneRegistry
 }

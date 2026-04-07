@@ -1,15 +1,18 @@
 export const dynamic = 'force-dynamic'
 
+import { eq } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import { CreateClipForm } from './form'
+import type { ComposableLayout } from '@hospitality-channels/content-model'
 
 export default async function NewClipPage({ searchParams }: { searchParams: { template?: string } }) {
 	const db = await getDb()
 	const templates = getTemplateRegistry()
 	const dbTemplates = await db.select().from(schema.templates)
 
-	const templateOptions = templates.map(t => {
+	// Built-in templates
+	const builtinOptions = templates.map(t => {
 		const dbMatch = dbTemplates.find(dt => dt.slug === t.slug)
 		return {
 			slug: t.slug,
@@ -24,9 +27,43 @@ export default async function NewClipPage({ searchParams }: { searchParams: { te
 				default: unknown
 				required?: boolean
 			}>,
+			templateType: 'builtin' as const,
+			layoutJson: null as ComposableLayout | null,
 		}
 	})
 
+	// Composable templates
+	const composableDbTemplates = dbTemplates.filter(
+		t => (t as Record<string, unknown>).type === 'composable'
+	)
+	const composableOptions = composableDbTemplates.map(t => {
+		const layoutJson = (t as Record<string, unknown>).layoutJson as ComposableLayout | null
+		const fields = layoutJson
+			? layoutJson.sections
+				.filter(s => s.enabled)
+				.sort((a, b) => a.order - b.order)
+				.flatMap(s => s.fields.map(f => ({
+					key: f.key,
+					label: f.label,
+					type: f.type,
+					default: f.default ?? '',
+					required: f.required,
+				})))
+			: []
+
+		return {
+			slug: t.slug,
+			name: t.name,
+			description: t.description ?? '',
+			category: 'custom',
+			id: t.id,
+			fields,
+			templateType: 'composable' as const,
+			layoutJson,
+		}
+	})
+
+	const templateOptions = [...composableOptions, ...builtinOptions]
 	const preselectedSlug = searchParams.template ?? null
 
 	return (

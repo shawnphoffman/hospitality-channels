@@ -3,7 +3,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getTemplateScenes } from '@/templates/registry'
+import { ComposableScene } from '@/components/composable-scene'
 import { TemplateField } from '@/components/template-field'
+import type { ComposableLayout } from '@hospitality-channels/content-model'
 
 interface TemplateFieldDef {
 	key: string
@@ -20,6 +22,8 @@ interface TemplateOption {
 	category: string
 	id: string
 	fields: TemplateFieldDef[]
+	templateType?: 'builtin' | 'composable'
+	layoutJson?: ComposableLayout | null
 }
 
 interface CreateClipFormProps {
@@ -154,11 +158,18 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 					onChange={e => handleTemplateChange(e.target.value)}
 					className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
 				>
-					{templates.map(t => (
-						<option key={t.slug} value={t.slug}>
-							{t.name}
-						</option>
-					))}
+					{templates.some(t => t.templateType === 'composable') && (
+						<optgroup label="Custom Templates">
+							{templates.filter(t => t.templateType === 'composable').map(t => (
+								<option key={t.slug} value={t.slug}>{t.name}</option>
+							))}
+						</optgroup>
+					)}
+					<optgroup label="Built-in Templates">
+						{templates.filter(t => t.templateType !== 'composable').map(t => (
+							<option key={t.slug} value={t.slug}>{t.name}</option>
+						))}
+					</optgroup>
 				</select>
 			</div>
 
@@ -172,6 +183,9 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 						>
 							<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
 								{(() => {
+									if (selectedTemplate?.templateType === 'composable' && selectedTemplate.layoutJson) {
+										return <ComposableScene layout={selectedTemplate.layoutJson} data={fieldValues} />
+									}
 									const entry = getTemplateScenes(selectedSlug)
 									if (!entry) {
 										return (

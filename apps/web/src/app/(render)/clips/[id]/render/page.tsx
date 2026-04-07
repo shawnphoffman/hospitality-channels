@@ -16,6 +16,15 @@ export default async function RenderPage({ params }: { params: { id: string } })
 	if (!dbTemplate) notFound()
 
 	const dataJson = (clip.dataJson ?? {}) as Record<string, string>
+	const templateType = (dbTemplate as Record<string, unknown>).type as string | undefined
+	const layoutJson = (dbTemplate as Record<string, unknown>).layoutJson as Record<string, unknown> | null | undefined
 
-	return <RenderScene templateSlug={dbTemplate.slug} data={dataJson} />
+	return (
+		<RenderScene
+			templateSlug={dbTemplate.slug}
+			data={dataJson}
+			templateType={templateType}
+			layoutJson={layoutJson as any}
+		/>
+	)
 }
