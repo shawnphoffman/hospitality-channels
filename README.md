@@ -6,6 +6,10 @@
 
 Self-hosted TV channel management for hospitality environments. Create template-driven video clips, compose them into programs with background audio, render to MP4, and publish to [Tunarr](https://github.com/chrisbenincasa/tunarr) channels.
 
+## Sample Output
+
+https://github.com/user-attachments/assets/8d8b1187-91cf-469e-8b78-eafacabfb216
+
 ## How It Works
 
 **Templates** provide visual layouts (welcome screens, daily agendas, local info, amenities, checkout, emergency info, etc.) with editable fields and optional background images.
