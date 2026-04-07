@@ -10,7 +10,7 @@
 #   docker build --target runner-fonts -f Dockerfile.worker -t worker:fonts .
 # =============================================================================
 
-FROM node:20-bookworm AS base
+FROM node:22-bookworm AS base
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 
 RUN apt-get update && \

@@ -11,7 +11,7 @@
 # =============================================================================
 
 # --- Base with system deps for Chromium + FFmpeg ---
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 
 RUN apt-get update && \
