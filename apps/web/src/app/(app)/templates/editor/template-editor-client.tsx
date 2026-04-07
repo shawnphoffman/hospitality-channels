@@ -4,6 +4,8 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ComposableScene } from '@/components/composable-scene'
 import { sectionTypes, createDefaultSection } from '@/components/composable-scene/section-registry'
+import { TemplateField } from '@/components/template-field'
+import { ImageField } from '@/components/image-field'
 import type { ComposableLayout, ComposableSection } from '@hospitality-channels/content-model'
 import { SectionConfigPanel } from './section-config-panel'
 
@@ -19,6 +21,7 @@ const DEFAULT_LAYOUT: ComposableLayout = {
 		overlayOpacity: 0.55,
 	},
 	sections: [],
+	sampleData: {},
 }
 
 const FONT_OPTIONS = [
@@ -45,6 +48,7 @@ interface TemplateEditorClientProps {
 	existingTemplate?: {
 		id: string
 		name: string
+		description: string
 		layoutJson: Record<string, unknown> | null
 	}
 }
@@ -54,12 +58,14 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 	const isEditing = Boolean(existingTemplate)
 
 	const [name, setName] = useState(existingTemplate?.name ?? '')
+	const [description, setDescription] = useState(existingTemplate?.description ?? '')
 	const [layout, setLayout] = useState<ComposableLayout>(
 		existingTemplate?.layoutJson
 			? (existingTemplate.layoutJson as unknown as ComposableLayout)
 			: DEFAULT_LAYOUT
 	)
-	const [previewData, setPreviewData] = useState<Record<string, string>>({})
+	const existingLayout = existingTemplate?.layoutJson as unknown as ComposableLayout | undefined
+	const [previewData, setPreviewData] = useState<Record<string, string>>(existingLayout?.sampleData ?? {})
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -176,10 +182,11 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 				: '/api/composable-templates'
 			const method = isEditing ? 'PUT' : 'POST'
 
+			const layoutWithSampleData = { ...layout, sampleData: previewData }
 			const res = await fetch(url, {
 				method,
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name, layoutJson: layout }),
+				body: JSON.stringify({ name, description, layoutJson: layoutWithSampleData }),
 			})
 
 			if (!res.ok) {
@@ -261,19 +268,36 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 			<div className="grid gap-6 lg:grid-cols-[380px_1fr]">
 				{/* Sidebar */}
 				<div className="space-y-4">
-					{/* Template Name */}
+					{/* Template Info */}
 					<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-						<label htmlFor="template-name" className="block text-sm font-medium text-slate-300">
-							Template Name
-						</label>
-						<input
-							id="template-name"
-							type="text"
-							value={name}
-							onChange={e => setName(e.target.value)}
-							placeholder="e.g. Welcome Screen"
-							className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-						/>
+						<div className="space-y-3">
+							<div>
+								<label htmlFor="template-name" className="block text-sm font-medium text-slate-300">
+									Template Name
+								</label>
+								<input
+									id="template-name"
+									type="text"
+									value={name}
+									onChange={e => setName(e.target.value)}
+									placeholder="e.g. Welcome Screen"
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+								/>
+							</div>
+							<div>
+								<label htmlFor="template-description" className="block text-sm font-medium text-slate-300">
+									Description
+								</label>
+								<textarea
+									id="template-description"
+									rows={2}
+									value={description}
+									onChange={e => setDescription(e.target.value)}
+									placeholder="Brief description of this template"
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+								/>
+							</div>
+						</div>
 					</section>
 
 					{/* Page Settings */}
@@ -350,14 +374,13 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 										)
 									})}
 								</div>
-								{/* Background image URL */}
+								{/* Background image */}
 								<div className="mt-2">
-									<input
-										type="text"
-										placeholder="Or paste background image URL"
+									<ImageField
+										id="bg-image"
+										label="Background Image"
 										value={layout.style.background.type === 'image' ? (layout.style.background.value ?? '') : ''}
-										onChange={e => {
-											const val = e.target.value.trim()
+										onChange={val => {
 											if (val) {
 												updateLayout(prev => ({
 													...prev,
@@ -370,7 +393,6 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 												}))
 											}
 										}}
-										className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 									/>
 								</div>
 							</div>
@@ -503,34 +525,18 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 						<section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
 							<h3 className="mb-3 text-sm font-semibold text-white">Preview Content</h3>
 							<p className="mb-3 text-xs text-slate-500">
-								Enter sample content to preview how the template will look.
+								Enter sample content to preview. These values will be used as defaults when creating clips from this template.
 							</p>
 							<div className="space-y-3">
 								{enabledSections.flatMap(section =>
 									section.fields.map(field => (
-										<div key={field.key}>
-											<label htmlFor={`preview-${field.key}`} className="block text-xs text-slate-400">
-												{field.label}
-												<span className="ml-1 text-slate-600">({sectionTypes.find(s => s.type === section.type)?.label})</span>
-											</label>
-											{field.type === 'markdown' || field.type === 'textarea' ? (
-												<textarea
-													id={`preview-${field.key}`}
-													rows={3}
-													value={previewData[field.key] ?? field.default ?? ''}
-													onChange={e => handlePreviewDataChange(field.key, e.target.value)}
-													className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-												/>
-											) : (
-												<input
-													id={`preview-${field.key}`}
-													type="text"
-													value={previewData[field.key] ?? field.default ?? ''}
-													onChange={e => handlePreviewDataChange(field.key, e.target.value)}
-													className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-												/>
-											)}
-										</div>
+										<TemplateField
+											key={field.key}
+											field={field}
+											value={previewData[field.key] ?? field.default ?? ''}
+											onChange={val => handlePreviewDataChange(field.key, val)}
+											idPrefix="preview-"
+										/>
 									))
 								)}
 							</div>

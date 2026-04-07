@@ -33,6 +33,7 @@ export const composableLayoutSchema = z.object({
   version: z.number().default(1),
   style: composableStyleSchema.default({}),
   sections: z.array(composableSectionSchema).default([]),
+  sampleData: z.record(z.string()).default({}),
 });
 
 export const templateSchema = z.object({

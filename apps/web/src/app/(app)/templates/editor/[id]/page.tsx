@@ -23,6 +23,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
 				existingTemplate={{
 					id: template.id,
 					name: template.name,
+					description: template.description ?? '',
 					layoutJson: (template as Record<string, unknown>).layoutJson as Record<string, unknown> | null,
 				}}
 			/>

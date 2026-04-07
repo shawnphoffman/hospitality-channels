@@ -5,9 +5,10 @@ interface HeaderSectionProps {
 	config: Record<string, unknown>
 	fields: Array<{ key: string }>
 	hasBg: boolean
+	accentColor: string
 }
 
-export function HeaderSection({ data, config, fields, hasBg }: HeaderSectionProps) {
+export function HeaderSection({ data, config, fields, hasBg, accentColor }: HeaderSectionProps) {
 	const titleKey = fields.find(f => f.key.endsWith('_title'))?.key ?? fields[0]?.key
 	const subtitleKey = fields.find(f => f.key.endsWith('_subtitle'))?.key ?? fields[1]?.key
 
@@ -20,8 +21,6 @@ export function HeaderSection({ data, config, fields, hasBg }: HeaderSectionProp
 	const textAlign = alignment as 'left' | 'center' | 'right'
 
 	if (!title && !subtitle) return null
-
-	const dividerColor = hasBg ? 'bg-white/30' : 'bg-indigo-500'
 
 	return (
 		<div style={{ paddingTop: 80, paddingInline: 96, textAlign }}>
@@ -43,8 +42,8 @@ export function HeaderSection({ data, config, fields, hasBg }: HeaderSectionProp
 			)}
 			{showDivider && (
 				<div
-					className={`${dividerColor} ${alignment === 'center' ? 'mx-auto' : alignment === 'right' ? 'ml-auto' : ''}`}
-					style={{ height: 3, width: 120, marginTop: 24 }}
+					className={`${alignment === 'center' ? 'mx-auto' : alignment === 'right' ? 'ml-auto' : ''}`}
+					style={{ height: 3, width: 120, marginTop: 24, backgroundColor: hasBg ? 'rgba(255,255,255,0.3)' : accentColor }}
 				/>
 			)}
 		</div>

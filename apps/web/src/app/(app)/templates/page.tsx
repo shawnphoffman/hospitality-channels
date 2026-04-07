@@ -48,7 +48,7 @@ export default async function TemplatesPage() {
 							>
 								<div>
 									<h4 className="font-medium text-white">{template.name}</h4>
-									<p className="mt-0.5 text-sm text-slate-500">Composable template</p>
+									<p className="mt-0.5 text-sm text-slate-500">{template.description || 'Composable template'}</p>
 								</div>
 								<div className="flex items-center gap-2">
 									<a

@@ -14,7 +14,7 @@ export async function GET() {
 export async function POST(request: Request) {
 	const db = await getDb()
 	const body = await request.json()
-	const { name, layoutJson } = body
+	const { name, description, layoutJson } = body
 
 	if (!name || typeof name !== 'string') {
 		return NextResponse.json({ error: 'Name is required' }, { status: 400 })
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 		id: generateId(),
 		slug: `custom-${slug}-${Date.now().toString(36)}`,
 		name,
-		description: null,
+		description: description || null,
 		category: 'custom',
 		schema: null,
 		previewImage: null,

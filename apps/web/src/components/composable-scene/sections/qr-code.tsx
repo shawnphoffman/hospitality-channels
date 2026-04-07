@@ -7,6 +7,7 @@ interface QrCodeSectionProps {
 	config: Record<string, unknown>
 	fields: Array<{ key: string }>
 	hasBg: boolean
+	accentColor: string
 }
 
 export function QrCodeSection({ data, config, fields, hasBg }: QrCodeSectionProps) {

@@ -16,6 +16,7 @@ const sectionComponents: Record<string, React.ComponentType<{
 	config: Record<string, unknown>
 	fields: Array<{ key: string }>
 	hasBg: boolean
+	accentColor: string
 }>> = {
 	'header': HeaderSection,
 	'text-card': TextCardSection,
@@ -41,7 +42,12 @@ function getBackgroundStyle(style: ComposableLayout['style']): React.CSSProperti
 
 export function ComposableScene({ layout, data }: ComposableSceneProps) {
 	const { style, sections } = layout
-	const hasBgImage = style.background.type === 'image' && Boolean(style.background.value)
+
+	// Allow clip-level background image override
+	const effectiveStyle = data._background_image
+		? { ...style, background: { type: 'image' as const, value: data._background_image } }
+		: style
+	const hasBgImage = effectiveStyle.background.type === 'image' && Boolean(effectiveStyle.background.value)
 
 	const enabledSections = sections
 		.filter(s => s.enabled)
@@ -51,15 +57,15 @@ export function ComposableScene({ layout, data }: ComposableSceneProps) {
 		<div
 			className="relative flex h-full w-full flex-col text-white"
 			style={{
-				...getBackgroundStyle(style),
-				fontFamily: style.fontFamily || 'Inter, system-ui, sans-serif',
+				...getBackgroundStyle(effectiveStyle),
+				fontFamily: effectiveStyle.fontFamily || 'Inter, system-ui, sans-serif',
 			}}
 		>
 			{/* Overlay for background images */}
 			{hasBgImage && (
 				<div
 					className="absolute inset-0"
-					style={{ background: `rgba(0,0,0,${style.overlayOpacity ?? 0.55})` }}
+					style={{ background: `rgba(0,0,0,${effectiveStyle.overlayOpacity ?? 0.55})` }}
 				/>
 			)}
 
@@ -75,6 +81,7 @@ export function ComposableScene({ layout, data }: ComposableSceneProps) {
 							config={section.config}
 							fields={section.fields}
 							hasBg={hasBgImage}
+							accentColor={effectiveStyle.accentColor}
 						/>
 					)
 				})}

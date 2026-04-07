@@ -38,17 +38,28 @@ export default async function NewClipPage({ searchParams }: { searchParams: { te
 	)
 	const composableOptions = composableDbTemplates.map(t => {
 		const layoutJson = (t as Record<string, unknown>).layoutJson as ComposableLayout | null
+		const sampleData = layoutJson?.sampleData ?? {}
 		const fields = layoutJson
-			? layoutJson.sections
-				.filter(s => s.enabled)
-				.sort((a, b) => a.order - b.order)
-				.flatMap(s => s.fields.map(f => ({
-					key: f.key,
-					label: f.label,
-					type: f.type,
-					default: f.default ?? '',
-					required: f.required,
-				})))
+			? [
+				// Background image override field
+				{
+					key: '_background_image',
+					label: 'Background Image',
+					type: 'image' as const,
+					default: layoutJson.style.background.type === 'image' ? (layoutJson.style.background.value ?? '') : '',
+					required: false,
+				},
+				...layoutJson.sections
+					.filter(s => s.enabled)
+					.sort((a, b) => a.order - b.order)
+					.flatMap(s => s.fields.map(f => ({
+						key: f.key,
+						label: f.label,
+						type: f.type,
+						default: sampleData[f.key] ?? f.default ?? '',
+						required: f.required,
+					}))),
+			]
 			: []
 
 		return {

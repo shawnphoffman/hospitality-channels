@@ -23,17 +23,27 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
 	let fields: Array<{ key: string; label: string; type: string; default: unknown; required?: boolean }>
 
 	if (templateType === 'composable' && layoutJson) {
+		const sampleData = layoutJson.sampleData ?? {}
 		// Derive fields from enabled sections in the layout
-		fields = layoutJson.sections
-			.filter(s => s.enabled)
-			.sort((a, b) => a.order - b.order)
-			.flatMap(s => s.fields.map(f => ({
-				key: f.key,
-				label: f.label,
-				type: f.type,
-				default: f.default ?? '',
-				required: f.required,
-			})))
+		fields = [
+			{
+				key: '_background_image',
+				label: 'Background Image',
+				type: 'image',
+				default: layoutJson.style.background.type === 'image' ? (layoutJson.style.background.value ?? '') : '',
+				required: false,
+			},
+			...layoutJson.sections
+				.filter(s => s.enabled)
+				.sort((a, b) => a.order - b.order)
+				.flatMap(s => s.fields.map(f => ({
+					key: f.key,
+					label: f.label,
+					type: f.type,
+					default: sampleData[f.key] ?? f.default ?? '',
+					required: f.required,
+				}))),
+		]
 	} else {
 		const registryTemplates = getTemplateRegistry()
 		const matchedTemplate = registryTemplates.find(t => t.slug === dbTemplate.slug)

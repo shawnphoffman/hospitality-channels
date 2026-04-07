@@ -5,6 +5,7 @@ interface ImageBlockSectionProps {
 	config: Record<string, unknown>
 	fields: Array<{ key: string }>
 	hasBg: boolean
+	accentColor: string
 }
 
 export function ImageBlockSection({ data, config, fields, hasBg }: ImageBlockSectionProps) {

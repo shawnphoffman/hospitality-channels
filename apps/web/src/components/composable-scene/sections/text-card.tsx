@@ -7,6 +7,7 @@ interface TextCardSectionProps {
 	config: Record<string, unknown>
 	fields: Array<{ key: string }>
 	hasBg: boolean
+	accentColor: string
 }
 
 export function TextCardSection({ data, config, fields, hasBg }: TextCardSectionProps) {
