@@ -124,4 +124,12 @@ Settings are managed through the web UI at `/settings`:
 
 ## License
 
-MIT
+AGPL-3.0
+
+## More Screenshots and Samples
+
+https://github.com/user-attachments/assets/140825f6-3469-4184-95d7-65a8251e3b4d
+
+<img width="2740" height="2000" alt="Dashboard" src="https://github.com/user-attachments/assets/87cadd81-ae0e-4473-a04c-5686a6707d3c" />
+
+<img width="2740" height="2000" alt="Program Creation" src="https://github.com/user-attachments/assets/62c330d2-d70d-4b6e-a041-e02df69af122" />
