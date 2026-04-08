@@ -107,6 +107,10 @@ Settings are managed through the web UI at `/settings`:
 - **Publish Profiles** — Export destinations with path and naming patterns
 - **NFO Generation** — Toggle `.nfo` sidecar file creation
 
+## AI Disclosure
+
+> This project is an experiment in [Level 6 AI-assisted coding](https://www.visidata.org/blog/2026/ai/) — AI does most of the coding while the human acts as team lead, driving development direction and testing empirically. The author is a seasoned software engineer who steers architecture and reviews results, but defers much of the implementation to AI tooling. This is not production-ready software; it's a hobby project and a learning exercise in pushing the boundaries of AI-assisted development.
+
 ## License
 
 AGPL-3.0
