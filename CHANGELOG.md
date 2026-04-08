@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.1](https://github.com/shawnphoffman/hospitality-channels/compare/v1.2.0...v1.2.1) (2026-04-08)
+
+### Bug Fixes
+
+* use client-side navigation and persist sidebar state ([415a949](https://github.com/shawnphoffman/hospitality-channels/commit/415a949da9f3b75255f638229627e6a2d6afce16))
+
 ## [1.2.0](https://github.com/shawnphoffman/hospitality-channels/compare/v1.1.0...v1.2.0) (2026-04-08)
 
 ### Features
