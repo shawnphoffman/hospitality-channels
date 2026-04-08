@@ -99,14 +99,14 @@ export default async function DashboardPage() {
 		})
 
 	return (
-		<div className="space-y-8">
+		<div className="space-y-6 sm:space-y-8">
 			<div>
-				<h2 className="text-2xl font-bold text-white">Dashboard</h2>
+				<h2 className="text-xl font-bold text-white sm:text-2xl">Dashboard</h2>
 				<p className="mt-1 text-sm text-slate-500">Overview of your hospitality TV system</p>
 			</div>
 
 			{/* Stats Row */}
-			<div className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-6">
+			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
 				<StatCard
 					href="/programs"
 					label="Programs"
@@ -185,7 +185,7 @@ export default async function DashboardPage() {
 			</div>
 
 			{/* Main Grid */}
-			<div className="grid gap-6 lg:grid-cols-2">
+			<div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
 				{/* Programs */}
 				<section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
 					<div className="mb-4 flex items-center justify-between">
@@ -415,13 +415,13 @@ function StatCard({
 	return (
 		<Link
 			href={href}
-			className="group rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-700 hover:bg-slate-800/60"
+			className="group rounded-xl border border-slate-800 bg-slate-900 p-3 transition-colors hover:border-slate-700 hover:bg-slate-800/60 sm:p-4"
 		>
-			<div className="flex items-center gap-3">
-				<div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${colorMap[color]}`}>{icon}</div>
-				<div>
-					<p className="text-2xl font-bold text-white">{value}</p>
-					<p className="text-xs text-slate-500 group-hover:text-slate-400">{label}</p>
+			<div className="flex items-center gap-2 sm:gap-3">
+				<div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 ${colorMap[color]}`}>{icon}</div>
+				<div className="min-w-0">
+					<p className="text-xl font-bold text-white sm:text-2xl">{value}</p>
+					<p className="truncate text-xs text-slate-500 group-hover:text-slate-400">{label}</p>
 				</div>
 			</div>
 		</Link>

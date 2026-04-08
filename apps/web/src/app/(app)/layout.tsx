@@ -8,7 +8,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 	return (
 		<div className="flex h-screen overflow-hidden">
 			<Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-			<main className="flex-1 overflow-y-auto p-8">{children}</main>
+			<main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
 		</div>
 	)
 }
@@ -242,24 +242,33 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 	return (
 		<>
 			<SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
-			<nav className={`flex shrink-0 flex-col border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
-				<div className="flex items-center justify-between p-4">
-					{!collapsed && (
-						<div className="flex min-w-0 items-center gap-2">
-							<img src="/logo1b.png" alt="" className="h-7 w-7 shrink-0" />
-							<h1 className="truncate text-lg font-bold text-white">Hospitality TV</h1>
-						</div>
+			<nav className={`flex shrink-0 flex-col overflow-hidden border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
+				<div className="flex h-14 shrink-0 items-center overflow-hidden px-2">
+					{collapsed ? (
+						<button
+							onClick={onToggle}
+							className="mx-auto flex h-9 w-9 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+							title="Expand sidebar"
+						>
+							<img src="/logo1b.png" alt="" className="h-6 w-6" />
+						</button>
+					) : (
+						<>
+							<div className="flex min-w-0 flex-1 items-center gap-2 pl-2">
+								<img src="/logo1b.png" alt="" className="h-7 w-7 shrink-0" />
+								<h1 className="truncate text-lg font-bold text-white">Hospitality TV</h1>
+							</div>
+							<button
+								onClick={onToggle}
+								className="shrink-0 rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+								title="Collapse sidebar"
+							>
+								<svg {...iconProps} width={16} height={16}>
+									<polyline points="15 18 9 12 15 6" />
+								</svg>
+							</button>
+						</>
 					)}
-					{collapsed && <img src="/logo1b.png" alt="" className="mx-auto h-6 w-6" />}
-					<button
-						onClick={onToggle}
-						className={`shrink-0 rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white ${collapsed ? 'mx-auto' : ''}`}
-						title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-					>
-						<svg {...iconProps} width={16} height={16}>
-							{collapsed ? <polyline points="9 18 15 12 9 6" /> : <polyline points="15 18 9 12 15 6" />}
-						</svg>
-					</button>
 				</div>
 				<ul className="flex-1 space-y-1 overflow-y-auto px-2">
 					{navItems.map((item, i) => {
