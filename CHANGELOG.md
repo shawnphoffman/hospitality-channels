@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0](https://github.com/shawnphoffman/hospitality-channels/compare/v1.1.0...v1.2.0) (2026-04-08)
+
+### Features
+
+* add Channel Offline built-in template ([92632b1](https://github.com/shawnphoffman/hospitality-channels/commit/92632b182f4411e88b20e7dcb76c1974036db3c7))
+
+### Bug Fixes
+
+* improve mobile responsiveness and sidebar toggle overflow ([b7237da](https://github.com/shawnphoffman/hospitality-channels/commit/b7237daf2d2f93a1910ed2e3404df46a921dacd2))
+
 ## [1.1.0](https://github.com/shawnphoffman/hospitality-channels/compare/v1.0.1...v1.1.0) (2026-04-08)
 
 ### Features
