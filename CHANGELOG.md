@@ -1,5 +1,7 @@
 # Changelog
 
+## [1.0.1](https://github.com/shawnphoffman/hospitality-channels/compare/v1.0.0...v1.0.1) (2026-04-08)
+
 ## 1.0.0 (2026-04-07)
 
 Initial release.
