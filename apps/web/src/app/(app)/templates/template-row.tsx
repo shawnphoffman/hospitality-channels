@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { getTemplateScenes } from '@/templates/registry'
 
 const SCENE_W = 1920
@@ -200,12 +201,12 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 					>
 						Preview
 					</button>
-					<a
+					<Link
 						href={`/clips/new?template=${slug}`}
 						className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-500"
 					>
 						Use Template
-					</a>
+					</Link>
 				</div>
 			</div>
 
@@ -220,12 +221,12 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 								<p className="text-sm text-slate-400">Preview with sample data</p>
 							</div>
 							<div className="flex items-center gap-3">
-								<a
+								<Link
 									href={`/clips/new?template=${slug}`}
 									className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
 								>
 									Use Template
-								</a>
+								</Link>
 								<button
 									onClick={handleClose}
 									className="rounded-lg border border-slate-700 p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"

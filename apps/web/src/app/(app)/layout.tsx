@@ -1,13 +1,29 @@
 'use client'
 
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import Link from 'next/link'
+
+const SIDEBAR_KEY = 'sidebar-collapsed'
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-	const [collapsed, setCollapsed] = useState(false)
+	const [collapsed, setCollapsed] = useState(() => {
+		if (typeof window !== 'undefined') {
+			return localStorage.getItem(SIDEBAR_KEY) === '1'
+		}
+		return false
+	})
+
+	const handleToggle = useCallback(() => {
+		setCollapsed(prev => {
+			const next = !prev
+			localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0')
+			return next
+		})
+	}, [])
 
 	return (
 		<div className="flex h-screen overflow-hidden">
-			<Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
+			<Sidebar collapsed={collapsed} onToggle={handleToggle} />
 			<main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
 		</div>
 	)
@@ -281,14 +297,14 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 						}
 						return (
 							<li key={item.href}>
-								<a
+								<Link
 									href={item.href}
 									className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
 									title={collapsed ? item.label : undefined}
 								>
 									<span className="shrink-0">{item.icon}</span>
 									{!collapsed && <span>{item.label}</span>}
-								</a>
+								</Link>
 							</li>
 						)
 					})}

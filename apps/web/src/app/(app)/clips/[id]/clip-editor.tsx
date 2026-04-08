@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { getTemplateScenes } from '@/templates/registry'
 import { ComposableScene } from '@/components/composable-scene'
 import { WifiQrCode } from '@/templates/wifi-qr-code'
@@ -184,9 +185,9 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
-					<a href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
+					<Link href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
 						Back
-					</a>
+					</Link>
 				</div>
 			</div>
 
@@ -266,13 +267,13 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 							<h4 className="mb-2 text-sm font-semibold text-slate-300">Used in Programs</h4>
 							<div className="space-y-1">
 								{programs.map(p => (
-									<a
+									<Link
 										key={p.id}
 										href={`/programs/${p.id}`}
 										className="block rounded-md px-2 py-1.5 text-sm text-blue-400 transition-colors hover:bg-slate-800 hover:text-blue-300"
 									>
 										{p.title}
-									</a>
+									</Link>
 								))}
 							</div>
 						</div>
@@ -344,9 +345,9 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
-					<a href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
+					<Link href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
 						Back
-					</a>
+					</Link>
 				</div>
 				<div className="flex items-center gap-3">
 					<button

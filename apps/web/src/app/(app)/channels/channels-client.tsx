@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface ChannelDef {
 	id: string
@@ -326,9 +327,9 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 				<p className="text-slate-400">
 					Tunarr integration is required to manage channels. Configure your Tunarr URL and media library in Settings to get started.
 				</p>
-				<a href="/settings" className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300">
+				<Link href="/settings" className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300">
 					Go to Settings
-				</a>
+				</Link>
 			</div>
 		)
 	}

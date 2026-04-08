@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ComposableScene } from '@/components/composable-scene'
 import { sectionTypes, createDefaultSection } from '@/components/composable-scene/section-registry'
 import { TemplateField } from '@/components/template-field'
@@ -255,9 +256,9 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
-					<a href="/templates" className="text-sm text-slate-400 hover:text-slate-300">
+					<Link href="/templates" className="text-sm text-slate-400 hover:text-slate-300">
 						Back
-					</a>
+					</Link>
 				</div>
 			</div>
 

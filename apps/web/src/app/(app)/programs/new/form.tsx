@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export function NewProgramForm() {
 	const router = useRouter()
@@ -104,9 +105,9 @@ export function NewProgramForm() {
 				>
 					{saving ? 'Creating...' : 'Create Program'}
 				</button>
-				<a href="/programs" className="text-sm text-slate-400 hover:text-slate-300">
+				<Link href="/programs" className="text-sm text-slate-400 hover:text-slate-300">
 					Cancel
-				</a>
+				</Link>
 			</div>
 		</div>
 	)

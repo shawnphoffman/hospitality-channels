@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { getTemplateScenes } from '@/templates/registry'
 import { ComposableScene } from '@/components/composable-scene'
 import { TemplateField } from '@/components/template-field'
@@ -271,9 +272,9 @@ export function CreateClipForm({ templates, preselectedTemplate }: CreateClipFor
 				>
 					{saving ? 'Creating...' : 'Create Clip'}
 				</button>
-				<a href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
+				<Link href="/clips" className="text-sm text-slate-400 hover:text-slate-300">
 					Cancel
-				</a>
+				</Link>
 			</div>
 		</form>
 	)

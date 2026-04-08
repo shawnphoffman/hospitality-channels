@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { eq } from 'drizzle-orm'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import { getDb, schema } from '@/db'
@@ -21,18 +22,18 @@ export default async function TemplatesPage() {
 					<p className="mt-1 text-sm text-slate-500">Pre-built and custom scene layouts for creating clips</p>
 				</div>
 				<div className="flex items-center gap-3">
-					<a
+					<Link
 						href="/templates/editor"
 						className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
 					>
 						Create Template
-					</a>
-					<a
+					</Link>
+					<Link
 						href="/templates/dev"
 						className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
 					>
 						Dev Mode
-					</a>
+					</Link>
 				</div>
 			</div>
 
@@ -51,18 +52,18 @@ export default async function TemplatesPage() {
 									<p className="mt-0.5 text-sm text-slate-500">{template.description || 'Composable template'}</p>
 								</div>
 								<div className="flex items-center gap-2">
-									<a
+									<Link
 										href={`/clips/new?template=${template.slug}`}
 										className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white"
 									>
 										Use
-									</a>
-									<a
+									</Link>
+									<Link
 										href={`/templates/editor/${template.id}`}
 										className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white"
 									>
 										Edit
-									</a>
+									</Link>
 								</div>
 							</div>
 						))}
