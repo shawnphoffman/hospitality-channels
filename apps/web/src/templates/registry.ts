@@ -10,6 +10,7 @@ import { AmenitiesScene } from './amenities'
 import { CheckoutScene } from './checkout'
 import { ContactDirectoryScene } from './contact-directory'
 import { EmergencyInfoScene } from './emergency-info'
+import { ChannelOfflineScene } from './channel-offline'
 
 const sceneRegistry: Record<string, TemplateSceneEntry> = {
 	welcome: { scene: WelcomeScene },
@@ -23,6 +24,7 @@ const sceneRegistry: Record<string, TemplateSceneEntry> = {
 	checkout: { scene: CheckoutScene },
 	'contact-directory': { scene: ContactDirectoryScene },
 	'emergency-info': { scene: EmergencyInfoScene },
+	'channel-offline': { scene: ChannelOfflineScene },
 }
 
 /** Returns the scene entry for a builtin template slug. Returns undefined for composable templates. */
