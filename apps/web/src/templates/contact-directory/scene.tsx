@@ -5,7 +5,7 @@ import type { TemplateSceneProps } from '../types'
 const contactIndices = [1, 2, 3, 4, 5, 6] as const
 
 export function ContactDirectoryScene({ data }: TemplateSceneProps) {
-	const header = data.headerText || 'Contact Directory'
+	const header = data.headerText || 'Contact Information'
 	const footer = data.footerText
 	const backgroundImageUrl = data.backgroundImageUrl
 	const backgroundVideoUrl = data.backgroundVideoUrl
@@ -57,7 +57,7 @@ export function ContactDirectoryScene({ data }: TemplateSceneProps) {
 						</p>
 					</div>
 				) : (
-					<div className="grid grid-cols-2 gap-5">
+					<div className="flex flex-col gap-4">
 						{contacts.map((contact, index) => (
 							<div
 								key={index}
@@ -65,14 +65,14 @@ export function ContactDirectoryScene({ data }: TemplateSceneProps) {
 									hasBg ? 'border-white/10 bg-black/60 backdrop-blur-sm' : 'border-slate-800'
 								}`}
 								style={{
-									padding: '28px 36px',
+									padding: '24px 48px',
 									backgroundColor: hasBg ? undefined : index % 2 === 0 ? 'rgba(30, 41, 59, 0.4)' : 'rgba(30, 41, 59, 0.25)',
 								}}
 							>
-								<p style={{ fontSize: 24, letterSpacing: '0.15em' }} className="uppercase text-white/50">
+								<p style={{ fontSize: 28, letterSpacing: '0.1em' }} className="uppercase text-white/50">
 									{contact.label}
 								</p>
-								<p style={{ fontSize: 40 }} className="font-semibold">
+								<p style={{ fontSize: 44 }} className="font-semibold tabular-nums tracking-wide">
 									{contact.number}
 								</p>
 							</div>

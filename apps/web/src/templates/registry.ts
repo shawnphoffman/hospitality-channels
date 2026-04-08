@@ -9,7 +9,6 @@ import { LocalInfoScene } from './local-info'
 import { AmenitiesScene } from './amenities'
 import { CheckoutScene } from './checkout'
 import { ContactDirectoryScene } from './contact-directory'
-import { EmergencyInfoScene } from './emergency-info'
 import { ChannelOfflineScene } from './channel-offline'
 
 const sceneRegistry: Record<string, TemplateSceneEntry> = {
@@ -23,7 +22,6 @@ const sceneRegistry: Record<string, TemplateSceneEntry> = {
 	amenities: { scene: AmenitiesScene },
 	checkout: { scene: CheckoutScene },
 	'contact-directory': { scene: ContactDirectoryScene },
-	'emergency-info': { scene: EmergencyInfoScene },
 	'channel-offline': { scene: ChannelOfflineScene },
 }
 

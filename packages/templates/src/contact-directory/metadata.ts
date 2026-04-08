@@ -2,7 +2,7 @@ import type { Template } from '@hospitality-channels/content-model'
 
 export const contactDirectoryTemplate: Template & { schema: Record<string, unknown> } = {
 	slug: 'contact-directory',
-	name: 'Contact Directory',
+	name: 'Contact Information',
 	description: 'Phone directory with front desk, concierge, housekeeping, and more',
 	category: 'info',
 	status: 'active',
@@ -11,7 +11,7 @@ export const contactDirectoryTemplate: Template & { schema: Record<string, unkno
 		fields: [
 			{ key: 'backgroundImageUrl', label: 'Background Image', type: 'image', default: '' },
 			{ key: 'backgroundVideoUrl', label: 'Background Video', type: 'video', default: '' },
-			{ key: 'headerText', label: 'Header', type: 'string', default: 'Contact Directory' },
+			{ key: 'headerText', label: 'Header', type: 'string', default: 'Contact Information' },
 			{ key: 'contact1Label', label: 'Contact 1 Label', type: 'string', default: 'Front Desk' },
 			{ key: 'contact1Number', label: 'Contact 1 Number', type: 'string', default: '' },
 			{ key: 'contact2Label', label: 'Contact 2 Label', type: 'string', default: 'Concierge' },

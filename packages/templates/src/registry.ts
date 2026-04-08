@@ -9,7 +9,6 @@ import { localInfoTemplate } from './local-info/index.js'
 import { amenitiesTemplate } from './amenities/index.js'
 import { checkoutTemplate } from './checkout/index.js'
 import { contactDirectoryTemplate } from './contact-directory/index.js'
-import { emergencyInfoTemplate } from './emergency-info/index.js'
 import { channelOfflineTemplate } from './channel-offline/index.js'
 
 const templates: (Template & { schema?: Record<string, unknown> })[] = [
@@ -23,7 +22,6 @@ const templates: (Template & { schema?: Record<string, unknown> })[] = [
 	amenitiesTemplate,
 	checkoutTemplate,
 	contactDirectoryTemplate,
-	emergencyInfoTemplate,
 	channelOfflineTemplate,
 ]
 
