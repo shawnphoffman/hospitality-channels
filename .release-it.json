@@ -1,0 +1,24 @@
+{
+	"git": {
+		"commit": true,
+		"commitMessage": "chore: release v${version}",
+		"tag": true,
+		"tagName": "v${version}",
+		"push": true
+	},
+	"npm": {
+		"publish": false
+	},
+	"github": {
+		"release": false
+	},
+	"plugins": {
+		"@release-it/conventional-changelog": {
+			"preset": {
+				"name": "conventionalcommits"
+			},
+			"infile": "CHANGELOG.md",
+			"header": "# Changelog"
+		}
+	}
+}

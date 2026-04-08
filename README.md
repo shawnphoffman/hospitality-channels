@@ -4,11 +4,19 @@
 
 # Hospitality Channels
 
-Self-hosted TV channel management for hospitality environments. Create template-driven video clips, compose them into programs with background audio, render to MP4, and publish to [Tunarr](https://github.com/chrisbenincasa/tunarr) channels.
+Self-hosted TV channel management for hospitality environments. Create template-driven video clips, compose them into programs with background audio, and render to MP4. Use the exported videos however you want — play them on a media player, loop them on a lobby TV, or push them directly to [Tunarr](https://github.com/chrisbenincasa/tunarr) channels with the built-in integration.
 
 ## Sample Output
 
 https://github.com/user-attachments/assets/8d8b1187-91cf-469e-8b78-eafacabfb216
+
+## Who Is This For
+
+- Tunarr tinkerers with a guest room IPTV playlist
+- Airbnb / VRBO hosts with a media player hooked up to the TV
+- Small hotels or B&Bs that want a DIY channel without enterprise software
+- Home lab enthusiasts looking for a new project to over-engineer
+- Randos with a laptop, a TV, and some free time
 
 ## How It Works
 
@@ -89,20 +97,6 @@ pnpm --filter @hospitality-channels/web dev
 | **Channel**         | A binding between a Tunarr channel and a program for one-click publishing      |
 | **Asset**           | An uploaded image or audio file used across clips and programs                 |
 
-## Built-in Templates
-
-- **Welcome** — Personalized guest welcome with Wi-Fi QR code
-- **Hotel Welcome** — Full-bleed background image with guest name overlay
-- **House Guide** — Wi-Fi, house rules, and general info
-- **Daily Agenda** — Up to 4 scheduled items with times and descriptions
-- **Local Info** — Switchable layouts (photo left, photo right, two-row)
-- **Amenities** — Property facilities with hours, details, and photos
-- **Checkout** — Checkout time, policies, and contact info
-- **Contact Directory** — Phone directory with up to 6 entries
-- **Emergency Info** — Emergency number, contacts, and safety information
-
-All templates support optional background images with automatic frosted-glass content overlays, background audio, and basic markdown in text fields.
-
 ## Configuration
 
 Settings are managed through the web UI at `/settings`:
@@ -112,15 +106,6 @@ Settings are managed through the web UI at `/settings`:
 - **Tunarr Media Path** — Filesystem path where Tunarr can access exported videos
 - **Publish Profiles** — Export destinations with path and naming patterns
 - **NFO Generation** — Toggle `.nfo` sidecar file creation
-
-## Tech Stack
-
-- Next.js 14 (App Router), React 18, Tailwind CSS
-- SQLite via libsql + Drizzle ORM
-- Chromium (Playwright) for page capture
-- FFmpeg for video encoding and audio processing
-- pnpm workspaces + Turborepo
-- Docker with built-in healthchecks
 
 ## License
 
