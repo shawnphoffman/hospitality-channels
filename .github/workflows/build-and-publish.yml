@@ -3,6 +3,19 @@ name: Build and Publish Docker Image
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.github/FUNDING.yml'
+      - '.vscode/**'
+      - '.claude/**'
+      - '.cursor/**'
+      - '.editorconfig'
+      - '.env.example'
+      - '.nvmrc'
+      - 'docs/**'
+      - 'docker-compose*.yml'
+      - '*.png'
 
 env:
   REGISTRY: ghcr.io
