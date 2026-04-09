@@ -32,6 +32,8 @@ https://github.com/user-attachments/assets/8d8b1187-91cf-469e-8b78-eafacabfb216
 
 ## AI Disclosure
 
+![Level 6](https://badgen.net/badge/AI%20Assistance/Level%206?color=yellow)
+
 > [!IMPORTANT]
 > This project is an experiment in [Level 6 AI-assisted coding](https://www.visidata.org/blog/2026/ai/) — AI does most of the coding while the human acts as team lead, driving development direction and testing empirically. The author is a seasoned software engineer who steers architecture and reviews results, but defers much of the implementation to AI tooling. This is not production-ready software; it's a hobby project and a learning exercise in pushing the boundaries of AI-assisted development.
 
