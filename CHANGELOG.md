@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0](https://github.com/shawnphoffman/hospitality-channels/compare/v1.2.2...v1.3.0) (2026-04-23)
+
+### Features
+
+* harden and parallelize render pipeline ([8c3d27e](https://github.com/shawnphoffman/hospitality-channels/commit/8c3d27e2337fda4e54ded6159d80789ff7af96f8))
+
 ## [1.2.2](https://github.com/shawnphoffman/hospitality-channels/compare/v1.2.1...v1.2.2) (2026-04-08)
 
 ## [1.2.1](https://github.com/shawnphoffman/hospitality-channels/compare/v1.2.0...v1.2.1) (2026-04-08)
