@@ -1,6 +1,9 @@
-export { capturePageVideo, probeDuration } from "./capture.js";
-export type { CaptureOptions, CaptureResult } from "./capture.js";
-export { captureScreenshot } from "./screenshot.js";
-export type { ScreenshotOptions } from "./screenshot.js";
-export { normalizeVideo } from "./ffmpeg.js";
-export type { FFmpegNormalizeOptions } from "./ffmpeg.js";
+export { capturePageVideo, probeDuration } from './capture.js'
+export type { CaptureOptions, CaptureResult } from './capture.js'
+export { captureScreenshot } from './screenshot.js'
+export type { ScreenshotOptions } from './screenshot.js'
+export { normalizeVideo } from './ffmpeg.js'
+export type { FFmpegNormalizeOptions } from './ffmpeg.js'
+export { launchBrowser } from './browser.js'
+export { runFfmpeg } from './ffmpegSpawn.js'
+export type { FfmpegRunOptions, FfmpegRunResult } from './ffmpegSpawn.js'

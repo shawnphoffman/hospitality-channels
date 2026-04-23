@@ -1,9 +1,8 @@
 import path from 'node:path'
 import { randomBytes } from 'node:crypto'
-import { spawn } from 'node:child_process'
 import { writeFile, unlink, mkdir } from 'node:fs/promises'
 import { createLogger, PATHS } from '@hospitality-channels/common'
-import { capturePageVideo, captureScreenshot, probeDuration } from '@hospitality-channels/render-core'
+import { capturePageVideo, captureScreenshot, launchBrowser, probeDuration, runFfmpeg } from '@hospitality-channels/render-core'
 import { publishArtifact, scanMediaSource } from '@hospitality-channels/publish'
 import { eq, count } from 'drizzle-orm'
 import { db, clips, assets, publishedArtifacts, settings } from './db.js'
@@ -531,20 +530,9 @@ async function concatenateAudio(audioPaths: string[], outputPath: string): Promi
 	const listContent = audioPaths.map(p => `file '${p}'`).join('\n')
 	await writeFile(listPath, listContent, 'utf-8')
 
-	const result = await new Promise<{ success: boolean; error?: string }>(resolve => {
-		const proc = spawn('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', outputPath], {
-			stdio: ['ignore', 'pipe', 'pipe'],
-		})
-
-		let stderr = ''
-		proc.stderr?.on('data', (chunk: Buffer) => {
-			stderr += chunk.toString()
-		})
-		proc.on('close', code => {
-			if (code === 0) resolve({ success: true })
-			else resolve({ success: false, error: stderr.slice(-500) })
-		})
-		proc.on('error', err => resolve({ success: false, error: err.message }))
+	const result = await runFfmpeg({
+		args: ['-y', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', outputPath],
+		timeoutMs: 120_000,
 	})
 
 	await unlink(listPath).catch(() => {})
@@ -648,20 +636,9 @@ async function stitchProgramVideo(
 
 	logger.info('FFmpeg stitch command', { args: ffmpegArgs.join(' '), clips: n, totalDuration, hasAudio: !!audioPath, ssOffset })
 
-	return new Promise(resolve => {
-		const proc = spawn('ffmpeg', ffmpegArgs, {
-			stdio: ['ignore', 'pipe', 'pipe'],
-		})
-
-		let stderr = ''
-		proc.stderr?.on('data', (chunk: Buffer) => {
-			stderr += chunk.toString()
-		})
-		proc.on('close', code => {
-			if (code === 0) resolve({ success: true })
-			else resolve({ success: false, error: stderr.slice(-500) })
-		})
-		proc.on('error', err => resolve({ success: false, error: err.message }))
+	return runFfmpeg({
+		args: ffmpegArgs,
+		timeoutMs: Math.max(180_000, totalDuration * 10_000),
 	})
 }
 
@@ -754,20 +731,9 @@ async function stitchMixedSegments(
 		ssOffset,
 	})
 
-	return new Promise(resolve => {
-		const proc = spawn('ffmpeg', ffmpegArgs, {
-			stdio: ['ignore', 'pipe', 'pipe'],
-		})
-
-		let stderr = ''
-		proc.stderr?.on('data', (chunk: Buffer) => {
-			stderr += chunk.toString()
-		})
-		proc.on('close', code => {
-			if (code === 0) resolve({ success: true })
-			else resolve({ success: false, error: stderr.slice(-500) })
-		})
-		proc.on('error', err => resolve({ success: false, error: err.message }))
+	return runFfmpeg({
+		args: ffmpegArgs,
+		timeoutMs: Math.max(180_000, totalDuration * 10_000),
 	})
 }
 
@@ -817,85 +783,103 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 		.replace(/\.\d+Z$/, '')
 
 	// Step 1: Render each clip — use capturePageVideo for clips with video backgrounds,
-	// captureScreenshot for static clips
-	const clipSegments: string[] = []
+	// captureScreenshot for static clips. Clips render concurrently against a single
+	// shared browser; WORKER_RENDER_CONCURRENCY (default 2) caps parallelism.
+	const clipSegments: string[] = new Array(clipIds.length).fill('')
 	const tempFiles: string[] = []
 	let hasAnyVideoBackground = false
+	const concurrency = Math.min(Math.max(1, Number(process.env.WORKER_RENDER_CONCURRENCY) || 2), Math.max(1, clipIds.length))
 
-	for (let i = 0; i < clipIds.length; i++) {
-		const url = `${WEB_URL}/programs/${programId}/render?clipIndex=${i}`
-		const video = await resolveVideoForClip(clipIds[i])
-
-		try {
-			if (video.videoPath) {
-				// Clip has a video background — render as a composited video segment
-				hasAnyVideoBackground = true
-				const segmentPath = path.join(outputDir, `_program-${programId}-clip${i}-${Date.now()}.mp4`)
-				const result = await capturePageVideo({
-					url,
-					outputPath: segmentPath,
-					durationSec: perClipDuration,
-					backgroundVideoPath: video.videoPath,
-				})
-				if (video.tempFile) tempFiles.push(video.tempFile)
-				if (!result.success) {
-					throw new Error(`Capture failed: ${result.error}`)
-				}
-				clipSegments.push(segmentPath)
-				tempFiles.push(segmentPath)
-			} else {
-				// Static clip — capture screenshot
-				const screenshotPath = path.join(outputDir, `_program-${programId}-clip${i}-${Date.now()}.png`)
-				await captureScreenshot({ url, outputPath: screenshotPath })
-				clipSegments.push(screenshotPath)
-				tempFiles.push(screenshotPath)
-			}
-		} catch (err) {
-			logger.error('Failed to render clip segment', { programId, clipIndex: i, error: String(err) })
-			for (const p of tempFiles) await unlink(p).catch(() => {})
-			throw new Error(`Failed to render clip ${i}: ${err instanceof Error ? err.message : String(err)}`)
-		}
-	}
-
-	// Step 1b: If loop transition is enabled, render a short copy of the first clip
-	// to append at the end. This gives the xfade material to transition from the
-	// last clip back into the first clip's opening frames.
 	const loopTailDuration = transitionSec
-	if (loopTransition && clipSegments.length >= 2) {
-		const firstClipId = clipIds[0]
-		const url = `${WEB_URL}/programs/${programId}/render?clipIndex=0`
-		const video = await resolveVideoForClip(firstClipId)
 
-		try {
-			if (video.videoPath) {
-				hasAnyVideoBackground = true
-				const segmentPath = path.join(outputDir, `_program-${programId}-looptail-${Date.now()}.mp4`)
-				const result = await capturePageVideo({
-					url,
-					outputPath: segmentPath,
-					durationSec: loopTailDuration,
-					backgroundVideoPath: video.videoPath,
-				})
-				if (video.tempFile) tempFiles.push(video.tempFile)
-				if (!result.success) {
-					logger.warn('Loop tail video capture failed, skipping loop transition', { programId })
-				} else {
-					clipSegments.push(segmentPath)
-					tempFiles.push(segmentPath)
+	const browser = await launchBrowser()
+	try {
+		const poolState: { nextIdx: number; errorMessage: string | null } = { nextIdx: 0, errorMessage: null }
+
+		const renderNext = async (): Promise<void> => {
+			while (poolState.errorMessage === null) {
+				const i = poolState.nextIdx++
+				if (i >= clipIds.length) return
+				const url = `${WEB_URL}/programs/${programId}/render?clipIndex=${i}`
+				try {
+					const video = await resolveVideoForClip(clipIds[i])
+					if (video.videoPath) {
+						hasAnyVideoBackground = true
+						const segmentPath = path.join(outputDir, `_program-${programId}-clip${i}-${Date.now()}.mp4`)
+						const result = await capturePageVideo({
+							url,
+							outputPath: segmentPath,
+							durationSec: perClipDuration,
+							backgroundVideoPath: video.videoPath,
+							browser,
+						})
+						if (video.tempFile) tempFiles.push(video.tempFile)
+						if (!result.success) throw new Error(`Capture failed: ${result.error}`)
+						clipSegments[i] = segmentPath
+						tempFiles.push(segmentPath)
+					} else {
+						const screenshotPath = path.join(outputDir, `_program-${programId}-clip${i}-${Date.now()}.png`)
+						await captureScreenshot({ url, outputPath: screenshotPath, browser })
+						clipSegments[i] = screenshotPath
+						tempFiles.push(screenshotPath)
+					}
+				} catch (err) {
+					logger.error('Failed to render clip segment', { programId, clipIndex: i, error: String(err) })
+					poolState.errorMessage = err instanceof Error ? err.message : String(err)
+					return
 				}
-			} else {
-				const screenshotPath = path.join(outputDir, `_program-${programId}-looptail-${Date.now()}.png`)
-				await captureScreenshot({ url, outputPath: screenshotPath })
-				clipSegments.push(screenshotPath)
-				tempFiles.push(screenshotPath)
 			}
-			logger.info('Rendered loop tail segment', { programId, loopTailDuration })
-		} catch (err) {
-			logger.warn('Failed to render loop tail segment, skipping loop transition', {
-				programId,
-				error: String(err),
-			})
 		}
+
+		await Promise.all(Array.from({ length: concurrency }, () => renderNext()))
+
+		if (poolState.errorMessage !== null) {
+			for (const p of tempFiles) await unlink(p).catch(() => {})
+			throw new Error(`Failed to render clip: ${poolState.errorMessage}`)
+		}
+
+		// Step 1b: If loop transition is enabled, render a short copy of the first clip
+		// to append at the end. This gives the xfade material to transition from the
+		// last clip back into the first clip's opening frames.
+		if (loopTransition && clipSegments.length >= 2) {
+			const firstClipId = clipIds[0]
+			const url = `${WEB_URL}/programs/${programId}/render?clipIndex=0`
+			const video = await resolveVideoForClip(firstClipId)
+
+			try {
+				if (video.videoPath) {
+					hasAnyVideoBackground = true
+					const segmentPath = path.join(outputDir, `_program-${programId}-looptail-${Date.now()}.mp4`)
+					const result = await capturePageVideo({
+						url,
+						outputPath: segmentPath,
+						durationSec: loopTailDuration,
+						backgroundVideoPath: video.videoPath,
+						browser,
+					})
+					if (video.tempFile) tempFiles.push(video.tempFile)
+					if (!result.success) {
+						logger.warn('Loop tail video capture failed, skipping loop transition', { programId })
+					} else {
+						clipSegments.push(segmentPath)
+						tempFiles.push(segmentPath)
+					}
+				} else {
+					const screenshotPath = path.join(outputDir, `_program-${programId}-looptail-${Date.now()}.png`)
+					await captureScreenshot({ url, outputPath: screenshotPath, browser })
+					clipSegments.push(screenshotPath)
+					tempFiles.push(screenshotPath)
+				}
+				logger.info('Rendered loop tail segment', { programId, loopTailDuration })
+			} catch (err) {
+				logger.warn('Failed to render loop tail segment, skipping loop transition', {
+					programId,
+					error: String(err),
+				})
+			}
+		}
+	} finally {
+		await browser.close().catch(() => {})
 	}
 
 	// Step 2: Resolve and concatenate audio tracks

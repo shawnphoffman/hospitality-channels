@@ -1,6 +1,7 @@
 import path from 'node:path'
-import { chromium } from 'playwright'
+import type { Browser } from 'playwright'
 import { RENDER_RESOLUTION, createLogger } from '@hospitality-channels/common'
+import { launchBrowser } from './browser.js'
 
 const logger = createLogger('render-core:screenshot')
 
@@ -9,6 +10,7 @@ export interface ScreenshotOptions {
 	outputPath: string
 	width?: number
 	height?: number
+	browser?: Browser
 }
 
 /**
@@ -17,21 +19,14 @@ export interface ScreenshotOptions {
  * before stitching them into a multi-clip video via FFmpeg.
  */
 export async function captureScreenshot(options: ScreenshotOptions): Promise<string> {
-	const {
-		url,
-		outputPath,
-		width = RENDER_RESOLUTION.width,
-		height = RENDER_RESOLUTION.height,
-	} = options
+	const { url, outputPath, width = RENDER_RESOLUTION.width, height = RENDER_RESOLUTION.height } = options
 
 	const outputDir = path.dirname(outputPath)
 	const fs = await import('node:fs/promises')
 	await fs.mkdir(outputDir, { recursive: true })
 
-	const browser = await chromium.launch({
-		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-	})
+	const ownsBrowser = !options.browser
+	const browser = options.browser ?? (await launchBrowser())
 
 	try {
 		const ctx = await browser.newContext({
@@ -60,6 +55,6 @@ export async function captureScreenshot(options: ScreenshotOptions): Promise<str
 		await ctx.close()
 		return outputPath
 	} finally {
-		await browser.close()
+		if (ownsBrowser) await browser.close()
 	}
 }

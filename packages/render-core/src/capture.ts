@@ -1,26 +1,34 @@
-import { spawn, execFile } from 'node:child_process'
+import { execFile } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import type { Browser } from 'playwright'
 import { RENDER_DEFAULTS, RENDER_RESOLUTION, createLogger } from '@hospitality-channels/common'
+import { launchBrowser } from './browser.js'
+import { runFfmpeg } from './ffmpegSpawn.js'
 
 const logger = createLogger('render-core:capture')
 
 export function probeDuration(filePath: string): Promise<number> {
 	return new Promise(resolve => {
-		execFile('ffprobe', ['-v', 'quiet', '-print_format', 'json', '-show_format', filePath], (err, stdout) => {
-			if (err) {
-				logger.warn('ffprobe failed, using fallback duration', { error: String(err) })
-				resolve(0)
-				return
+		execFile(
+			'ffprobe',
+			['-v', 'quiet', '-print_format', 'json', '-show_format', filePath],
+			{ timeout: 10_000, killSignal: 'SIGKILL' },
+			(err, stdout) => {
+				if (err) {
+					logger.warn('ffprobe failed, using fallback duration', { error: String(err) })
+					resolve(0)
+					return
+				}
+				try {
+					const info = JSON.parse(stdout)
+					const dur = parseFloat(info.format?.duration ?? '0')
+					resolve(dur)
+				} catch {
+					resolve(0)
+				}
 			}
-			try {
-				const info = JSON.parse(stdout)
-				const dur = parseFloat(info.format?.duration ?? '0')
-				resolve(dur)
-			} catch {
-				resolve(0)
-			}
-		})
+		)
 	})
 }
 
@@ -34,6 +42,7 @@ export interface CaptureOptions {
 	audioPath?: string
 	matchAudioDuration?: boolean
 	backgroundVideoPath?: string
+	browser?: Browser
 }
 
 export interface CaptureResult {
@@ -58,10 +67,8 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 	const fs = await import('node:fs/promises')
 	await fs.mkdir(outputDir, { recursive: true })
 
-	const browser = await chromium.launch({
-		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-	})
+	const ownsBrowser = !options.browser
+	const browser = options.browser ?? (await launchBrowser())
 
 	try {
 		const ctx = await browser.newContext({
@@ -103,7 +110,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 			await new Promise(resolve => setTimeout(resolve, 200))
 		}
 
-		const screenshotPath = path.join(outputDir, `_frame-${Date.now()}.png`)
+		const screenshotPath = path.join(outputDir, `_frame-${Date.now()}-${randomBytes(4).toString('hex')}.png`)
 		await page.screenshot({ path: screenshotPath, type: 'png', omitBackground: hasVideoBackground })
 		logger.info('Screenshot captured', { url, screenshotPath, transparent: hasVideoBackground })
 
@@ -176,28 +183,8 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 			matchAudioDuration: options.matchAudioDuration,
 		})
 
-		const ffmpegResult = await new Promise<{ success: boolean; error?: string }>(resolve => {
-			const proc = spawn('ffmpeg', ffmpegArgs, {
-				stdio: ['ignore', 'pipe', 'pipe'],
-			})
-
-			let stderr = ''
-			proc.stderr?.on('data', (chunk: Buffer) => {
-				stderr += chunk.toString()
-			})
-
-			proc.on('close', code => {
-				if (code === 0) {
-					resolve({ success: true })
-				} else {
-					resolve({ success: false, error: stderr.slice(-500) })
-				}
-			})
-
-			proc.on('error', err => {
-				resolve({ success: false, error: err.message })
-			})
-		})
+		const ffmpegTimeoutMs = Math.max(60_000, durationSec * 10_000)
+		const ffmpegResult = await runFfmpeg({ args: ffmpegArgs, timeoutMs: ffmpegTimeoutMs })
 
 		// Clean up the temporary screenshot
 		await fs.unlink(screenshotPath).catch(() => {})
@@ -240,6 +227,6 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 			error: err instanceof Error ? err.message : String(err),
 		}
 	} finally {
-		await browser.close()
+		if (ownsBrowser) await browser.close()
 	}
 }

@@ -29,6 +29,9 @@ services:
       - TZ=${TZ:-UTC}
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
+      # Number of clips to render in parallel within a program render.
+      # Default 2. Lower to 1 on memory-constrained hosts; raise for more cores.
+      # - WORKER_RENDER_CONCURRENCY=2
 
 volumes:
   app-data:

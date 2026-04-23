@@ -44,3 +44,6 @@ renders
 .local/
 
 apps/web/data/assets/
+
+# Local planning docs
+docs/future-plans/
