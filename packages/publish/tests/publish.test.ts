@@ -79,6 +79,28 @@ describe('publishArtifact filename patterns', () => {
 		expect(base).not.toMatch(/[^a-zA-Z0-9-_.]/)
 	})
 
+	it('strips a leading dash produced by an emoji/punctuation title', async () => {
+		const result = await publishArtifact({
+			sourcePath,
+			programId: 'prog789',
+			programTitle: '🏔️ Welcome PCT Hikers',
+			profile: {
+				name: 'test',
+				exportPath: exportDir('emoji'),
+				outputFormat: 'mp4',
+				fileNamingPattern: '{title}-{programId}.mp4',
+			},
+			durationSec: 30,
+			generateNfo: false,
+		})
+
+		expect(result.success).toBe(true)
+		const base = path.basename(result.outputPath)
+		// A leading dash breaks Tunarr's ffprobe-based indexing (reads as a CLI flag).
+		expect(base.startsWith('-')).toBe(false)
+		expect(base).toBe('Welcome-PCT-Hikers-prog789.mp4')
+	})
+
 	it('prefers program identity over clip identity', async () => {
 		const result = await publishArtifact({
 			sourcePath,

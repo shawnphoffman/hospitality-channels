@@ -29,7 +29,15 @@ export interface PublishArtifactResult {
 }
 
 function sanitizeFilename(str: string): string {
-	return str.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-')
+	// Collapse disallowed chars to dashes, then strip leading/trailing dashes.
+	// A leading dash is critical to avoid: downstream tools (e.g. Tunarr's
+	// ffprobe-based library scan) treat a filename starting with "-" as a CLI
+	// flag and silently fail to index it. Fall back to a safe stub if empty.
+	const cleaned = str
+		.replace(/[^a-zA-Z0-9-_]/g, '-')
+		.replace(/-+/g, '-')
+		.replace(/^[-_]+|[-_]+$/g, '')
+	return cleaned || 'untitled'
 }
 
 export async function publishArtifact(input: PublishArtifactInput): Promise<PublishArtifactResult> {
