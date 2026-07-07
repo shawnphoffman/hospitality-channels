@@ -59,13 +59,17 @@ The web UI is available at `http://localhost:3000`.
 
 See [`docker-compose.yml`](docker-compose.yml) for configuration options. Key environment variables:
 
-| Variable                    | Default | Description                                                                       |
-| --------------------------- | ------- | --------------------------------------------------------------------------------- |
-| `PORT`                      | `3000`  | Web server port                                                                   |
-| `TZ`                        | `UTC`   | Timezone                                                                          |
-| `PUID`                      | `1000`  | User ID for file permissions                                                      |
-| `PGID`                      | `1000`  | Group ID for file permissions                                                     |
-| `WORKER_RENDER_CONCURRENCY` | `2`     | Clips rendered in parallel per program. Lower to `1` on memory-constrained hosts. |
+| Variable                    | Default  | Description                                                                       |
+| --------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `PORT`                      | `3000`   | Web server port                                                                   |
+| `TZ`                        | `UTC`    | Timezone                                                                          |
+| `PUID`                      | `1000`   | User ID for file permissions                                                      |
+| `PGID`                      | `1000`   | Group ID for file permissions                                                     |
+| `WORKER_RENDER_CONCURRENCY` | `2`      | Clips rendered in parallel per program. Lower to `1` on memory-constrained hosts. |
+| `WORKER_JOB_MAX_ATTEMPTS`   | `2`      | Times a render/publish job is attempted before it is marked failed.               |
+| `ASSET_FETCH_TIMEOUT_MS`    | `120000` | Time budget for the worker to download a remote audio/video asset.                |
+| `ASSET_FETCH_MAX_BYTES`     | `1 GiB`  | Max size of a remote audio/video asset the worker will download.                  |
+| `MAX_UPLOAD_BYTES`          | `1 GiB`  | Max size of a single asset upload through the web UI.                             |
 
 #### Volumes
 

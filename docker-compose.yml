@@ -32,6 +32,13 @@ services:
       # Number of clips to render in parallel within a program render.
       # Default 2. Lower to 1 on memory-constrained hosts; raise for more cores.
       # - WORKER_RENDER_CONCURRENCY=2
+      # Times a render/publish job is attempted before it is marked failed. Default 2.
+      # - WORKER_JOB_MAX_ATTEMPTS=2
+      # Worker download guards for remote audio/video assets. Defaults: 120s, 1 GiB.
+      # - ASSET_FETCH_TIMEOUT_MS=120000
+      # - ASSET_FETCH_MAX_BYTES=1073741824
+      # Max size of a single asset upload through the web UI. Default 1 GiB.
+      # - MAX_UPLOAD_BYTES=1073741824
 
 volumes:
   app-data:
