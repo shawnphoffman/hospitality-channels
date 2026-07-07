@@ -68,6 +68,18 @@ export async function failJob(id: string, error: string): Promise<void> {
 	logger.error('Job failed', { id, error })
 }
 
+export interface JobStep {
+	key: string
+	label: string
+	status: 'pending' | 'running' | 'done' | 'failed' | 'skipped'
+	detail?: string
+}
+
+/** Persists per-step pipeline progress so the UI can render a live strip. */
+export async function updateJobSteps(id: string, steps: JobStep[]): Promise<void> {
+	await db.update(jobs).set({ steps }).where(eq(jobs.id, id))
+}
+
 /** Put a failed attempt back in the queue for another try. */
 export async function requeueJob(id: string, error: string): Promise<void> {
 	await db

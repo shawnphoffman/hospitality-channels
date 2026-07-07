@@ -13,6 +13,9 @@ const renderAndPublishSchema = z.object({
 	pageId: z.string().nullable().optional(),
 	programId: z.string().nullable().optional(),
 	durationSec: z.number().optional(),
+	// Tunarr channel id; when set, the worker pushes the artifact to this channel after publishing (programs only)
+	pushChannelId: z.string().nullable().optional(),
+	pushMode: z.enum(['append', 'replace']).nullable().optional(),
 })
 
 export async function POST(request: Request) {
@@ -88,10 +91,22 @@ export async function POST(request: Request) {
 				transitionType: program.transitionType,
 				transitionSec: program.transitionSec,
 				loopTransition: program.loopTransition,
+				pushChannelId: body.pushChannelId ?? null,
+				pushMode: body.pushMode ?? null,
 			},
 			status: 'queued',
 			outputPath: null,
 			error: null,
+			steps: [
+				{ key: 'render', label: 'Render', status: 'pending' },
+				{ key: 'export', label: 'Export', status: 'pending' },
+				...(body.pushChannelId
+					? [
+							{ key: 'index', label: 'Tunarr index', status: 'pending' },
+							{ key: 'push', label: 'Push to channel', status: 'pending' },
+						]
+					: []),
+			],
 			createdAt: new Date().toISOString(),
 			startedAt: null,
 			completedAt: null,

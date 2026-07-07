@@ -168,6 +168,23 @@ export async function getLibraryPrograms(tunarrUrl: string, libraryId: string): 
 	return tunarrFetch<TunarrProgram[]>(tunarrUrl, `/media-libraries/${libraryId}/programs`)
 }
 
+/** Turns a failed scan-and-find result into an actionable, user-facing message. */
+export function describeScanFailure(result: ScanFindResult, externalKey: string): string {
+	switch (result.failure) {
+		case 'no-media-source':
+			return `No Tunarr media source covers "${externalKey}". Select a media source and library in Settings, or add one in Tunarr whose path contains your exports.`
+		case 'no-library':
+			return 'The matched Tunarr media source has no usable library. Select a library in Settings.'
+		default:
+			return (
+				`Tunarr did not index "${externalKey}" after scanning.` +
+				(result.samplePaths?.length
+					? ` The library contains paths like ${result.samplePaths.map(p => `"${p}"`).join(', ')}; if your file is there under a different prefix, correct the Tunarr media path in Settings.`
+					: ' The library returned no programs; check that the export volume is mounted into Tunarr and the media path in Settings matches how Tunarr sees it.')
+			)
+	}
+}
+
 export interface ScanFindResult {
 	program: TunarrProgram | null
 	/** How the program was matched, when found. */

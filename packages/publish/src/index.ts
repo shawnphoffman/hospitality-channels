@@ -11,6 +11,7 @@ export {
 	getLibraryPrograms,
 	getProgramPath,
 	enrichProgram,
+	describeScanFailure,
 } from './tunarr.js'
 export type { TunarrChannel, TunarrProgram, TunarrMediaSource, TunarrMediaLibrary, ScanFindResult, ProgramMetadata } from './tunarr.js'
 export { buildExternalKey, findProgramByKey, normalizeKey, sampleExternalKeys, suggestMediaPath } from './tunarr-paths.js'

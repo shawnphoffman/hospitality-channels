@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server'
 import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb, schema } from '@/db'
-import { updateChannelProgramming, scanAndFindProgram, buildExternalKey, enrichProgram } from '@hospitality-channels/publish'
+import {
+	updateChannelProgramming,
+	scanAndFindProgram,
+	buildExternalKey,
+	describeScanFailure,
+	enrichProgram,
+} from '@hospitality-channels/publish'
 import { PATHS } from '@hospitality-channels/common'
 import path from 'node:path'
 import { parseJsonBody } from '@/lib/api-validation'
@@ -86,22 +92,7 @@ export async function POST(request: Request) {
 			libraryId: librarySetting?.value || undefined,
 		})
 		if (!result.program) {
-			let error: string
-			switch (result.failure) {
-				case 'no-media-source':
-					error = `No Tunarr media source covers "${externalKey}". Select a media source and library in Settings, or add one in Tunarr whose path contains your exports.`
-					break
-				case 'no-library':
-					error = 'The matched Tunarr media source has no usable library. Select a library in Settings.'
-					break
-				default:
-					error =
-						`Tunarr did not index "${externalKey}" after scanning.` +
-						(result.samplePaths?.length
-							? ` The library contains paths like ${result.samplePaths.map(p => `"${p}"`).join(', ')}; if your file is there under a different prefix, correct the Tunarr media path in Settings.`
-							: ' The library returned no programs; check that the export volume is mounted into Tunarr and the media path in Settings matches how Tunarr sees it.')
-			}
-			return NextResponse.json({ error }, { status: 404 })
+			return NextResponse.json({ error: describeScanFailure(result, externalKey) }, { status: 404 })
 		}
 		const program = result.program
 

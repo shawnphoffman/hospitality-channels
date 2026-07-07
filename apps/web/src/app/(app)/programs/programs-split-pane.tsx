@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { DuplicateButton } from '@/components/duplicate-button'
 import { LazyMount } from '@/components/lazy-mount'
+import { PipelineProgress } from '@/components/pipeline-progress'
 import { TagEditor } from '@/components/tags/tag-editor'
 import { TagFilterBar } from '@/components/tags/tag-filter-bar'
 import { formatDuration } from './[id]/program-editor-shared'
@@ -19,6 +20,8 @@ export interface ProgramListItem {
 	durationSec: number
 	status: 'onair' | 'published' | 'rendered' | 'failed' | 'draft'
 	channelLabel: string | null
+	tunarrChannelId: string | null
+	pushMode: 'append' | 'replace'
 	updatedAt: string
 	tags: string[]
 }
@@ -49,7 +52,13 @@ function formatDate(dateStr: string): string {
 	}
 }
 
-export function ProgramsSplitPane({ programs }: { programs: ProgramListItem[] }) {
+export function ProgramsSplitPane({
+	programs,
+	defaultProfile,
+}: {
+	programs: ProgramListItem[]
+	defaultProfile: { id: string; name: string } | null
+}) {
 	const router = useRouter()
 	const [search, setSearch] = useState('')
 	const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
@@ -57,6 +66,8 @@ export function ProgramsSplitPane({ programs }: { programs: ProgramListItem[] })
 	const [tagOverrides, setTagOverrides] = useState<Record<string, string[]>>({})
 	const [tagError, setTagError] = useState<string | null>(null)
 	const [vocabulary, setVocabulary] = useState<string[]>([])
+	const [pipelineJobs, setPipelineJobs] = useState<Record<string, string>>({})
+	const [publishError, setPublishError] = useState<string | null>(null)
 	const detailRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
@@ -117,6 +128,32 @@ export function ProgramsSplitPane({ programs }: { programs: ProgramListItem[] })
 		setSelectedId(id)
 		// On stacked (mobile) layout, bring the detail pane into view
 		if (window.innerWidth < 820) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+	}
+
+	const publishToChannel = async (program: ProgramListItem) => {
+		if (!defaultProfile || !program.tunarrChannelId) return
+		setPublishError(null)
+		try {
+			const res = await fetch('/api/render-and-publish', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					programId: program.id,
+					profileId: defaultProfile.id,
+					pushChannelId: program.tunarrChannelId,
+					pushMode: program.pushMode,
+				}),
+			})
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				setPublishError(data.error || 'Failed to start the publish pipeline')
+				return
+			}
+			const job = await res.json()
+			setPipelineJobs(prev => ({ ...prev, [program.id]: job.id }))
+		} catch {
+			setPublishError('Failed to start the publish pipeline')
+		}
 	}
 
 	return (
@@ -196,6 +233,16 @@ export function ProgramsSplitPane({ programs }: { programs: ProgramListItem[] })
 								>
 									Open editor
 								</Link>
+								{selected.tunarrChannelId && defaultProfile && (
+									<button
+										onClick={() => publishToChannel(selected)}
+										disabled={!!pipelineJobs[selected.id]}
+										className="rounded-lg border border-emerald-700 px-3 py-1.5 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-950 disabled:opacity-50"
+										title={`Render, export via ${defaultProfile.name}, and push to ${selected.channelLabel}`}
+									>
+										Publish to {selected.channelLabel}
+									</button>
+								)}
 								<DuplicateButton endpoint={`/api/programs/${selected.id}/duplicate`} hrefBase="/programs" />
 								<DuplicateButton
 									endpoint={`/api/programs/${selected.id}/duplicate`}
@@ -204,6 +251,12 @@ export function ProgramsSplitPane({ programs }: { programs: ProgramListItem[] })
 									label="Duplicate + Clips"
 								/>
 							</div>
+							{publishError && <p className="mt-2 text-xs text-red-400">{publishError}</p>}
+							{pipelineJobs[selected.id] && (
+								<div className="mt-3">
+									<PipelineProgress jobId={pipelineJobs[selected.id]} onFinished={() => router.refresh()} />
+								</div>
+							)}
 
 							<div className="mt-5">
 								<p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Clips · {selected.clips.length}</p>

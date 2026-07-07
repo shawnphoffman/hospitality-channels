@@ -3,11 +3,19 @@ import { randomBytes } from 'node:crypto'
 import { writeFile, unlink, mkdir } from 'node:fs/promises'
 import { createLogger, PATHS } from '@hospitality-channels/common'
 import { capturePageVideo, captureScreenshot, launchBrowser, probeDuration, runFfmpeg } from '@hospitality-channels/render-core'
-import { publishArtifact, scanMediaSource } from '@hospitality-channels/publish'
+import {
+	buildExternalKey,
+	describeScanFailure,
+	enrichProgram,
+	publishArtifact,
+	scanAndFindProgram,
+	scanMediaSource,
+	updateChannelProgramming,
+} from '@hospitality-channels/publish'
 import { eq, count, max } from 'drizzle-orm'
 import { db, clips, assets, publishedArtifacts, settings } from './db.js'
 import { buildXfadeFilter, computeProgramTiming } from './render-math.js'
-import type { Job } from './queue.js'
+import { updateJobSteps, type Job, type JobStep } from './queue.js'
 
 const logger = createLogger('worker:handlers')
 
@@ -974,6 +982,11 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 	return finalPath
 }
 
+async function getSetting(key: string): Promise<string | null> {
+	const [row] = await db.select().from(settings).where(eq(settings.key, key)).limit(1)
+	return row?.value ?? null
+}
+
 export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 	const payload = job.payload as {
 		durationSec: number
@@ -987,13 +1000,43 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 		fileNamingPattern: string | null
 		outputFormat: string
 		generateNfo?: boolean
+		pushChannelId?: string | null
+		pushMode?: 'append' | 'replace' | null
 	}
 
 	const programId = job.programId ?? 'unknown'
 	const profileId = job.profileId ?? 'unknown'
+	const wantPush = !!payload.pushChannelId
+
+	const steps: JobStep[] = [
+		{ key: 'render', label: 'Render', status: 'pending' },
+		{ key: 'export', label: 'Export', status: 'pending' },
+		...(wantPush
+			? [
+					{ key: 'index', label: 'Tunarr index', status: 'pending' as const },
+					{ key: 'push', label: 'Push to channel', status: 'pending' as const },
+				]
+			: []),
+	]
+	const setStep = async (key: string, status: JobStep['status'], detail?: string) => {
+		const step = steps.find(s => s.key === key)
+		if (step) {
+			step.status = status
+			if (detail) step.detail = detail
+		}
+		await updateJobSteps(job.id, steps).catch(() => {})
+	}
 
 	// Step 1: Render the program
-	const renderPath = await handleRenderProgramJob(job)
+	await setStep('render', 'running')
+	let renderPath: string
+	try {
+		renderPath = await handleRenderProgramJob(job)
+	} catch (err) {
+		await setStep('render', 'failed', err instanceof Error ? err.message : String(err))
+		throw err
+	}
+	await setStep('render', 'done')
 
 	// Probe actual duration from rendered file
 	const actualDuration = await probeDuration(renderPath)
@@ -1002,6 +1045,7 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 	logger.info('Program render complete, publishing...', { programId, renderPath, actualDuration: finalDuration })
 
 	// Step 2: Publish
+	await setStep('export', 'running')
 	const seqNum = await getNextSequenceNumber(profileId)
 	const result = await publishArtifact({
 		sourcePath: renderPath,
@@ -1021,6 +1065,7 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 	})
 
 	if (!result.success) {
+		await setStep('export', 'failed', result.error)
 		throw new Error(`Publish failed: ${result.error}`)
 	}
 
@@ -1038,11 +1083,58 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 		publishedAt: new Date().toISOString(),
 		sequenceNumber: seqNum,
 	})
+	await setStep('export', 'done')
 
 	logger.info('Program render+publish complete', { programId, outputPath: result.outputPath, artifactId })
 
-	// Trigger Tunarr rescan so the new file is indexed immediately
-	await triggerTunarrRescan()
+	if (wantPush) {
+		// Step 3: Wait for Tunarr to index the exported file
+		await setStep('index', 'running')
+		const tunarrUrl = await getSetting('tunarr_url')
+		if (!tunarrUrl) {
+			await setStep('index', 'failed', 'Tunarr URL not configured')
+			throw new Error('Push failed: Tunarr URL not configured')
+		}
+		const mediaPath = await getSetting('tunarr_media_path')
+		const externalKey = buildExternalKey(result.outputPath, path.resolve(PATHS.exports), mediaPath)
+		const scan = await scanAndFindProgram(tunarrUrl, externalKey, {
+			mediaSourceId: (await getSetting('tunarr_media_source_id')) ?? undefined,
+			libraryId: (await getSetting('tunarr_library_id')) ?? undefined,
+		})
+		if (!scan.program) {
+			const message = describeScanFailure(scan, externalKey)
+			await setStep('index', 'failed', message)
+			throw new Error(`Push failed: ${message}`)
+		}
+		await setStep(
+			'index',
+			'done',
+			scan.matchedBy === 'basename' && scan.suggestedMediaPath
+				? `Matched by filename only; set the Tunarr media path to "${scan.suggestedMediaPath}" for exact matching`
+				: undefined
+		)
+
+		// Step 4: Push to the channel
+		await setStep('push', 'running')
+		enrichProgram(scan.program, {
+			title: payload.programTitle,
+			summary: payload.programSummary,
+			description: payload.programDescription,
+			durationMs: Math.round(finalDuration * 1000),
+		})
+		try {
+			await updateChannelProgramming(tunarrUrl, payload.pushChannelId!, scan.program, payload.pushMode ?? 'replace')
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err)
+			await setStep('push', 'failed', message)
+			throw new Error(`Push failed: ${message}`)
+		}
+		await setStep('push', 'done')
+		logger.info('Program pushed to channel', { programId, channelId: payload.pushChannelId, mode: payload.pushMode ?? 'replace' })
+	} else {
+		// Trigger Tunarr rescan so the new file is indexed immediately
+		await triggerTunarrRescan()
+	}
 
 	return result.outputPath
 }
