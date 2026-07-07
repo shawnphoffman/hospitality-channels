@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { parseJsonBody } from '@/lib/api-validation'
+import { loadAllEntityTags } from '@/lib/tags'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,14 +27,30 @@ export async function GET() {
 	const channels = await db.select().from(schema.channelDefinitions)
 	const clips = await db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips)
 	const programs = await db.select({ id: schema.programs.id, title: schema.programs.title }).from(schema.programs)
+	const entityTags = await loadAllEntityTags(db)
+
+	// Find latest artifact per clip/program (from any profile)
+	const allArtifacts = await db.select().from(schema.publishedArtifacts)
+	const artifactsByKey: Record<string, { id: string; outputPath: string; durationSec: number; publishedAt: string | null }> = {}
+	for (const a of allArtifacts) {
+		const key = a.clipId ?? a.programId
+		if (!key) continue
+		const existing = artifactsByKey[key]
+		if (!existing || (a.publishedAt ?? '') > (existing.publishedAt ?? '')) {
+			artifactsByKey[key] = { id: a.id, outputPath: a.outputPath, durationSec: a.durationSec, publishedAt: a.publishedAt }
+		}
+	}
 
 	const result = channels.map(ch => {
 		const clip = ch.clipId ? clips.find(p => p.id === ch.clipId) : null
 		const program = ch.programId ? programs.find(p => p.id === ch.programId) : null
+		const key = ch.programId ?? ch.clipId
 		return {
 			...ch,
 			clipTitle: clip?.title ?? null,
 			programTitle: program?.title ?? null,
+			programTags: ch.programId ? (entityTags.programs.get(ch.programId) ?? []) : [],
+			latestArtifact: key ? (artifactsByKey[key] ?? null) : null,
 		}
 	})
 

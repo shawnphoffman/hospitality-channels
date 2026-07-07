@@ -90,7 +90,7 @@ export function ChannelCard({
 					</span>
 				)}
 			</p>
-			{ch.programTags.length > 0 && (
+			{ch.programTags && ch.programTags.length > 0 && (
 				<div className="mt-1.5 flex flex-wrap gap-1.5">
 					{ch.programTags.map(t => (
 						<TagChip key={t} name={t} />
