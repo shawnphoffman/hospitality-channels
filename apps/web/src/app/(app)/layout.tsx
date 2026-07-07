@@ -110,8 +110,8 @@ const navItems: NavItem[] = [
 	},
 	{
 		type: 'link',
-		href: '/images',
-		label: 'Images',
+		href: '/media',
+		label: 'Media',
 		icon: (
 			<svg {...iconProps}>
 				<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -120,34 +120,11 @@ const navItems: NavItem[] = [
 			</svg>
 		),
 	},
-	{
-		type: 'link',
-		href: '/audio',
-		label: 'Audio',
-		icon: (
-			<svg {...iconProps}>
-				<path d="M9 18V5l12-3v13" />
-				<circle cx="6" cy="18" r="3" />
-				<circle cx="18" cy="15" r="3" />
-			</svg>
-		),
-	},
-	{
-		type: 'link',
-		href: '/videos',
-		label: 'Videos',
-		icon: (
-			<svg {...iconProps}>
-				<path d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72" />
-				<rect x="2.25" y="5.25" width="13.5" height="13.5" rx="2.25" />
-			</svg>
-		),
-	},
 	{ type: 'separator' },
 	{
 		type: 'link',
-		href: '/publish',
-		label: 'Artifacts',
+		href: '/exports',
+		label: 'Exports',
 		icon: (
 			<svg {...iconProps}>
 				<polyline points="21 8 21 21 3 21 3 8" />
