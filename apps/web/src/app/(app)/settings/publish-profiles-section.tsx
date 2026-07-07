@@ -50,7 +50,7 @@ export function PublishProfilesSection({ initialProfiles }: PublishProfilesSecti
 				setNewProfileAllowDownload(false)
 			}
 		} catch {
-			setProfileError('Failed to create profile')
+			setProfileError('Failed to create export location')
 		} finally {
 			setSavingProfile(false)
 		}
@@ -75,7 +75,7 @@ export function PublishProfilesSection({ initialProfiles }: PublishProfilesSecti
 				setEditingProfileId(null)
 			}
 		} catch {
-			setProfileError('Failed to update profile')
+			setProfileError('Failed to update export location')
 		} finally {
 			setSavingProfile(false)
 		}
@@ -99,36 +99,36 @@ export function PublishProfilesSection({ initialProfiles }: PublishProfilesSecti
 				setProfiles(prev => [...prev, created])
 			} else {
 				const data = await res.json().catch(() => ({}))
-				setProfileError(data.error || 'Failed to duplicate profile')
+				setProfileError(data.error || 'Failed to duplicate export location')
 			}
 		} catch {
-			setProfileError('Failed to duplicate profile')
+			setProfileError('Failed to duplicate export location')
 		} finally {
 			setSavingProfile(false)
 		}
 	}
 
 	const handleDeleteProfile = async (profileId: string) => {
-		if (!confirm('Delete this publish profile? Associated artifacts will be unlinked.')) return
+		if (!confirm('Delete this export location? Associated artifacts will be unlinked.')) return
 		try {
 			const res = await fetch(`/api/publish-profiles/${profileId}`, { method: 'DELETE' })
 			if (res.ok) {
 				setProfiles(prev => prev.filter(p => p.id !== profileId))
 			} else {
 				const data = await res.json().catch(() => ({}))
-				setProfileError(data.error || 'Failed to delete profile')
+				setProfileError(data.error || 'Failed to delete export location')
 			}
 		} catch {
-			setProfileError('Failed to delete profile')
+			setProfileError('Failed to delete export location')
 		}
 	}
 
 	return (
 		<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
 			<div className="mb-4 flex items-center justify-between">
-				<h3 className="text-lg font-semibold text-white">Publish Profiles</h3>
+				<h3 className="text-lg font-semibold text-white">Export Locations</h3>
 				<button onClick={() => setShowNewProfile(!showNewProfile)} className="text-sm text-blue-400 hover:text-blue-300">
-					{showNewProfile ? 'Cancel' : '+ New Profile'}
+					{showNewProfile ? 'Cancel' : '+ New Location'}
 				</button>
 			</div>
 
@@ -195,16 +195,16 @@ export function PublishProfilesSection({ initialProfiles }: PublishProfilesSecti
 						disabled={savingProfile || !newProfileName.trim() || !newProfilePath.trim()}
 						className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
 					>
-						{savingProfile ? 'Creating...' : 'Create Profile'}
+						{savingProfile ? 'Creating...' : 'Create Location'}
 					</button>
 				</div>
 			)}
 
 			{profiles.length === 0 && !showNewProfile ? (
 				<div className="rounded-lg border border-dashed border-slate-700 p-6 text-center">
-					<p className="text-sm text-slate-400">No publish profiles configured.</p>
+					<p className="text-sm text-slate-400">No export locations configured.</p>
 					<button onClick={() => setShowNewProfile(true)} className="mt-2 text-sm text-blue-400 hover:text-blue-300">
-						Create your first profile
+						Create your first location
 					</button>
 				</div>
 			) : (

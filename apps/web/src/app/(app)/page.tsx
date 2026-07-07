@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { getDb, schema } from '@/db'
 import { asc, count, desc, eq, sum } from 'drizzle-orm'
 import Link from 'next/link'
+import { deriveProgramStatuses } from '@/lib/program-status'
 
 function formatDuration(sec: number): string {
 	if (sec <= 0) return '—'
@@ -42,6 +43,9 @@ export default async function DashboardPage() {
 		recentJobRows,
 		channelRows,
 		[tunarrSetting],
+		failedJobRows,
+		programTitleRows,
+		programStatuses,
 	] = await Promise.all([
 		db.select({ value: count() }).from(schema.clips),
 		db.select({ value: count() }).from(schema.programs),
@@ -95,6 +99,20 @@ export default async function DashboardPage() {
 			.orderBy(asc(schema.channelDefinitions.channelNumber))
 			.limit(6),
 		db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1),
+		db
+			.select({
+				job: schema.jobs,
+				programTitle: schema.programs.title,
+				clipTitle: schema.clips.title,
+			})
+			.from(schema.jobs)
+			.leftJoin(schema.programs, eq(schema.jobs.programId, schema.programs.id))
+			.leftJoin(schema.clips, eq(schema.jobs.clipId, schema.clips.id))
+			.where(eq(schema.jobs.status, 'failed'))
+			.orderBy(desc(schema.jobs.createdAt))
+			.limit(10),
+		db.select({ id: schema.programs.id, title: schema.programs.title }).from(schema.programs),
+		deriveProgramStatuses(db),
 	])
 
 	const tunarrConfigured = !!tunarrSetting?.value
@@ -127,12 +145,100 @@ export default async function DashboardPage() {
 		boundTo: programTitle ?? clipTitle ?? null,
 	}))
 
+	// Needs attention: failed renders that are still the latest outcome for their program,
+	// deduped to one entry per program or clip
+	const seenFailureKeys = new Set<string>()
+	const failedJobs = failedJobRows
+		.filter(({ job }) => {
+			if (job.programId && programStatuses.get(job.programId)?.status !== 'failed') return false
+			const key = job.programId ?? job.clipId ?? job.id
+			if (seenFailureKeys.has(key)) return false
+			seenFailureKeys.add(key)
+			return true
+		})
+		.slice(0, 5)
+		.map(({ job, programTitle, clipTitle }) => ({
+			...job,
+			label: programTitle ?? clipTitle ?? job.type,
+			href: job.programId ? `/programs/${job.programId}` : job.clipId ? `/clips/${job.clipId}` : '/programs',
+		}))
+
+	// Needs attention: programs that are rendered or exported but not on a channel
+	const programTitleById = new Map(programTitleRows.map(p => [p.id, p.title]))
+	const unpushedPrograms = [...programStatuses.entries()]
+		.filter(([, info]) => info.status === 'rendered' || info.status === 'published')
+		.slice(0, 5)
+		.map(([programId, info]) => ({
+			id: programId,
+			title: programTitleById.get(programId) ?? 'Unknown program',
+			status: info.status,
+		}))
+
+	const needsAttention = failedJobs.length > 0 || unpushedPrograms.length > 0
+
 	return (
 		<div className="space-y-6 sm:space-y-8">
 			<div>
 				<h2 className="text-xl font-bold text-white sm:text-2xl">Dashboard</h2>
 				<p className="mt-1 text-sm text-slate-500">Overview of your hospitality TV system</p>
 			</div>
+
+			{/* Needs Attention */}
+			{needsAttention && (
+				<section className="rounded-xl border border-amber-900/50 bg-slate-900 p-5">
+					<div className="mb-4 flex items-center gap-2">
+						<span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
+							<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+								/>
+							</svg>
+						</span>
+						<h3 className="font-semibold text-white">Needs Attention</h3>
+					</div>
+					<div className="space-y-2">
+						{failedJobs.map(job => (
+							<Link
+								key={job.id}
+								href={job.href}
+								className="flex items-center gap-3 rounded-lg border border-red-900/40 bg-red-950/20 p-3 transition-colors hover:border-red-800 hover:bg-red-950/40"
+							>
+								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400">
+									<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+										<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+									</svg>
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="truncate text-sm font-medium text-white">{job.label}</p>
+									<p className="truncate text-xs text-red-400">Render failed{job.error ? `: ${job.error}` : ''}</p>
+								</div>
+								<span className="shrink-0 text-xs text-slate-600">{timeAgo(job.createdAt)}</span>
+							</Link>
+						))}
+						{unpushedPrograms.map(p => (
+							<Link
+								key={p.id}
+								href={`/programs/${p.id}`}
+								className="flex items-center gap-3 rounded-lg border border-amber-900/40 bg-amber-950/10 p-3 transition-colors hover:border-amber-800 hover:bg-amber-950/30"
+							>
+								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+									<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+										<rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+										<polyline points="17 2 12 7 7 2" />
+									</svg>
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="truncate text-sm font-medium text-white">{p.title}</p>
+									<p className="text-xs text-amber-400">{p.status === 'rendered' ? 'Rendered' : 'Exported'}, not on a channel</p>
+								</div>
+								<span className="shrink-0 text-xs text-slate-500">Put it on a channel &rarr;</span>
+							</Link>
+						))}
+					</div>
+				</section>
+			)}
 
 			{/* Stats Row */}
 			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
@@ -174,8 +280,8 @@ export default async function DashboardPage() {
 					color="purple"
 				/>
 				<StatCard
-					href="/publish"
-					label="Artifacts"
+					href="/exports"
+					label="Exports"
 					value={artifactsCount.value}
 					icon={
 						<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -315,14 +421,14 @@ export default async function DashboardPage() {
 				{/* Recent Artifacts */}
 				<section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
 					<div className="mb-4 flex items-center justify-between">
-						<h3 className="font-semibold text-white">Recent Artifacts</h3>
-						<Link href="/publish" className="text-xs text-slate-400 hover:text-white">
+						<h3 className="font-semibold text-white">Recent Exports</h3>
+						<Link href="/exports" className="text-xs text-slate-400 hover:text-white">
 							View all
 						</Link>
 					</div>
 					{enrichedArtifacts.length === 0 ? (
 						<div className="rounded-lg border border-dashed border-slate-700 py-8 text-center">
-							<p className="text-sm text-slate-500">No published artifacts yet</p>
+							<p className="text-sm text-slate-500">No exports yet</p>
 						</div>
 					) : (
 						<div className="space-y-2">
@@ -404,10 +510,10 @@ export default async function DashboardPage() {
 						Manage Channels
 					</Link>
 					<Link
-						href="/publish"
+						href="/exports"
 						className="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800"
 					>
-						View Artifacts
+						View Exports
 					</Link>
 				</div>
 			</section>

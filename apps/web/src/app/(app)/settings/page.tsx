@@ -19,7 +19,7 @@ export default async function SettingsPage() {
 		<div>
 			<div className="mb-6">
 				<h2 className="text-2xl font-bold text-white">Settings</h2>
-				<p className="mt-1 text-sm text-slate-500">Tunarr integration, publish profiles, and system configuration</p>
+				<p className="mt-1 text-sm text-slate-500">Tunarr integration, export locations, and system configuration</p>
 			</div>
 			<SettingsForm
 				initialSettings={settings}

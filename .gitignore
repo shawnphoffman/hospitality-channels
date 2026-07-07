@@ -37,7 +37,9 @@ pnpm-debug.log*
 
 # Assets (local dev)
 uploads
-exports
+/exports
+apps/exports
+apps/*/exports
 generated
 renders
 .claude/
