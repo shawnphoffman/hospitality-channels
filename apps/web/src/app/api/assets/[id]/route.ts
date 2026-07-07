@@ -2,8 +2,14 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { rm } from 'node:fs/promises'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const updateAssetSchema = z.object({
+	name: z.string().optional(),
+})
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
 	const db = await getDb()
@@ -13,7 +19,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 		return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
 	}
 
-	const body = await request.json()
+	const result = await parseJsonBody(request, updateAssetSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 	const updates: Record<string, unknown> = {}
 
 	if (typeof body.name === 'string') {

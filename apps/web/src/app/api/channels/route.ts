@@ -1,9 +1,21 @@
 import { randomBytes } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
+import { parseJsonBody } from '@/lib/api-validation'
 
 export const dynamic = 'force-dynamic'
+
+const createChannelSchema = z.object({
+	tunarrChannelId: z.string().min(1),
+	channelNumber: z.number(),
+	channelName: z.string().min(1),
+	clipId: z.string().nullable().optional(),
+	pageId: z.string().nullable().optional(),
+	programId: z.string().nullable().optional(),
+	pushMode: z.enum(['append', 'replace']).optional(),
+})
 
 function generateId(): string {
 	return randomBytes(12).toString('hex')
@@ -30,19 +42,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	const db = await getDb()
-	const body = (await request.json()) as {
-		tunarrChannelId: string
-		channelNumber: number
-		channelName: string
-		clipId?: string
-		pageId?: string
-		programId?: string
-		pushMode?: 'append' | 'replace'
-	}
-
-	if (!body.tunarrChannelId || !body.channelName) {
-		return NextResponse.json({ error: 'tunarrChannelId and channelName are required' }, { status: 400 })
-	}
+	const result = await parseJsonBody(request, createChannelSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	// Check for duplicate
 	const existing = await db

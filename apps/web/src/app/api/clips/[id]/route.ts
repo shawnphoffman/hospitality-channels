@@ -2,7 +2,18 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const updateClipSchema = z.object({
+	title: z.string().optional(),
+	slug: z.string().optional(),
+	themeId: z.string().nullable().optional(),
+	dataJson: z.record(z.unknown()).optional(),
+	animationProfile: z.string().nullable().optional(),
+	defaultDurationSec: z.number().optional(),
+})
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
 	const db = await getDb()
@@ -23,7 +34,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
-	const body = await request.json()
+	const result = await parseJsonBody(request, updateClipSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 	const now = new Date().toISOString()
 
 	await db

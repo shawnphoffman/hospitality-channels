@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { getDb, schema } from '@/db'
 import { programSchema } from '@hospitality-channels/content-model'
 import { generateId } from '@/lib/id'
+import { parseJsonBody } from '@/lib/api-validation'
 
 export async function GET() {
 	const db = await getDb()
@@ -34,8 +35,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	const db = await getDb()
-	const body = await request.json()
-	const parsed = programSchema.parse(body)
+	const result = await parseJsonBody(request, programSchema)
+	if (!result.ok) return result.response
+	const parsed = result.data
 	const now = new Date().toISOString()
 
 	const program = {

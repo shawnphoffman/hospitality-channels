@@ -2,8 +2,16 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const createTemplateSchema = z.object({
+	name: z.string().min(1),
+	description: z.string().nullable().optional(),
+	layoutJson: z.unknown().optional(),
+})
 
 export async function GET() {
 	const db = await getDb()
@@ -13,12 +21,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	const db = await getDb()
-	const body = await request.json()
-	const { name, description, layoutJson } = body
-
-	if (!name || typeof name !== 'string') {
-		return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-	}
+	const result = await parseJsonBody(request, createTemplateSchema)
+	if (!result.ok) return result.response
+	const { name, description, layoutJson } = result.data
 
 	const slug = name
 		.toLowerCase()

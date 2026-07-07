@@ -1,9 +1,13 @@
 import { randomBytes } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
+import { parseJsonBody } from '@/lib/api-validation'
 
 export const dynamic = 'force-dynamic'
+
+const settingsSchema = z.record(z.string())
 
 function generateId(): string {
 	return randomBytes(12).toString('hex')
@@ -23,7 +27,9 @@ export async function GET() {
 
 export async function PUT(request: Request) {
 	const db = await getDb()
-	const body = (await request.json()) as Record<string, string>
+	const result = await parseJsonBody(request, settingsSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	const now = new Date().toISOString()
 	for (const [key, value] of Object.entries(body)) {

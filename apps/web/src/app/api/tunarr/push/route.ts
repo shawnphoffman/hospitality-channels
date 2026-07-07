@@ -1,21 +1,27 @@
 import { NextResponse } from 'next/server'
 import { eq, desc } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { updateChannelProgramming, scanAndFindProgram } from '@hospitality-channels/publish'
 import { PATHS } from '@hospitality-channels/common'
 import path from 'node:path'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const pushSchema = z.object({
+	artifactId: z.string().optional(),
+	artifactOutputPath: z.string().optional(),
+	channelId: z.string().min(1),
+	mode: z.enum(['append', 'replace']),
+})
 
 export async function POST(request: Request) {
 	const db = await getDb()
-	const body = (await request.json()) as {
-		artifactId?: string
-		artifactOutputPath?: string
-		channelId: string
-		mode: 'append' | 'replace'
-	}
+	const result = await parseJsonBody(request, pushSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
-	if ((!body.artifactId && !body.artifactOutputPath) || !body.channelId || !body.mode) {
-		return NextResponse.json({ error: 'artifactId or artifactOutputPath, channelId, and mode are required' }, { status: 400 })
+	if (!body.artifactId && !body.artifactOutputPath) {
+		return NextResponse.json({ error: 'artifactId or artifactOutputPath is required' }, { status: 400 })
 	}
 
 	const [tunarrUrlSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)

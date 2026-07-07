@@ -2,22 +2,26 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq, asc } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const renderAndPublishSchema = z.object({
+	profileId: z.string().min(1),
+	clipId: z.string().nullable().optional(),
+	pageId: z.string().nullable().optional(),
+	programId: z.string().nullable().optional(),
+	durationSec: z.number().optional(),
+})
 
 export async function POST(request: Request) {
 	const db = await getDb()
-	const body = await request.json()
+	const result = await parseJsonBody(request, renderAndPublishSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 	const clipId = body.clipId ?? body.pageId
-	const { profileId, programId, durationSec } = body as {
-		profileId: string
-		programId?: string
-		durationSec?: number
-	}
-
-	if (!profileId) {
-		return NextResponse.json({ error: 'profileId is required' }, { status: 400 })
-	}
+	const { profileId, programId, durationSec } = body
 
 	if (!clipId && !programId) {
 		return NextResponse.json({ error: 'clipId or programId is required' }, { status: 400 })
@@ -98,7 +102,7 @@ export async function POST(request: Request) {
 	}
 
 	// Clip render-publish (existing behavior)
-	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, clipId)).limit(1)
+	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, clipId!)).limit(1)
 	if (!clip) {
 		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}

@@ -2,7 +2,18 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const updateProfileSchema = z.object({
+	name: z.string().optional(),
+	exportPath: z.string().optional(),
+	outputFormat: z.string().optional(),
+	lineupType: z.string().nullable().optional(),
+	fileNamingPattern: z.string().nullable().optional(),
+	allowDownload: z.boolean().optional(),
+})
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
 	const db = await getDb()
@@ -12,7 +23,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 		return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 	}
 
-	const body = await request.json()
+	const result = await parseJsonBody(request, updateProfileSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	await db
 		.update(schema.publishProfiles)

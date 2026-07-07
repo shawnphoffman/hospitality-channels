@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const updateChannelSchema = z.object({
+	clipId: z.string().nullable().optional(),
+	pageId: z.string().nullable().optional(),
+	programId: z.string().nullable().optional(),
+	pushMode: z.enum(['append', 'replace']).optional(),
+	enabled: z.boolean().optional(),
+	description: z.string().nullable().optional(),
+})
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params
 	const db = await getDb()
-	const body = (await request.json()) as {
-		clipId?: string | null
-		pageId?: string | null
-		programId?: string | null
-		pushMode?: 'append' | 'replace'
-		enabled?: boolean
-		description?: string | null
-	}
+	const result = await parseJsonBody(request, updateChannelSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	const [existing] = await db.select().from(schema.channelDefinitions).where(eq(schema.channelDefinitions.id, id)).limit(1)
 	if (!existing) {

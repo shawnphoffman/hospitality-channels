@@ -2,7 +2,23 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq, asc } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const updateProgramSchema = z.object({
+	title: z.string().optional(),
+	slug: z.string().optional(),
+	description: z.string().nullable().optional(),
+	summary: z.string().nullable().optional(),
+	iconAssetId: z.string().nullable().optional(),
+	durationMode: z.enum(['auto', 'manual']).optional(),
+	manualDurationSec: z.number().nullable().optional(),
+	minClipDurationSec: z.number().nullable().optional(),
+	transitionType: z.string().optional(),
+	transitionSec: z.number().optional(),
+	loopTransition: z.boolean().optional(),
+})
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params
@@ -80,7 +96,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 		return NextResponse.json({ error: 'Program not found' }, { status: 404 })
 	}
 
-	const body = await request.json()
+	const result = await parseJsonBody(request, updateProgramSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 	const now = new Date().toISOString()
 
 	await db

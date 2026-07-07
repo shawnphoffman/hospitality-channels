@@ -2,8 +2,17 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq, asc } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const reorderClipsSchema = z.array(z.object({ clipId: z.string(), position: z.number() }))
+
+const addClipSchema = z.object({
+	clipId: z.string().min(1),
+	position: z.number().optional(),
+})
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params
@@ -40,10 +49,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 		return NextResponse.json({ error: 'Program not found' }, { status: 404 })
 	}
 
-	const body = (await request.json()) as Array<{ clipId: string; position: number }>
-	if (!Array.isArray(body)) {
-		return NextResponse.json({ error: 'Body must be an array of { clipId, position }' }, { status: 400 })
-	}
+	const result = await parseJsonBody(request, reorderClipsSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	// Load all program clips to find IDs by clipId
 	const allProgramClips = await db.select().from(schema.programClips).where(eq(schema.programClips.programId, id))
@@ -74,10 +82,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 		return NextResponse.json({ error: 'Program not found' }, { status: 404 })
 	}
 
-	const body = (await request.json()) as { clipId: string; position?: number }
-	if (!body.clipId) {
-		return NextResponse.json({ error: 'clipId is required' }, { status: 400 })
-	}
+	const result = await parseJsonBody(request, addClipSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	// Verify the clip exists
 	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, body.clipId)).limit(1)

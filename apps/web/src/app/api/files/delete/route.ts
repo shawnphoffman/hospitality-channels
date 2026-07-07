@@ -2,15 +2,20 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { rm } from 'node:fs/promises'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { eq } from 'drizzle-orm'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const deleteFileSchema = z.object({
+	filePath: z.string().min(1),
+	cleanupRefs: z.boolean().optional(),
+})
 
 export async function POST(request: Request) {
-	const { filePath, cleanupRefs } = await request.json()
-
-	if (!filePath || typeof filePath !== 'string') {
-		return NextResponse.json({ error: 'filePath is required' }, { status: 400 })
-	}
+	const result = await parseJsonBody(request, deleteFileSchema)
+	if (!result.ok) return result.response
+	const { filePath, cleanupRefs } = result.data
 
 	const db = await getDb()
 	const cleaned: string[] = []

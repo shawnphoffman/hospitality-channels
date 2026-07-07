@@ -2,8 +2,19 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { eq, asc } from 'drizzle-orm'
+import { z } from 'zod'
 import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
+import { parseJsonBody } from '@/lib/api-validation'
+
+const reorderTracksSchema = z.array(z.object({ trackId: z.string(), position: z.number() }))
+
+const addTrackSchema = z.object({
+	assetId: z.string().optional(),
+	audioUrl: z.string().optional(),
+	position: z.number().optional(),
+	durationSec: z.number().nullable().optional(),
+})
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params
@@ -40,10 +51,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 		return NextResponse.json({ error: 'Program not found' }, { status: 404 })
 	}
 
-	const body = (await request.json()) as Array<{ trackId: string; position: number }>
-	if (!Array.isArray(body)) {
-		return NextResponse.json({ error: 'Body must be an array of { trackId, position }' }, { status: 400 })
-	}
+	const result = await parseJsonBody(request, reorderTracksSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	for (const item of body) {
 		await db.update(schema.programAudioTracks).set({ position: item.position }).where(eq(schema.programAudioTracks.id, item.trackId))
@@ -68,12 +78,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 		return NextResponse.json({ error: 'Program not found' }, { status: 404 })
 	}
 
-	const body = (await request.json()) as {
-		assetId?: string
-		audioUrl?: string
-		position?: number
-		durationSec?: number
-	}
+	const result = await parseJsonBody(request, addTrackSchema)
+	if (!result.ok) return result.response
+	const body = result.data
 
 	if (!body.assetId && !body.audioUrl) {
 		return NextResponse.json({ error: 'Either assetId or audioUrl is required' }, { status: 400 })
