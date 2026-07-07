@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { eq } from 'drizzle-orm'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import { getDb, schema } from '@/db'
+import { DuplicateButton } from '@/components/duplicate-button'
 import { TemplateRow } from './template-row'
 
 export const dynamic = 'force-dynamic'
@@ -9,10 +10,7 @@ export const dynamic = 'force-dynamic'
 export default async function TemplatesPage() {
 	const templates = getTemplateRegistry()
 	const db = await getDb()
-	const composableTemplates = await db
-		.select()
-		.from(schema.templates)
-		.where(eq(schema.templates.type, 'composable'))
+	const composableTemplates = await db.select().from(schema.templates).where(eq(schema.templates.type, 'composable'))
 
 	return (
 		<div>
@@ -22,10 +20,7 @@ export default async function TemplatesPage() {
 					<p className="mt-1 text-sm text-slate-500">Pre-built and custom scene layouts for creating clips</p>
 				</div>
 				<div className="flex items-center gap-3">
-					<Link
-						href="/templates/editor"
-						className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
-					>
+					<Link href="/templates/editor" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
 						Create Template
 					</Link>
 					<Link
@@ -64,6 +59,7 @@ export default async function TemplatesPage() {
 									>
 										Edit
 									</Link>
+									<DuplicateButton endpoint={`/api/composable-templates/${template.id}/duplicate`} />
 								</div>
 							</div>
 						))}

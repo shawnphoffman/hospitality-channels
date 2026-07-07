@@ -81,6 +81,33 @@ export function PublishProfilesSection({ initialProfiles }: PublishProfilesSecti
 		}
 	}
 
+	const handleDuplicateProfile = async (profile: Profile) => {
+		setSavingProfile(true)
+		try {
+			const res = await fetch('/api/publish-profiles', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					name: `${profile.name} (Copy)`,
+					exportPath: profile.exportPath,
+					fileNamingPattern: profile.fileNamingPattern,
+					allowDownload: profile.allowDownload,
+				}),
+			})
+			if (res.ok) {
+				const created = await res.json()
+				setProfiles(prev => [...prev, created])
+			} else {
+				const data = await res.json().catch(() => ({}))
+				setProfileError(data.error || 'Failed to duplicate profile')
+			}
+		} catch {
+			setProfileError('Failed to duplicate profile')
+		} finally {
+			setSavingProfile(false)
+		}
+	}
+
 	const handleDeleteProfile = async (profileId: string) => {
 		if (!confirm('Delete this publish profile? Associated artifacts will be unlinked.')) return
 		try {
@@ -211,6 +238,13 @@ export function PublishProfilesSection({ initialProfiles }: PublishProfilesSecti
 										className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-700 hover:text-white"
 									>
 										Edit
+									</button>
+									<button
+										onClick={() => handleDuplicateProfile(p)}
+										disabled={savingProfile}
+										className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-50"
+									>
+										Duplicate
 									</button>
 									<button
 										onClick={() => handleDeleteProfile(p.id)}

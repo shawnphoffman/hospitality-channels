@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { DuplicateButton } from '@/components/duplicate-button'
 import {
 	formatDuration,
 	type ArtifactData,
@@ -366,6 +367,18 @@ export function ProgramEditor({
 					>
 						Cancel
 					</Link>
+					<DuplicateButton
+						endpoint={`/api/programs/${program.id}/duplicate`}
+						hrefBase="/programs"
+						className="w-full rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-50 md:w-auto"
+					/>
+					<DuplicateButton
+						endpoint={`/api/programs/${program.id}/duplicate`}
+						body={{ includeClips: true }}
+						hrefBase="/programs"
+						label="Duplicate + Clips"
+						className="w-full rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-50 md:w-auto"
+					/>
 					<button
 						onClick={handleDelete}
 						disabled={saving}

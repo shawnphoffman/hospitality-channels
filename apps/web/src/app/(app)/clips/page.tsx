@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { getDb, schema } from '@/db'
+import { DuplicateButton } from '@/components/duplicate-button'
 import { LazyMount } from '@/components/lazy-mount'
 
 const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
@@ -79,12 +80,11 @@ export default async function ClipsListPage() {
 			) : (
 				<div className="space-y-3">
 					{clipsWithDetails.map(clip => (
-						<a
+						<div
 							key={clip.id}
-							href={`/clips/${clip.id}`}
 							className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-700"
 						>
-							<div className="min-w-0 flex-1">
+							<a href={`/clips/${clip.id}`} className="min-w-0 flex-1">
 								<h3 className="font-semibold text-white">{clip.title}</h3>
 								<p className="mt-0.5 text-xs text-slate-400">
 									{clip.templateName} &middot; {clip.slug}
@@ -93,7 +93,8 @@ export default async function ClipsListPage() {
 									Created {formatDate(clip.createdAt)}
 									{clip.updatedAt && clip.updatedAt !== clip.createdAt && <> &middot; Modified {formatDate(clip.updatedAt)}</>}
 								</p>
-							</div>
+							</a>
+							<DuplicateButton endpoint={`/api/clips/${clip.id}/duplicate`} />
 							<div className="h-[54px] w-24 shrink-0 overflow-hidden rounded bg-slate-950">
 								{clip.thumbnailPath ? (
 									/* eslint-disable-next-line @next/next/no-img-element */
@@ -116,7 +117,7 @@ export default async function ClipsListPage() {
 									</LazyMount>
 								)}
 							</div>
-						</a>
+						</div>
 					))}
 				</div>
 			)}

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { getDb, schema } from '@/db'
+import { DuplicateButton } from '@/components/duplicate-button'
 
 export default async function ProgramsListPage() {
 	const db = await getDb()
@@ -66,12 +67,11 @@ export default async function ProgramsListPage() {
 			) : (
 				<div className="space-y-3">
 					{programsWithDetails.map(program => (
-						<a
+						<div
 							key={program.id}
-							href={`/programs/${program.id}`}
 							className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-700"
 						>
-							<div className="min-w-0 flex-1">
+							<a href={`/programs/${program.id}`} className="min-w-0 flex-1">
 								<h3 className="font-semibold text-white">{program.title}</h3>
 								<p className="mt-0.5 text-xs text-slate-400">{program.slug}</p>
 								<div className="mt-1.5 flex items-center gap-4 text-xs text-slate-500">
@@ -84,8 +84,9 @@ export default async function ProgramsListPage() {
 									<span>{formatDuration(program.computedDuration)}</span>
 								</div>
 								{program.description && <p className="mt-1.5 line-clamp-1 text-xs text-slate-400">{program.description}</p>}
-							</div>
-						</a>
+							</a>
+							<DuplicateButton endpoint={`/api/programs/${program.id}/duplicate`} />
+						</div>
 					))}
 				</div>
 			)}
