@@ -9,7 +9,7 @@
   "dependencies": {
     "@hospitality-channels/common": "workspace:*",
     "@hospitality-channels/templates": "workspace:*",
-    "@libsql/client": "^0.14.0",
+    "@libsql/client": "^0.17.4",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
