@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ComposableScene } from '@/components/composable-scene'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { sectionTypes, createDefaultSection } from '@/components/composable-scene/section-registry'
 import { TemplateField } from '@/components/template-field'
 import { ImageField } from '@/components/image-field'
@@ -25,16 +26,7 @@ const DEFAULT_LAYOUT: ComposableLayout = {
 	sampleData: {},
 }
 
-const FONT_OPTIONS = [
-	'Inter',
-	'Georgia',
-	'Palatino',
-	'Garamond',
-	'Courier New',
-	'Trebuchet MS',
-	'Arial',
-	'Verdana',
-]
+const FONT_OPTIONS = ['Inter', 'Georgia', 'Palatino', 'Garamond', 'Courier New', 'Trebuchet MS', 'Arial', 'Verdana']
 
 const BACKGROUND_PRESETS = [
 	{ label: 'Dark Slate', type: 'gradient' as const, from: '#0f172a', to: '#020617' },
@@ -61,9 +53,7 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 	const [name, setName] = useState(existingTemplate?.name ?? '')
 	const [description, setDescription] = useState(existingTemplate?.description ?? '')
 	const [layout, setLayout] = useState<ComposableLayout>(
-		existingTemplate?.layoutJson
-			? (existingTemplate.layoutJson as unknown as ComposableLayout)
-			: DEFAULT_LAYOUT
+		existingTemplate?.layoutJson ? (existingTemplate.layoutJson as unknown as ComposableLayout) : DEFAULT_LAYOUT
 	)
 	const existingLayout = existingTemplate?.layoutJson as unknown as ComposableLayout | undefined
 	const [previewData, setPreviewData] = useState<Record<string, string>>(existingLayout?.sampleData ?? {})
@@ -105,63 +95,66 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 		if (Object.keys(defaults).length > 0) {
 			setPreviewData(prev => ({ ...defaults, ...prev }))
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [layout.sections])
 
 	const updateLayout = useCallback((updater: (prev: ComposableLayout) => ComposableLayout) => {
 		setLayout(prev => updater(prev))
 	}, [])
 
-	const handleToggleSection = useCallback((sectionType: ComposableSection['type']) => {
-		updateLayout(prev => {
-			const existing = prev.sections.find(s => s.type === sectionType)
-			if (existing) {
+	const handleToggleSection = useCallback(
+		(sectionType: ComposableSection['type']) => {
+			updateLayout(prev => {
+				const existing = prev.sections.find(s => s.type === sectionType)
+				if (existing) {
+					return {
+						...prev,
+						sections: prev.sections.map(s => (s.type === sectionType ? { ...s, enabled: !s.enabled } : s)),
+					}
+				}
+				const newSection = createDefaultSection(sectionType, prev.sections.length)
+				return { ...prev, sections: [...prev.sections, newSection] }
+			})
+		},
+		[updateLayout]
+	)
+
+	const handleUpdateSectionConfig = useCallback(
+		(sectionId: string, config: Record<string, unknown>) => {
+			updateLayout(prev => ({
+				...prev,
+				sections: prev.sections.map(s => (s.id === sectionId ? { ...s, config: { ...s.config, ...config } } : s)),
+			}))
+		},
+		[updateLayout]
+	)
+
+	const handleMoveSection = useCallback(
+		(sectionId: string, direction: 'up' | 'down') => {
+			updateLayout(prev => {
+				const enabled = prev.sections.filter(s => s.enabled).sort((a, b) => a.order - b.order)
+				const idx = enabled.findIndex(s => s.id === sectionId)
+				if (idx < 0) return prev
+				if (direction === 'up' && idx === 0) return prev
+				if (direction === 'down' && idx === enabled.length - 1) return prev
+
+				const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+				const newOrder = enabled.map(s => s.order)
+				const tmp = newOrder[idx]
+				newOrder[idx] = newOrder[swapIdx]
+				newOrder[swapIdx] = tmp
+
+				const updates = new Map<string, number>()
+				enabled.forEach((s, i) => updates.set(s.id, newOrder[i]))
+
 				return {
 					...prev,
-					sections: prev.sections.map(s =>
-						s.type === sectionType ? { ...s, enabled: !s.enabled } : s
-					),
+					sections: prev.sections.map(s => (updates.has(s.id) ? { ...s, order: updates.get(s.id)! } : s)),
 				}
-			}
-			const newSection = createDefaultSection(sectionType, prev.sections.length)
-			return { ...prev, sections: [...prev.sections, newSection] }
-		})
-	}, [updateLayout])
-
-	const handleUpdateSectionConfig = useCallback((sectionId: string, config: Record<string, unknown>) => {
-		updateLayout(prev => ({
-			...prev,
-			sections: prev.sections.map(s =>
-				s.id === sectionId ? { ...s, config: { ...s.config, ...config } } : s
-			),
-		}))
-	}, [updateLayout])
-
-	const handleMoveSection = useCallback((sectionId: string, direction: 'up' | 'down') => {
-		updateLayout(prev => {
-			const enabled = prev.sections.filter(s => s.enabled).sort((a, b) => a.order - b.order)
-			const idx = enabled.findIndex(s => s.id === sectionId)
-			if (idx < 0) return prev
-			if (direction === 'up' && idx === 0) return prev
-			if (direction === 'down' && idx === enabled.length - 1) return prev
-
-			const swapIdx = direction === 'up' ? idx - 1 : idx + 1
-			const newOrder = enabled.map(s => s.order)
-			const tmp = newOrder[idx]
-			newOrder[idx] = newOrder[swapIdx]
-			newOrder[swapIdx] = tmp
-
-			const updates = new Map<string, number>()
-			enabled.forEach((s, i) => updates.set(s.id, newOrder[i]))
-
-			return {
-				...prev,
-				sections: prev.sections.map(s =>
-					updates.has(s.id) ? { ...s, order: updates.get(s.id)! } : s
-				),
-			}
-		})
-	}, [updateLayout])
+			})
+		},
+		[updateLayout]
+	)
 
 	const handlePreviewDataChange = useCallback((key: string, value: string) => {
 		setPreviewData(prev => ({ ...prev, [key]: value }))
@@ -178,9 +171,7 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 		setSuccessMsg(null)
 
 		try {
-			const url = isEditing
-				? `/api/composable-templates/${existingTemplate!.id}`
-				: '/api/composable-templates'
+			const url = isEditing ? `/api/composable-templates/${existingTemplate!.id}` : '/api/composable-templates'
 			const method = isEditing ? 'PUT' : 'POST'
 
 			const layoutWithSampleData = { ...layout, sampleData: previewData }
@@ -229,9 +220,7 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 		}
 	}
 
-	const enabledSections = layout.sections
-		.filter(s => s.enabled)
-		.sort((a, b) => a.order - b.order)
+	const enabledSections = layout.sections.filter(s => s.enabled).sort((a, b) => a.order - b.order)
 
 	const scaledW = Math.round(SCENE_W * scale)
 	const scaledH = Math.round(SCENE_H * scale)
@@ -241,12 +230,8 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 			{/* Header */}
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h2 className="text-2xl font-bold text-white">
-						{isEditing ? 'Edit Template' : 'Create Template'}
-					</h2>
-					<p className="mt-0.5 text-sm text-slate-400">
-						Composable template editor
-					</p>
+					<h2 className="text-2xl font-bold text-white">{isEditing ? 'Edit Template' : 'Create Template'}</h2>
+					<p className="mt-0.5 text-sm text-slate-400">Composable template editor</p>
 				</div>
 				<div className="flex items-center gap-3">
 					<button
@@ -307,34 +292,44 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 						<div className="space-y-3">
 							{/* Font */}
 							<div>
-								<label htmlFor="font-select" className="block text-xs text-slate-400">Font</label>
+								<label htmlFor="font-select" className="block text-xs text-slate-400">
+									Font
+								</label>
 								<select
 									id="font-select"
 									value={layout.style.fontFamily}
-									onChange={e => updateLayout(prev => ({
-										...prev,
-										style: { ...prev.style, fontFamily: e.target.value },
-									}))}
+									onChange={e =>
+										updateLayout(prev => ({
+											...prev,
+											style: { ...prev.style, fontFamily: e.target.value },
+										}))
+									}
 									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
 								>
 									{FONT_OPTIONS.map(f => (
-										<option key={f} value={f} style={{ fontFamily: f }}>{f}</option>
+										<option key={f} value={f} style={{ fontFamily: f }}>
+											{f}
+										</option>
 									))}
 								</select>
 							</div>
 
 							{/* Accent Color */}
 							<div>
-								<label htmlFor="accent-color" className="block text-xs text-slate-400">Accent Color</label>
+								<label htmlFor="accent-color" className="block text-xs text-slate-400">
+									Accent Color
+								</label>
 								<div className="mt-1 flex items-center gap-2">
 									<input
 										id="accent-color"
 										type="color"
 										value={layout.style.accentColor}
-										onChange={e => updateLayout(prev => ({
-											...prev,
-											style: { ...prev.style, accentColor: e.target.value },
-										}))}
+										onChange={e =>
+											updateLayout(prev => ({
+												...prev,
+												style: { ...prev.style, accentColor: e.target.value },
+											}))
+										}
 										className="h-8 w-8 cursor-pointer rounded border border-slate-700 bg-transparent"
 									/>
 									<span className="text-xs text-slate-500">{layout.style.accentColor}</span>
@@ -355,15 +350,18 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 											<button
 												key={i}
 												type="button"
-												onClick={() => updateLayout(prev => ({
-													...prev,
-													style: {
-														...prev.style,
-														background: preset.type === 'color'
-															? { type: 'color', value: preset.value }
-															: { type: 'gradient', from: preset.from, to: preset.to },
-													},
-												}))}
+												onClick={() =>
+													updateLayout(prev => ({
+														...prev,
+														style: {
+															...prev.style,
+															background:
+																preset.type === 'color'
+																	? { type: 'color', value: preset.value }
+																	: { type: 'gradient', from: preset.from, to: preset.to },
+														},
+													}))
+												}
 												className={`rounded-lg border px-2 py-1.5 text-xs transition-colors ${
 													isActive
 														? 'border-blue-500 bg-blue-500/10 text-blue-400'
@@ -410,10 +408,12 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 										min={0}
 										max={100}
 										value={Math.round((layout.style.overlayOpacity ?? 0.55) * 100)}
-										onChange={e => updateLayout(prev => ({
-											...prev,
-											style: { ...prev.style, overlayOpacity: parseInt(e.target.value) / 100 },
-										}))}
+										onChange={e =>
+											updateLayout(prev => ({
+												...prev,
+												style: { ...prev.style, overlayOpacity: parseInt(e.target.value) / 100 },
+											}))
+										}
 										className="mt-1 w-full"
 									/>
 								</div>
@@ -437,9 +437,7 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 												<button
 													type="button"
 													onClick={() => handleToggleSection(sectionDef.type)}
-													className={`relative h-5 w-9 rounded-full transition-colors ${
-														isEnabled ? 'bg-blue-600' : 'bg-slate-600'
-													}`}
+													className={`relative h-5 w-9 rounded-full transition-colors ${isEnabled ? 'bg-blue-600' : 'bg-slate-600'}`}
 												>
 													<span
 														className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
@@ -479,7 +477,11 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 															title="Configure"
 														>
 															<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-																<path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+																/>
 																<path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 															</svg>
 														</button>
@@ -492,7 +494,7 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 										{isEnabled && existing && expandedSection === existing.id && (
 											<SectionConfigPanel
 												section={existing}
-												onUpdateConfig={(config) => handleUpdateSectionConfig(existing.id, config)}
+												onUpdateConfig={config => handleUpdateSectionConfig(existing.id, config)}
 												previewData={previewData}
 												onPreviewDataChange={handlePreviewDataChange}
 											/>
@@ -514,7 +516,9 @@ export function TemplateEditorClient({ existingTemplate }: TemplateEditorClientP
 									className="absolute left-0 top-0"
 								>
 									<div className="absolute inset-0 overflow-hidden">
-										<ComposableScene layout={layout} data={previewData} />
+										<ErrorBoundary label="template preview">
+											<ComposableScene layout={layout} data={previewData} />
+										</ErrorBoundary>
 									</div>
 								</div>
 							</div>

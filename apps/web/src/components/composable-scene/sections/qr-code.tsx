@@ -1,6 +1,6 @@
 'use client'
 
-import { QrCode } from '@/templates/qr-code'
+import { QrCode } from '@/components/qr-code'
 
 interface QrCodeSectionProps {
 	data: Record<string, string>

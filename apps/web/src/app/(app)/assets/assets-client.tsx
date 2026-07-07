@@ -50,22 +50,35 @@ export function AssetsClient({ initialAssets }: { initialAssets: AssetData[] }) 
 	const handleUpload = async (files: FileList) => {
 		setUploading(true)
 		setMessage(null)
+		const fileList = Array.from(files)
 		let uploaded = 0
+		const failures: Array<{ name: string; reason: string }> = []
 
-		for (const file of Array.from(files)) {
+		for (const file of fileList) {
 			const formData = new FormData()
 			formData.append('file', file)
 			try {
 				const res = await fetch('/api/assets', { method: 'POST', body: formData })
-				if (res.ok) uploaded++
+				if (res.ok) {
+					uploaded++
+				} else {
+					const data = await res.json().catch(() => null)
+					const reason = typeof data?.error === 'string' ? data.error : `Server error (${res.status})`
+					failures.push({ name: file.name, reason })
+				}
 			} catch {
-				// continue with next file
+				failures.push({ name: file.name, reason: 'Network error' })
 			}
 		}
 
-		setMessage(`Uploaded ${uploaded} file(s)`)
+		if (failures.length === 0) {
+			setMessage(`Uploaded ${uploaded} file(s)`)
+		} else {
+			const details = failures.map(f => `${f.name} (${f.reason})`).join(', ')
+			setMessage(`Uploaded ${uploaded} of ${fileList.length} files. Failed: ${details}`)
+		}
 		setUploading(false)
-		router.refresh()
+		if (uploaded > 0) router.refresh()
 	}
 
 	const handleDelete = async (id: string) => {

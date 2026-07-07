@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'rea
 import { useSearchParams } from 'next/navigation'
 import { getTemplateRegistry } from '@hospitality-channels/templates'
 import { getTemplateScenes } from '@/templates/registry'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { TemplateField } from '@/components/template-field'
 
 interface SchemaField {
@@ -127,7 +128,9 @@ function TemplateDevContent() {
 							}}
 							className="absolute left-0 top-0"
 						>
-							<PreviewScene data={data} />
+							<ErrorBoundary label="scene preview">
+								<PreviewScene data={data} />
+							</ErrorBoundary>
 
 							{showSafeArea && (
 								<div

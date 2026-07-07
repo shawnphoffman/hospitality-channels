@@ -4,6 +4,9 @@ import { useState, useRef, type ReactNode } from 'react'
 
 const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
 
+/** How many picker items to render initially and per "Show more" click */
+const PICKER_BATCH_SIZE = 60
+
 function emojiFirstSort(a: string, b: string): number {
 	const aEmoji = EMOJI_RE.test(a)
 	const bEmoji = EMOJI_RE.test(b)
@@ -67,6 +70,8 @@ export function AssetField({
 	const [selectedAsset, setSelectedAsset] = useState<AssetData | null>(null)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const [uploading, setUploading] = useState(false)
+	const [filter, setFilter] = useState('')
+	const [visibleCount, setVisibleCount] = useState(PICKER_BATCH_SIZE)
 
 	const loadAssets = async () => {
 		setLoadingAssets(true)
@@ -85,6 +90,8 @@ export function AssetField({
 
 	const openPicker = () => {
 		setShowPicker(true)
+		setFilter('')
+		setVisibleCount(PICKER_BATCH_SIZE)
 		loadAssets()
 	}
 
@@ -114,6 +121,15 @@ export function AssetField({
 	}
 
 	const hasValue = value && value.length > 0
+
+	const normalizedFilter = filter.trim().toLowerCase()
+	const filteredAssets = normalizedFilter
+		? assets.filter(
+				asset => (asset.name ?? '').toLowerCase().includes(normalizedFilter) || asset.originalPath.toLowerCase().includes(normalizedFilter)
+			)
+		: assets
+	const visibleAssets = filteredAssets.slice(0, visibleCount)
+	const remainingCount = filteredAssets.length - visibleAssets.length
 
 	return (
 		<div>
@@ -203,18 +219,44 @@ export function AssetField({
 							</div>
 						</div>
 
+						{!loadingAssets && assets.length > 0 && (
+							<input
+								type="text"
+								value={filter}
+								onChange={e => {
+									setFilter(e.target.value)
+									setVisibleCount(PICKER_BATCH_SIZE)
+								}}
+								placeholder="Filter by name or path..."
+								className="mb-4 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+							/>
+						)}
+
 						{loadingAssets ? (
 							<p className="py-8 text-center text-slate-400">Loading assets...</p>
 						) : assets.length === 0 ? (
 							<p className="py-8 text-center text-slate-400">{emptyMessage}</p>
+						) : filteredAssets.length === 0 ? (
+							<p className="py-8 text-center text-slate-400">No assets match your filter.</p>
 						) : (
-							<div className={pickerClassName}>
-								{assets.map(asset => (
-									<button key={asset.id} type="button" onClick={() => selectAsset(asset)} className="w-full">
-										{renderPickerItem(asset, assetServeUrl(asset))}
+							<>
+								<div className={pickerClassName}>
+									{visibleAssets.map(asset => (
+										<button key={asset.id} type="button" onClick={() => selectAsset(asset)} className="w-full">
+											{renderPickerItem(asset, assetServeUrl(asset))}
+										</button>
+									))}
+								</div>
+								{remainingCount > 0 && (
+									<button
+										type="button"
+										onClick={() => setVisibleCount(prev => prev + PICKER_BATCH_SIZE)}
+										className="mt-4 w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-white"
+									>
+										Show more ({remainingCount} remaining)
 									</button>
-								))}
-							</div>
+								)}
+							</>
 						)}
 					</div>
 				</div>

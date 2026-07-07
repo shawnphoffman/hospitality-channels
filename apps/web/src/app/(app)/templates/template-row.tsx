@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { getTemplateScenes } from '@/templates/registry'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { LazyMount } from '@/components/lazy-mount'
 
 const SCENE_W = 1920
 const SCENE_H = 1080
@@ -173,9 +175,13 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 				{/* Preview thumbnail */}
 				<div className="h-[108px] w-48 shrink-0 overflow-hidden rounded bg-slate-950">
 					{Scene && (
-						<div style={{ width: 1920, height: 1080, transform: 'scale(0.1)', transformOrigin: 'top left' }}>
-							<Scene data={sampleData} />
-						</div>
+						<LazyMount className="h-full w-full">
+							<ErrorBoundary label="template preview">
+								<div style={{ width: 1920, height: 1080, transform: 'scale(0.1)', transformOrigin: 'top left' }}>
+									<Scene data={sampleData} />
+								</div>
+							</ErrorBoundary>
+						</LazyMount>
 					)}
 				</div>
 				<div className="min-w-0 flex-1">
@@ -234,7 +240,9 @@ export function TemplateRow({ slug, name, description }: TemplateRowProps) {
 										className="absolute left-0 top-0"
 									>
 										<div className="absolute inset-0 overflow-hidden">
-											<Scene data={sampleData} />
+											<ErrorBoundary label="template preview">
+												<Scene data={sampleData} />
+											</ErrorBoundary>
 										</div>
 									</div>
 								</div>

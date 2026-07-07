@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { getDb, schema } from '@/db'
+import { LazyMount } from '@/components/lazy-mount'
 
 const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
 
@@ -104,12 +105,14 @@ export default async function ClipsListPage() {
 									/* eslint-disable-next-line @next/next/no-img-element */
 									<img src={clip.bgImageUrl} alt="" className="h-full w-full object-cover" />
 								) : (
-									<iframe
-										src={`/clips/${clip.id}/render`}
-										className="pointer-events-none"
-										style={{ width: 1920, height: 1080, transform: 'scale(0.05)', transformOrigin: 'top left' }}
-										tabIndex={-1}
-									/>
+									<LazyMount className="h-full w-full">
+										<iframe
+											src={`/clips/${clip.id}/render`}
+											className="pointer-events-none"
+											style={{ width: 1920, height: 1080, transform: 'scale(0.05)', transformOrigin: 'top left' }}
+											tabIndex={-1}
+										/>
+									</LazyMount>
 								)}
 							</div>
 						</a>

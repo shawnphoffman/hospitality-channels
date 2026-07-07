@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getTemplateScenes } from '@/templates/registry'
 import { ComposableScene } from '@/components/composable-scene'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { WifiQrCode } from '@/templates/wifi-qr-code'
 import { TemplateField } from '@/components/template-field'
 import type { ComposableLayout } from '@hospitality-channels/content-model'
@@ -204,21 +205,23 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 							className="absolute left-0 top-0"
 						>
 							<div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
-								{(() => {
-									if (templateType === 'composable' && layoutJson) {
-										return <ComposableScene layout={layoutJson} data={fieldValues} />
-									}
-									const entry = getTemplateScenes(templateSlug)
-									if (!entry) {
-										return (
-											<div className="flex h-full items-center justify-center text-slate-500">
-												<p style={{ fontSize: 32 }}>Unknown template: {templateSlug}</p>
-											</div>
-										)
-									}
-									const Scene = entry.scene
-									return <Scene data={fieldValues} />
-								})()}
+								<ErrorBoundary label="scene preview">
+									{(() => {
+										if (templateType === 'composable' && layoutJson) {
+											return <ComposableScene layout={layoutJson} data={fieldValues} />
+										}
+										const entry = getTemplateScenes(templateSlug)
+										if (!entry) {
+											return (
+												<div className="flex h-full items-center justify-center text-slate-500">
+													<p style={{ fontSize: 32 }}>Unknown template: {templateSlug}</p>
+												</div>
+											)
+										}
+										const Scene = entry.scene
+										return <Scene data={fieldValues} />
+									})()}
+								</ErrorBoundary>
 							</div>
 						</div>
 					</div>

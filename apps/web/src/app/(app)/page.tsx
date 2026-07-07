@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { getDb, schema } from '@/db'
-import { count, desc, eq, isNotNull } from 'drizzle-orm'
+import { asc, count, desc, eq, sum } from 'drizzle-orm'
 import Link from 'next/link'
 
 function formatDuration(sec: number): string {
@@ -35,14 +35,12 @@ export default async function DashboardPage() {
 		[artifactsCount],
 		[audioCount],
 		[imageCount],
-		allPrograms,
-		allProgramClips,
-		allAudioTracks,
-		recentArtifacts,
-		recentJobs,
-		channels,
-		allClips,
-		profiles,
+		recentPrograms,
+		clipCountRows,
+		audioDurationRows,
+		recentArtifactRows,
+		recentJobRows,
+		channelRows,
 		[tunarrSetting],
 	] = await Promise.all([
 		db.select({ value: count() }).from(schema.clips),
@@ -51,52 +49,83 @@ export default async function DashboardPage() {
 		db.select({ value: count() }).from(schema.publishedArtifacts),
 		db.select({ value: count() }).from(schema.assets).where(eq(schema.assets.type, 'audio')),
 		db.select({ value: count() }).from(schema.assets).where(eq(schema.assets.type, 'photo')),
-		db.select().from(schema.programs),
-		db.select().from(schema.programClips),
-		db.select().from(schema.programAudioTracks),
-		db.select().from(schema.publishedArtifacts).orderBy(desc(schema.publishedArtifacts.publishedAt)).limit(5),
-		db.select().from(schema.jobs).orderBy(desc(schema.jobs.createdAt)).limit(5),
-		db.select().from(schema.channelDefinitions).where(eq(schema.channelDefinitions.enabled, true)),
-		db.select().from(schema.clips),
-		db.select().from(schema.publishProfiles),
+		db.select().from(schema.programs).orderBy(desc(schema.programs.updatedAt)).limit(4),
+		db
+			.select({ programId: schema.programClips.programId, value: count() })
+			.from(schema.programClips)
+			.groupBy(schema.programClips.programId),
+		db
+			.select({ programId: schema.programAudioTracks.programId, value: sum(schema.programAudioTracks.durationSec) })
+			.from(schema.programAudioTracks)
+			.groupBy(schema.programAudioTracks.programId),
+		db
+			.select({
+				artifact: schema.publishedArtifacts,
+				programTitle: schema.programs.title,
+				clipTitle: schema.clips.title,
+				profileName: schema.publishProfiles.name,
+			})
+			.from(schema.publishedArtifacts)
+			.leftJoin(schema.programs, eq(schema.publishedArtifacts.programId, schema.programs.id))
+			.leftJoin(schema.clips, eq(schema.publishedArtifacts.clipId, schema.clips.id))
+			.leftJoin(schema.publishProfiles, eq(schema.publishedArtifacts.publishProfileId, schema.publishProfiles.id))
+			.orderBy(desc(schema.publishedArtifacts.publishedAt))
+			.limit(5),
+		db
+			.select({
+				job: schema.jobs,
+				programTitle: schema.programs.title,
+				clipTitle: schema.clips.title,
+			})
+			.from(schema.jobs)
+			.leftJoin(schema.programs, eq(schema.jobs.programId, schema.programs.id))
+			.leftJoin(schema.clips, eq(schema.jobs.clipId, schema.clips.id))
+			.orderBy(desc(schema.jobs.createdAt))
+			.limit(5),
+		db
+			.select({
+				channel: schema.channelDefinitions,
+				programTitle: schema.programs.title,
+				clipTitle: schema.clips.title,
+			})
+			.from(schema.channelDefinitions)
+			.leftJoin(schema.programs, eq(schema.channelDefinitions.programId, schema.programs.id))
+			.leftJoin(schema.clips, eq(schema.channelDefinitions.clipId, schema.clips.id))
+			.where(eq(schema.channelDefinitions.enabled, true))
+			.orderBy(asc(schema.channelDefinitions.channelNumber))
+			.limit(6),
 		db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1),
 	])
 
 	const tunarrConfigured = !!tunarrSetting?.value
 
-	// Enrich programs
-	const programsWithDetails = allPrograms
-		.map(p => {
-			const clips = allProgramClips.filter(pc => pc.programId === p.id)
-			const tracks = allAudioTracks.filter(t => t.programId === p.id)
-			const audioDuration = tracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
-			const computedDuration = p.durationMode === 'manual' ? (p.manualDurationSec ?? 0) : audioDuration
-			return { ...p, clipCount: clips.length, computedDuration }
-		})
-		.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-		.slice(0, 4)
-
-	// Enrich recent artifacts
-	const enrichedArtifacts = recentArtifacts.map(a => {
-		const program = a.programId ? allPrograms.find(p => p.id === a.programId) : null
-		const clip = a.clipId ? allClips.find(c => c.id === a.clipId) : null
-		const profile = profiles.find(p => p.id === a.publishProfileId)
-		return {
-			...a,
-			label: program?.title ?? clip?.title ?? 'Unknown',
-			profileName: profile?.name ?? 'Unknown',
-		}
+	// Enrich programs with aggregated counts and durations
+	const clipCountByProgram = new Map(clipCountRows.map(r => [r.programId, r.value]))
+	const audioDurationByProgram = new Map(audioDurationRows.map(r => [r.programId, Number(r.value ?? 0)]))
+	const programsWithDetails = recentPrograms.map(p => {
+		const audioDuration = audioDurationByProgram.get(p.id) ?? 0
+		const computedDuration = p.durationMode === 'manual' ? (p.manualDurationSec ?? 0) : audioDuration
+		return { ...p, clipCount: clipCountByProgram.get(p.id) ?? 0, computedDuration }
 	})
 
+	// Enrich recent artifacts
+	const enrichedArtifacts = recentArtifactRows.map(({ artifact, programTitle, clipTitle, profileName }) => ({
+		...artifact,
+		label: programTitle ?? clipTitle ?? 'Unknown',
+		profileName: profileName ?? 'Unknown',
+	}))
+
+	// Recent jobs
+	const recentJobs = recentJobRows.map(({ job, programTitle, clipTitle }) => ({
+		...job,
+		label: programTitle ?? clipTitle ?? job.type,
+	}))
+
 	// Active channels
-	const enrichedChannels = channels
-		.sort((a, b) => a.channelNumber - b.channelNumber)
-		.slice(0, 6)
-		.map(ch => {
-			const program = ch.programId ? allPrograms.find(p => p.id === ch.programId) : null
-			const clip = ch.clipId ? allClips.find(c => c.id === ch.clipId) : null
-			return { ...ch, boundTo: program?.title ?? clip?.title ?? null }
-		})
+	const enrichedChannels = channelRows.map(({ channel, programTitle, clipTitle }) => ({
+		...channel,
+		boundTo: programTitle ?? clipTitle ?? null,
+	}))
 
 	return (
 		<div className="space-y-6 sm:space-y-8">
@@ -334,23 +363,19 @@ export default async function DashboardPage() {
 						</div>
 					) : (
 						<div className="space-y-2">
-							{recentJobs.map(job => {
-								const clip = job.clipId ? allClips.find(c => c.id === job.clipId) : null
-								const program = job.programId ? allPrograms.find(p => p.id === job.programId) : null
-								return (
-									<div key={job.id} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/40 p-3">
-										<JobStatusIcon status={job.status} />
-										<div className="min-w-0 flex-1">
-											<p className="truncate text-sm font-medium text-white">{program?.title ?? clip?.title ?? job.type}</p>
-											<p className="text-xs text-slate-500">
-												{job.type.replace(/-/g, ' ')}
-												{job.error && <span className="ml-1 text-red-400">&middot; {job.error}</span>}
-											</p>
-										</div>
-										<span className="shrink-0 text-xs text-slate-600">{timeAgo(job.createdAt)}</span>
+							{recentJobs.map(job => (
+								<div key={job.id} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/40 p-3">
+									<JobStatusIcon status={job.status} />
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-medium text-white">{job.label}</p>
+										<p className="text-xs text-slate-500">
+											{job.type.replace(/-/g, ' ')}
+											{job.error && <span className="ml-1 text-red-400">&middot; {job.error}</span>}
+										</p>
 									</div>
-								)
-							})}
+									<span className="shrink-0 text-xs text-slate-600">{timeAgo(job.createdAt)}</span>
+								</div>
+							))}
 						</div>
 					)}
 				</section>
