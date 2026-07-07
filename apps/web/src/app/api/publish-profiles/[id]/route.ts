@@ -15,19 +15,20 @@ const updateProfileSchema = z.object({
 	allowDownload: z.boolean().optional(),
 })
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-	const db = await getDb()
-	const [existing] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id)).limit(1)
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
+    const [existing] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id)).limit(1)
 
-	if (!existing) {
+    if (!existing) {
 		return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 	}
 
-	const result = await parseJsonBody(request, updateProfileSchema)
-	if (!result.ok) return result.response
-	const body = result.data
+    const result = await parseJsonBody(request, updateProfileSchema)
+    if (!result.ok) return result.response
+    const body = result.data
 
-	await db
+    await db
 		.update(schema.publishProfiles)
 		.set({
 			name: body.name ?? existing.name,
@@ -39,22 +40,23 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 		})
 		.where(eq(schema.publishProfiles.id, params.id))
 
-	const [updated] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id)).limit(1)
+    const [updated] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id)).limit(1)
 
-	return NextResponse.json(updated)
+    return NextResponse.json(updated)
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-	const db = await getDb()
-	const [existing] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id)).limit(1)
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
+    const [existing] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id)).limit(1)
 
-	if (!existing) {
+    if (!existing) {
 		return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 	}
 
-	// Remove referencing artifacts and jobs first to avoid FK constraint errors
-	await db.delete(schema.publishedArtifacts).where(eq(schema.publishedArtifacts.publishProfileId, params.id))
-	await db.delete(schema.jobs).where(eq(schema.jobs.profileId, params.id))
-	await db.delete(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id))
-	return NextResponse.json({ success: true })
+    // Remove referencing artifacts and jobs first to avoid FK constraint errors
+    await db.delete(schema.publishedArtifacts).where(eq(schema.publishedArtifacts.publishProfileId, params.id))
+    await db.delete(schema.jobs).where(eq(schema.jobs.profileId, params.id))
+    await db.delete(schema.publishProfiles).where(eq(schema.publishProfiles.id, params.id))
+    return NextResponse.json({ success: true })
 }

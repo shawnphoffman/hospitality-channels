@@ -15,29 +15,30 @@ function emojiFirstSort(a: string, b: string): number {
 	return a.localeCompare(b)
 }
 
-export default async function ProgramPage({ params }: { params: { id: string } }) {
-	const db = await getDb()
+export default async function ProgramPage(props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
 
-	const [program] = await db.select().from(schema.programs).where(eq(schema.programs.id, params.id)).limit(1)
-	if (!program) notFound()
+    const [program] = await db.select().from(schema.programs).where(eq(schema.programs.id, params.id)).limit(1)
+    if (!program) notFound()
 
-	const programClips = await db
+    const programClips = await db
 		.select()
 		.from(schema.programClips)
 		.where(eq(schema.programClips.programId, params.id))
 		.orderBy(asc(schema.programClips.position))
 
-	const audioTracks = await db
+    const audioTracks = await db
 		.select()
 		.from(schema.programAudioTracks)
 		.where(eq(schema.programAudioTracks.programId, params.id))
 		.orderBy(asc(schema.programAudioTracks.position))
 
-	// Get clip details
-	const allClips = await db.select().from(schema.clips)
-	const allTemplates = await db.select().from(schema.templates)
+    // Get clip details
+    const allClips = await db.select().from(schema.clips)
+    const allTemplates = await db.select().from(schema.templates)
 
-	const enrichedClips = programClips.map(pc => {
+    const enrichedClips = programClips.map(pc => {
 		const clip = allClips.find(c => c.id === pc.clipId)
 		const template = clip ? allTemplates.find(t => t.id === clip.templateId) : null
 		return {
@@ -49,9 +50,9 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 		}
 	})
 
-	// Get audio asset details
-	const allAssets = await db.select().from(schema.assets)
-	const enrichedTracks = audioTracks.map(t => {
+    // Get audio asset details
+    const allAssets = await db.select().from(schema.assets)
+    const enrichedTracks = audioTracks.map(t => {
 		const asset = t.assetId ? allAssets.find(a => a.id === t.assetId) : null
 		return {
 			id: t.id,
@@ -68,20 +69,20 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 		}
 	})
 
-	const profiles = await db.select().from(schema.publishProfiles)
-	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
-	const [tunarrMediaPathSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_path')).limit(1)
+    const profiles = await db.select().from(schema.publishProfiles)
+    const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
+    const [tunarrMediaPathSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_path')).limit(1)
 
-	// Load published artifacts for this program
-	const artifacts = await db
+    // Load published artifacts for this program
+    const artifacts = await db
 		.select()
 		.from(schema.publishedArtifacts)
 		.where(eq(schema.publishedArtifacts.programId, params.id))
 		.orderBy(desc(schema.publishedArtifacts.publishedAt))
 
-	// Mark older artifacts with the same output path as superseded
-	const latestByPath = new Set<string>()
-	const artifactsWithProfile = artifacts.map(a => {
+    // Mark older artifacts with the same output path as superseded
+    const latestByPath = new Set<string>()
+    const artifactsWithProfile = artifacts.map(a => {
 		const profile = profiles.find(p => p.id === a.publishProfileId)
 		const superseded = latestByPath.has(a.outputPath)
 		latestByPath.add(a.outputPath)
@@ -97,30 +98,30 @@ export default async function ProgramPage({ params }: { params: { id: string } }
 		}
 	})
 
-	// Available clips (not already in program)
-	const usedClipIds = new Set(programClips.map(pc => pc.clipId))
-	const availableClips = allClips.map(c => ({ id: c.id, title: c.title })).sort((a, b) => emojiFirstSort(a.title, b.title))
+    // Available clips (not already in program)
+    const usedClipIds = new Set(programClips.map(pc => pc.clipId))
+    const availableClips = allClips.map(c => ({ id: c.id, title: c.title })).sort((a, b) => emojiFirstSort(a.title, b.title))
 
-	// Available audio assets
-	const audioAssets = allAssets
+    // Available audio assets
+    const audioAssets = allAssets
 		.filter(a => a.type === 'audio')
 		.map(a => ({ id: a.id, filename: a.name ?? a.originalPath.split('/').pop() ?? 'audio', originalPath: a.originalPath }))
 		.sort((a, b) => emojiFirstSort(a.filename, b.filename))
 
-	// Look up channel binding for this program
-	const [boundChannel] = await db
+    // Look up channel binding for this program
+    const [boundChannel] = await db
 		.select({ tunarrChannelId: schema.channelDefinitions.tunarrChannelId, pushMode: schema.channelDefinitions.pushMode })
 		.from(schema.channelDefinitions)
 		.where(eq(schema.channelDefinitions.programId, params.id))
 		.limit(1)
 
-	// Image assets for icon picker
-	const imageAssets = allAssets
+    // Image assets for icon picker
+    const imageAssets = allAssets
 		.filter(a => a.type !== 'audio' && a.type !== 'video')
 		.map(a => ({ id: a.id, name: a.name ?? null, originalPath: a.originalPath }))
 		.sort((a, b) => emojiFirstSort(a.name ?? a.originalPath, b.name ?? b.originalPath))
 
-	return (
+    return (
 		<ProgramEditor
 			program={{
 				id: program.id,

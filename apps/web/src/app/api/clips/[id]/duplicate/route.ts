@@ -5,18 +5,19 @@ import { eq } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
 import { generateId } from '@/lib/id'
 
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
-	const db = await getDb()
-	const [existing] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
+export async function POST(_request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
+    const [existing] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
 
-	if (!existing) {
+    if (!existing) {
 		return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
 	}
 
-	const now = new Date().toISOString()
-	const newSlug = `${existing.slug}-copy`
+    const now = new Date().toISOString()
+    const newSlug = `${existing.slug}-copy`
 
-	const duplicate = {
+    const duplicate = {
 		id: generateId(),
 		templateId: existing.templateId,
 		slug: newSlug,
@@ -29,7 +30,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
 		updatedAt: now,
 	}
 
-	await db.insert(schema.clips).values(duplicate)
+    await db.insert(schema.clips).values(duplicate)
 
-	return NextResponse.json(duplicate, { status: 201 })
+    return NextResponse.json(duplicate, { status: 201 })
 }

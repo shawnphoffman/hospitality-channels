@@ -5,19 +5,20 @@ import { getDb, schema } from '@/db'
 import { notFound } from 'next/navigation'
 import { TemplateEditorClient } from '../template-editor-client'
 
-export default async function EditTemplatePage({ params }: { params: { id: string } }) {
-	const db = await getDb()
-	const [template] = await db
+export default async function EditTemplatePage(props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
+    const [template] = await db
 		.select()
 		.from(schema.templates)
 		.where(eq(schema.templates.id, params.id))
 		.limit(1)
 
-	if (!template || (template as Record<string, unknown>).type !== 'composable') {
+    if (!template || (template as Record<string, unknown>).type !== 'composable') {
 		notFound()
 	}
 
-	return (
+    return (
 		<div>
 			<TemplateEditorClient
 				existingTemplate={{

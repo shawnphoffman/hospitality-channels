@@ -11,89 +11,91 @@ const updateAssetSchema = z.object({
 	name: z.string().optional(),
 })
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-	const db = await getDb()
-	const [asset] = await db.select().from(schema.assets).where(eq(schema.assets.id, params.id)).limit(1)
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
+    const [asset] = await db.select().from(schema.assets).where(eq(schema.assets.id, params.id)).limit(1)
 
-	if (!asset) {
+    if (!asset) {
 		return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
 	}
 
-	const result = await parseJsonBody(request, updateAssetSchema)
-	if (!result.ok) return result.response
-	const body = result.data
-	const updates: Record<string, unknown> = {}
+    const result = await parseJsonBody(request, updateAssetSchema)
+    if (!result.ok) return result.response
+    const body = result.data
+    const updates: Record<string, unknown> = {}
 
-	if (typeof body.name === 'string') {
+    if (typeof body.name === 'string') {
 		updates.name = body.name.trim() || null
 	}
 
-	if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0) {
 		return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
 	}
 
-	await db.update(schema.assets).set(updates).where(eq(schema.assets.id, params.id))
+    await db.update(schema.assets).set(updates).where(eq(schema.assets.id, params.id))
 
-	const [updated] = await db.select().from(schema.assets).where(eq(schema.assets.id, params.id)).limit(1)
-	return NextResponse.json(updated)
+    const [updated] = await db.select().from(schema.assets).where(eq(schema.assets.id, params.id)).limit(1)
+    return NextResponse.json(updated)
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-	const db = await getDb()
-	const [asset] = await db.select().from(schema.assets).where(eq(schema.assets.id, params.id)).limit(1)
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
+    const [asset] = await db.select().from(schema.assets).where(eq(schema.assets.id, params.id)).limit(1)
 
-	if (!asset) {
+    if (!asset) {
 		return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
 	}
 
-	// Check for references that would prevent deletion
-	const [programIconRef] = await db
+    // Check for references that would prevent deletion
+    const [programIconRef] = await db
 		.select({ id: schema.programs.id })
 		.from(schema.programs)
 		.where(eq(schema.programs.iconAssetId, params.id))
 		.limit(1)
 
-	if (programIconRef) {
+    if (programIconRef) {
 		return NextResponse.json(
 			{ error: 'This asset is used as an icon by a program. Remove it from the program before deleting.' },
 			{ status: 409 }
 		)
 	}
 
-	const [audioTrackRef] = await db
+    const [audioTrackRef] = await db
 		.select({ id: schema.programAudioTracks.id })
 		.from(schema.programAudioTracks)
 		.where(eq(schema.programAudioTracks.assetId, params.id))
 		.limit(1)
 
-	if (audioTrackRef) {
+    if (audioTrackRef) {
 		return NextResponse.json(
 			{ error: 'This asset is used as an audio track in a program. Remove it from the program before deleting.' },
 			{ status: 409 }
 		)
 	}
 
-	const [posterRef] = await db
+    const [posterRef] = await db
 		.select({ id: schema.channelDefinitions.id })
 		.from(schema.channelDefinitions)
 		.where(eq(schema.channelDefinitions.posterAssetId, params.id))
 		.limit(1)
 
-	if (posterRef) {
+    if (posterRef) {
 		return NextResponse.json(
 			{ error: 'This asset is used as a channel poster. Remove it from the channel before deleting.' },
 			{ status: 409 }
 		)
 	}
 
-	try {
+    try {
 		await rm(asset.originalPath, { force: true })
 		if (asset.derivedPath) await rm(asset.derivedPath, { force: true })
 	} catch {
 		// File may already be deleted from disk
 	}
 
-	await db.delete(schema.assets).where(eq(schema.assets.id, params.id))
+    await db.delete(schema.assets).where(eq(schema.assets.id, params.id))
 
-	return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true })
 }

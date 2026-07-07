@@ -12,37 +12,38 @@ import { RenderScene } from '../../../clips/[id]/render/render-scene'
  *
  * URL: /programs/{programId}/render?clipIndex=0
  */
-export default async function ProgramRenderPage({
-	params,
-	searchParams,
-}: {
-	params: { id: string }
-	searchParams: { clipIndex?: string }
-}) {
-	const db = await getDb()
+export default async function ProgramRenderPage(
+    props: {
+        params: Promise<{ id: string }>
+        searchParams: Promise<{ clipIndex?: string }>
+    }
+) {
+    const searchParams = await props.searchParams;
+    const params = await props.params;
+    const db = await getDb()
 
-	const [program] = await db.select().from(schema.programs).where(eq(schema.programs.id, params.id)).limit(1)
-	if (!program) notFound()
+    const [program] = await db.select().from(schema.programs).where(eq(schema.programs.id, params.id)).limit(1)
+    if (!program) notFound()
 
-	const programClips = await db
+    const programClips = await db
 		.select()
 		.from(schema.programClips)
 		.where(eq(schema.programClips.programId, params.id))
 		.orderBy(asc(schema.programClips.position))
 
-	if (programClips.length === 0) notFound()
+    if (programClips.length === 0) notFound()
 
-	const clipIndex = parseInt(searchParams.clipIndex ?? '0', 10)
-	const programClip = programClips[clipIndex]
-	if (!programClip) notFound()
+    const clipIndex = parseInt(searchParams.clipIndex ?? '0', 10)
+    const programClip = programClips[clipIndex]
+    if (!programClip) notFound()
 
-	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, programClip.clipId)).limit(1)
-	if (!clip) notFound()
+    const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, programClip.clipId)).limit(1)
+    if (!clip) notFound()
 
-	const [dbTemplate] = await db.select().from(schema.templates).where(eq(schema.templates.id, clip.templateId)).limit(1)
-	if (!dbTemplate) notFound()
+    const [dbTemplate] = await db.select().from(schema.templates).where(eq(schema.templates.id, clip.templateId)).limit(1)
+    if (!dbTemplate) notFound()
 
-	const dataJson = (clip.dataJson ?? {}) as Record<string, string>
+    const dataJson = (clip.dataJson ?? {}) as Record<string, string>
 
-	return <RenderScene templateSlug={dbTemplate.slug} data={dataJson} />
+    return <RenderScene templateSlug={dbTemplate.slug} data={dataJson} />
 }

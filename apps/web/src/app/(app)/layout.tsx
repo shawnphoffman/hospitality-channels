@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, type ReactElement, type ReactNode } from 'react'
 import Link from 'next/link'
 
 const SIDEBAR_KEY = 'sidebar-collapsed'
@@ -41,7 +41,7 @@ const iconProps = {
 	strokeLinejoin: 'round' as const,
 }
 
-type NavItem = { type: 'link'; href: string; label: string; icon: JSX.Element } | { type: 'separator' }
+type NavItem = { type: 'link'; href: string; label: string; icon: ReactElement } | { type: 'separator' }
 
 const navItems: NavItem[] = [
 	{
@@ -188,18 +188,35 @@ function SupportModal({ open, onClose }: { open: boolean; onClose: () => void })
 				className="relative w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
 				onClick={e => e.stopPropagation()}
 			>
-				<button
-					onClick={onClose}
-					className="absolute right-3 top-3 rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300"
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+				<button onClick={onClose} className="absolute right-3 top-3 rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width={16}
+						height={16}
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth={2}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					>
 						<line x1="18" y1="6" x2="6" y2="18" />
 						<line x1="6" y1="6" x2="18" y2="18" />
 					</svg>
 				</button>
 
 				<div className="mb-4 flex items-center gap-2.5">
-					<svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width={22}
+						height={22}
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="#f59e0b"
+						strokeWidth={2}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					>
 						<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
 					</svg>
 					<h2 className="text-lg font-bold text-white">Support the Trail</h2>
@@ -219,7 +236,18 @@ function SupportModal({ open, onClose }: { open: boolean; onClose: () => void })
 						<p className="font-medium text-white">Pacific Crest Trail Association</p>
 						<p className="text-sm text-slate-500">Protecting the PCT from Mexico to Canada</p>
 					</div>
-					<svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-slate-500">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width={14}
+						height={14}
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth={2}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						className="shrink-0 text-slate-500"
+					>
 						<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
 						<polyline points="15 3 21 3 21 9" />
 						<line x1="10" y1="14" x2="21" y2="3" />
@@ -258,7 +286,9 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 	return (
 		<>
 			<SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
-			<nav className={`flex shrink-0 flex-col overflow-hidden border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
+			<nav
+				className={`flex shrink-0 flex-col overflow-hidden border-r border-slate-800 bg-slate-900 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}
+			>
 				<div className="flex h-14 shrink-0 items-center overflow-hidden px-2">
 					{collapsed ? (
 						<button
@@ -318,7 +348,17 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 						title={collapsed ? 'Support' : undefined}
 					>
 						<span className="shrink-0">
-							<svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width={18}
+								height={18}
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
 								<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
 							</svg>
 						</span>

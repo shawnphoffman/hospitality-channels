@@ -6,13 +6,14 @@ import { getTemplateRegistry } from '@hospitality-channels/templates'
 import { CreateClipForm } from './form'
 import type { ComposableLayout } from '@hospitality-channels/content-model'
 
-export default async function NewClipPage({ searchParams }: { searchParams: { template?: string } }) {
-	const db = await getDb()
-	const templates = getTemplateRegistry()
-	const dbTemplates = await db.select().from(schema.templates)
+export default async function NewClipPage(props: { searchParams: Promise<{ template?: string }> }) {
+    const searchParams = await props.searchParams;
+    const db = await getDb()
+    const templates = getTemplateRegistry()
+    const dbTemplates = await db.select().from(schema.templates)
 
-	// Built-in templates
-	const builtinOptions = templates.map(t => {
+    // Built-in templates
+    const builtinOptions = templates.map(t => {
 		const dbMatch = dbTemplates.find(dt => dt.slug === t.slug)
 		return {
 			slug: t.slug,
@@ -32,11 +33,11 @@ export default async function NewClipPage({ searchParams }: { searchParams: { te
 		}
 	})
 
-	// Composable templates
-	const composableDbTemplates = dbTemplates.filter(
+    // Composable templates
+    const composableDbTemplates = dbTemplates.filter(
 		t => (t as Record<string, unknown>).type === 'composable'
 	)
-	const composableOptions = composableDbTemplates.map(t => {
+    const composableOptions = composableDbTemplates.map(t => {
 		const layoutJson = (t as Record<string, unknown>).layoutJson as ComposableLayout | null
 		const sampleData = layoutJson?.sampleData ?? {}
 		const fields = layoutJson
@@ -74,10 +75,10 @@ export default async function NewClipPage({ searchParams }: { searchParams: { te
 		}
 	})
 
-	const templateOptions = [...composableOptions, ...builtinOptions]
-	const preselectedSlug = searchParams.template ?? null
+    const templateOptions = [...composableOptions, ...builtinOptions]
+    const preselectedSlug = searchParams.template ?? null
 
-	return (
+    return (
 		<div>
 			<h2 className="mb-6 text-2xl font-bold text-white">Create New Clip</h2>
 			<CreateClipForm templates={templateOptions} preselectedTemplate={preselectedSlug} />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
 	formatDuration,
@@ -359,12 +360,12 @@ export function ProgramEditor({
 					>
 						{saving ? 'Saving...' : 'Save'}
 					</button>
-					<a
+					<Link
 						href="/programs"
 						className="w-full rounded-lg border border-slate-700 px-4 py-2 text-center text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white md:w-auto"
 					>
 						Cancel
-					</a>
+					</Link>
 					<button
 						onClick={handleDelete}
 						disabled={saving}

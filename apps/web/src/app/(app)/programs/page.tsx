@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { getDb, schema } from '@/db'
 
 export default async function ProgramsListPage() {
@@ -45,22 +46,22 @@ export default async function ProgramsListPage() {
 					<h2 className="text-2xl font-bold text-white">Programs</h2>
 					<p className="mt-1 text-sm text-slate-500">Compose multiple clips with audio into a single rendered video</p>
 				</div>
-				<a
+				<Link
 					href="/programs/new"
 					className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
 				>
 					New Program
-				</a>
+				</Link>
 			</div>
 			{programsWithDetails.length === 0 ? (
 				<div className="rounded-xl border border-dashed border-slate-700 p-12 text-center">
 					<p className="text-slate-400">No programs yet. Create one to compose clips together.</p>
-					<a
+					<Link
 						href="/programs/new"
 						className="mt-4 inline-block rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-500"
 					>
 						Create Program
-					</a>
+					</Link>
 				</div>
 			) : (
 				<div className="space-y-3">

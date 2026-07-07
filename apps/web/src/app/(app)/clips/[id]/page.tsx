@@ -7,22 +7,23 @@ import { notFound } from 'next/navigation'
 import { ClipEditor } from './clip-editor'
 import type { ComposableLayout } from '@hospitality-channels/content-model'
 
-export default async function ClipPage({ params }: { params: { id: string } }) {
-	const db = await getDb()
-	const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
+export default async function ClipPage(props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const db = await getDb()
+    const [clip] = await db.select().from(schema.clips).where(eq(schema.clips.id, params.id)).limit(1)
 
-	if (!clip) notFound()
+    if (!clip) notFound()
 
-	const [dbTemplate] = await db.select().from(schema.templates).where(eq(schema.templates.id, clip.templateId)).limit(1)
+    const [dbTemplate] = await db.select().from(schema.templates).where(eq(schema.templates.id, clip.templateId)).limit(1)
 
-	if (!dbTemplate) notFound()
+    if (!dbTemplate) notFound()
 
-	const templateType = (dbTemplate as Record<string, unknown>).type as string | undefined
-	const layoutJson = (dbTemplate as Record<string, unknown>).layoutJson as ComposableLayout | null | undefined
+    const templateType = (dbTemplate as Record<string, unknown>).type as string | undefined
+    const layoutJson = (dbTemplate as Record<string, unknown>).layoutJson as ComposableLayout | null | undefined
 
-	let fields: Array<{ key: string; label: string; type: string; default: unknown; required?: boolean }>
+    let fields: Array<{ key: string; label: string; type: string; default: unknown; required?: boolean }>
 
-	if (templateType === 'composable' && layoutJson) {
+    if (templateType === 'composable' && layoutJson) {
 		const sampleData = layoutJson.sampleData ?? {}
 		// Derive fields from enabled sections in the layout
 		fields = [
@@ -50,16 +51,16 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
 		fields = (matchedTemplate?.schema?.fields ?? []) as typeof fields
 	}
 
-	const registryTemplate = getTemplateBySlug(dbTemplate.slug)
+    const registryTemplate = getTemplateBySlug(dbTemplate.slug)
 
-	// Find programs that include this clip
-	const programClips = await db.select().from(schema.programClips).where(eq(schema.programClips.clipId, clip.id))
+    // Find programs that include this clip
+    const programClips = await db.select().from(schema.programClips).where(eq(schema.programClips.clipId, clip.id))
 
-	const programIds = programClips.map(pc => pc.programId)
-	const allPrograms = programIds.length > 0 ? await db.select().from(schema.programs) : []
-	const clipPrograms = allPrograms.filter(p => programIds.includes(p.id)).map(p => ({ id: p.id, title: p.title }))
+    const programIds = programClips.map(pc => pc.programId)
+    const allPrograms = programIds.length > 0 ? await db.select().from(schema.programs) : []
+    const clipPrograms = allPrograms.filter(p => programIds.includes(p.id)).map(p => ({ id: p.id, title: p.title }))
 
-	return (
+    return (
 		<ClipEditor
 			clip={{
 				id: clip.id,
