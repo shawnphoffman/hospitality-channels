@@ -131,6 +131,34 @@ export const programAudioTracks = sqliteTable('program_audio_tracks', {
 	durationSec: real('duration_sec'),
 })
 
+// --- Tags ---
+
+export const tags = sqliteTable('tags', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull().unique(),
+	createdAt: text('created_at').notNull(),
+})
+
+export const programTags = sqliteTable('program_tags', {
+	id: text('id').primaryKey(),
+	programId: text('program_id')
+		.notNull()
+		.references(() => programs.id),
+	tagId: text('tag_id')
+		.notNull()
+		.references(() => tags.id),
+})
+
+export const clipTags = sqliteTable('page_tags', {
+	id: text('id').primaryKey(),
+	clipId: text('page_id')
+		.notNull()
+		.references(() => clips.id),
+	tagId: text('tag_id')
+		.notNull()
+		.references(() => tags.id),
+})
+
 export const channelDefinitions = sqliteTable('channel_definitions', {
 	id: text('id').primaryKey(),
 	tunarrChannelId: text('tunarr_channel_id'),

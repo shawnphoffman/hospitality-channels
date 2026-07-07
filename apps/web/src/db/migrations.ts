@@ -227,6 +227,30 @@ export const MIGRATIONS: Migration[] = [
 			await addColumnIfMissing(client, 'published_artifacts', 'sequence_number', 'INTEGER')
 		},
 	},
+	{
+		// One shared tag vocabulary across content types, joined through
+		// per-entity junction tables.
+		id: '0003_tags',
+		run: async client => {
+			await client.execute(`CREATE TABLE IF NOT EXISTS tags (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
+      )`)
+			await client.execute(`CREATE TABLE IF NOT EXISTS program_tags (
+        id TEXT PRIMARY KEY,
+        program_id TEXT NOT NULL REFERENCES programs(id),
+        tag_id TEXT NOT NULL REFERENCES tags(id),
+        UNIQUE(program_id, tag_id)
+      )`)
+			await client.execute(`CREATE TABLE IF NOT EXISTS page_tags (
+        id TEXT PRIMARY KEY,
+        page_id TEXT NOT NULL REFERENCES pages(id),
+        tag_id TEXT NOT NULL REFERENCES tags(id),
+        UNIQUE(page_id, tag_id)
+      )`)
+		},
+	},
 ]
 
 /**

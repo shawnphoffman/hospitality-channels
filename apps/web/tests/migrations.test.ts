@@ -37,7 +37,19 @@ describe('runMigrations', () => {
 		expect(applied).toEqual(MIGRATIONS.map(m => m.id))
 
 		const tables = await tableNames(client)
-		for (const table of ['templates', 'pages', 'assets', 'publish_profiles', 'published_artifacts', 'jobs', 'settings', 'programs']) {
+		for (const table of [
+			'templates',
+			'pages',
+			'assets',
+			'publish_profiles',
+			'published_artifacts',
+			'jobs',
+			'settings',
+			'programs',
+			'tags',
+			'program_tags',
+			'page_tags',
+		]) {
 			expect(tables.has(table), `missing table ${table}`).toBe(true)
 		}
 		expect((await columnNames(client, 'jobs')).has('attempts')).toBe(true)
