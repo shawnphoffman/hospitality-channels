@@ -283,16 +283,28 @@ export async function updateChannelProgramming(
 	program: TunarrProgram,
 	mode: 'append' | 'replace'
 ): Promise<void> {
-	const programs = [program]
-	const lineup = [{ type: 'index' as const, index: 0 }]
+	// Tunarr's manual programming request takes a `lineup` of condensed channel
+	// programs, each a discriminated union on `type` (content/custom/filler/
+	// redirect/flex). A played file is a `content` item that references the
+	// program by its persisted id (Tunarr inserts this straight into the
+	// channel_programs table as the program uuid) plus a duration in ms. The id
+	// must be the uuid from the media-libraries programs endpoint, not the
+	// external uniqueId.
+	if (!program.id) {
+		throw new Error('Cannot push program to Tunarr: matched program is missing an id')
+	}
+	if (typeof program.duration !== 'number') {
+		throw new Error('Cannot push program to Tunarr: matched program is missing a duration')
+	}
 
-	logger.info('Updating channel programming', { channelId, mode, programCount: programs.length })
+	const lineup = [{ type: 'content' as const, id: program.id, duration: program.duration }]
+
+	logger.info('Updating channel programming', { channelId, mode, programId: program.id })
 
 	await tunarrFetch(tunarrUrl, `/channels/${channelId}/programming`, {
 		method: 'POST',
 		body: JSON.stringify({
 			type: 'manual',
-			programs,
 			lineup,
 			append: mode === 'append',
 		}),
