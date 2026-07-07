@@ -120,7 +120,7 @@ export async function scanAndFindProgram(
 	externalKey: string,
 	opts?: { mediaSourceId?: string; libraryId?: string }
 ): Promise<TunarrProgram | null> {
-	let sourceId: string | undefined = opts?.mediaSourceId
+	const sourceId: string | undefined = opts?.mediaSourceId
 	let libraryId: string | undefined = opts?.libraryId
 
 	if (sourceId && libraryId) {

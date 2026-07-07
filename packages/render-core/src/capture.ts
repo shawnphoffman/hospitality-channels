@@ -78,7 +78,7 @@ export async function capturePageVideo(options: CaptureOptions): Promise<Capture
 
 		const page = await ctx.newPage()
 		page.addInitScript(() => {
-			;(window as unknown as { __RENDER_MODE__: boolean }).__RENDER_MODE__ = true
+			(window as unknown as { __RENDER_MODE__: boolean }).__RENDER_MODE__ = true
 		})
 
 		await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 })
