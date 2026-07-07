@@ -43,7 +43,7 @@ export function SettingsForm({ initialSettings, initialProfiles }: SettingsFormP
 
 			<PublishProfilesSection initialProfiles={initialProfiles} />
 
-			<TunarrSettings settings={settings} update={update} setSettings={setSettings} setSaved={setSaved} />
+			<TunarrSettings settings={settings} update={update} setSettings={setSettings} setSaved={setSaved} profiles={initialProfiles} />
 
 			<div className="flex items-center gap-3">
 				<button

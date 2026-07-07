@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { eq } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
 import { deriveProgramStatuses } from '@/lib/program-status'
 import { loadAllEntityTags } from '@/lib/tags'
@@ -7,16 +8,24 @@ import { ProgramsSplitPane, type ProgramListItem } from './programs-split-pane'
 
 export default async function ProgramsListPage() {
 	const db = await getDb()
-	const [allPrograms, allProgramClips, allAudioTracks, allClips, allAssets, programStatuses, entityTags, profiles] = await Promise.all([
-		db.select().from(schema.programs),
-		db.select().from(schema.programClips),
-		db.select().from(schema.programAudioTracks),
-		db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips),
-		db.select({ id: schema.assets.id, name: schema.assets.name, originalPath: schema.assets.originalPath }).from(schema.assets),
-		deriveProgramStatuses(db),
-		loadAllEntityTags(db),
-		db.select({ id: schema.publishProfiles.id, name: schema.publishProfiles.name }).from(schema.publishProfiles),
-	])
+	const [allPrograms, allProgramClips, allAudioTracks, allClips, allAssets, programStatuses, entityTags, profiles, publishProfileSetting] =
+		await Promise.all([
+			db.select().from(schema.programs),
+			db.select().from(schema.programClips),
+			db.select().from(schema.programAudioTracks),
+			db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips),
+			db.select({ id: schema.assets.id, name: schema.assets.name, originalPath: schema.assets.originalPath }).from(schema.assets),
+			deriveProgramStatuses(db),
+			loadAllEntityTags(db),
+			db.select({ id: schema.publishProfiles.id, name: schema.publishProfiles.name }).from(schema.publishProfiles),
+			db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_publish_profile_id')).limit(1),
+		])
+
+	// Channel publishes go through the profile designated as the Tunarr export
+	// location in Settings, so the file lands where Tunarr indexes. Fall back to
+	// the first profile if none is designated yet.
+	const designatedProfileId = publishProfileSetting[0]?.value ?? null
+	const channelProfile = (designatedProfileId ? profiles.find(p => p.id === designatedProfileId) : undefined) ?? profiles[0] ?? null
 
 	const clipTitleById = new Map(allClips.map(c => [c.id, c.title]))
 	const assetById = new Map(allAssets.map(a => [a.id, a]))
@@ -63,5 +72,5 @@ export default async function ProgramsListPage() {
 			return a.title.localeCompare(b.title)
 		})
 
-	return <ProgramsSplitPane programs={items} defaultProfile={profiles[0] ?? null} />
+	return <ProgramsSplitPane programs={items} defaultProfile={channelProfile} />
 }

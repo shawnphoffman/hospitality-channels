@@ -20,6 +20,7 @@ interface TunarrSettingsProps {
 	update: (key: string, value: string) => void
 	setSettings: Dispatch<SetStateAction<Record<string, string>>>
 	setSaved: (saved: boolean) => void
+	profiles: { id: string; name: string; exportPath: string }[]
 }
 
 interface DiagnosticStep {
@@ -29,7 +30,7 @@ interface DiagnosticStep {
 	suggestion?: string
 }
 
-export function TunarrSettings({ settings, update, setSettings, setSaved }: TunarrSettingsProps) {
+export function TunarrSettings({ settings, update, setSettings, setSaved, profiles }: TunarrSettingsProps) {
 	const [testing, setTesting] = useState(false)
 	const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 	const [diagnosing, setDiagnosing] = useState(false)
@@ -193,6 +194,26 @@ export function TunarrSettings({ settings, update, setSettings, setSaved }: Tuna
 						className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
 					/>
 					<p className="mt-1 text-xs text-slate-500">Filesystem path where Tunarr can access exported videos</p>
+				</div>
+
+				<div>
+					<label className="block text-sm text-slate-400">Channel publish profile</label>
+					<select
+						value={settings.tunarr_publish_profile_id ?? ''}
+						onChange={e => update('tunarr_publish_profile_id', e.target.value)}
+						className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+					>
+						<option value="">First profile (default)</option>
+						{profiles.map(p => (
+							<option key={p.id} value={p.id}>
+								{p.name} ({p.exportPath})
+							</option>
+						))}
+					</select>
+					<p className="mt-1 text-xs text-slate-500">
+						Export location used when publishing a program to a channel. Its path should match the Tunarr media path above so Tunarr can
+						index the file.
+					</p>
 				</div>
 
 				{/* Media Library Selection */}

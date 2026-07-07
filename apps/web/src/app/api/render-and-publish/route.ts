@@ -39,6 +39,18 @@ export async function POST(request: Request) {
 	const [nfoSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'generate_nfo')).limit(1)
 	const generateNfo = nfoSetting?.value === 'true'
 
+	// Channel pushes must render/export through the profile designated as the
+	// Tunarr export location in Settings, so the file lands in the directory
+	// Tunarr indexes, regardless of which profile the caller passed.
+	let effectiveProfile = profile
+	if (body.pushChannelId) {
+		const [designated] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_publish_profile_id')).limit(1)
+		if (designated?.value) {
+			const [tunarrProfile] = await db.select().from(schema.publishProfiles).where(eq(schema.publishProfiles.id, designated.value)).limit(1)
+			if (tunarrProfile) effectiveProfile = tunarrProfile
+		}
+	}
+
 	// Program render-publish
 	if (programId) {
 		const [program] = await db.select().from(schema.programs).where(eq(schema.programs.id, programId)).limit(1)
@@ -70,7 +82,7 @@ export async function POST(request: Request) {
 			type: 'render-program-publish',
 			clipId: null,
 			programId,
-			profileId,
+			profileId: effectiveProfile.id,
 			payload: {
 				durationSec: durationSec ?? computedDuration,
 				programTitle: program.title,
@@ -84,9 +96,9 @@ export async function POST(request: Request) {
 					position: t.position,
 					durationSec: t.durationSec,
 				})),
-				exportPath: profile.exportPath,
-				fileNamingPattern: profile.fileNamingPattern,
-				outputFormat: profile.outputFormat,
+				exportPath: effectiveProfile.exportPath,
+				fileNamingPattern: effectiveProfile.fileNamingPattern,
+				outputFormat: effectiveProfile.outputFormat,
 				generateNfo,
 				transitionType: program.transitionType,
 				transitionSec: program.transitionSec,
