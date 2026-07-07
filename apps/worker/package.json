@@ -18,7 +18,7 @@
 		"@hospitality-channels/render-core": "workspace:*",
 		"@hospitality-channels/storage": "workspace:*",
 		"@libsql/client": "^0.14.0",
-		"drizzle-orm": "^0.36.4"
+		"drizzle-orm": "^0.45.2"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.1",
