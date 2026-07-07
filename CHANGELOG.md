@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.0.0](https://github.com/shawnphoffman/hospitality-channels/compare/v1.3.0...v2.0.0) (2026-07-07)
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** requires Node-side React 19 peer dependencies; no application-facing behavior change.
+
+### Features
+
+* **api:** validate request bodies and harden asset uploads ([b1724f9](https://github.com/shawnphoffman/hospitality-channels/commit/b1724f94e072f51ca2ea07925d595fdaff3e208b))
+* **db:** track schema migrations and adopt legacy databases ([793a7e1](https://github.com/shawnphoffman/hospitality-channels/commit/793a7e1195d12341871c6d704cce8e05f3848fb4))
+* **tunarr:** add step-by-step diagnostics to settings ([4ca318f](https://github.com/shawnphoffman/hospitality-channels/commit/4ca318f641fda736dda4766f5c2480e78f846bd1))
+* **web:** improve error surfacing, preview performance, and dedupe QR components ([4eb5904](https://github.com/shawnphoffman/hospitality-channels/commit/4eb5904e851109375d5bde8b19fa3cff6e8d6a79))
+* **worker:** recover stuck jobs, retry failures, and guard asset downloads ([df9cb3c](https://github.com/shawnphoffman/hospitality-channels/commit/df9cb3c6c7e78521ced312d7e6b7c3250d891e5a))
+
+### Bug Fixes
+
+* **deps:** bump drizzle-orm to 0.45.2 for SQL identifier escaping advisory ([047892a](https://github.com/shawnphoffman/hospitality-channels/commit/047892a33f286908f020a6b117a14f2961d7a15e))
+* **deps:** clear remaining drizzle-orm and postcss advisories ([66ccb79](https://github.com/shawnphoffman/hospitality-channels/commit/66ccb79fd17c95ee4b7055dbf779c505d824cc78))
+* **deps:** patch remaining advisories via tooling bumps and overrides ([ff59bd6](https://github.com/shawnphoffman/hospitality-channels/commit/ff59bd6aa7276facc0db5ffceedecaf9247e16aa))
+* **deps:** upgrade Next.js to 15 and React to 19 ([7fccffd](https://github.com/shawnphoffman/hospitality-channels/commit/7fccffde79431c6c5af2471589cc3bf3a23dd5b6))
+* **tunarr:** match programs across API shapes and stop pushes from hanging or failing silently ([9b23a01](https://github.com/shawnphoffman/hospitality-channels/commit/9b23a011303fa12bc330f7d0fd4e9628c0ef024f))
+
 ## [1.3.0](https://github.com/shawnphoffman/hospitality-channels/compare/v1.2.2...v1.3.0) (2026-04-23)
 
 ### Features
