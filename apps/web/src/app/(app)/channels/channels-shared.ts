@@ -10,6 +10,7 @@ export interface ChannelDef {
 	description: string | null
 	clipTitle: string | null
 	programTitle: string | null
+	programTags: string[]
 	latestArtifact: {
 		id: string
 		outputPath: string

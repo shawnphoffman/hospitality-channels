@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { eq } from 'drizzle-orm'
 import { getDb, schema } from '@/db'
+import { loadAllEntityTags } from '@/lib/tags'
 import { ChannelsClient } from './channels-client'
 
 export default async function ChannelsPage() {
@@ -11,6 +12,7 @@ export default async function ChannelsPage() {
 	const programs = await db.select({ id: schema.programs.id, title: schema.programs.title }).from(schema.programs)
 	const [tunarrSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_url')).limit(1)
 	const tunarrConfigured = !!tunarrSetting?.value
+	const entityTags = await loadAllEntityTags(db)
 
 	// Find latest artifact per clip/program (from any profile)
 	const allArtifacts = await db.select().from(schema.publishedArtifacts)
@@ -39,6 +41,7 @@ export default async function ChannelsPage() {
 				...ch,
 				clipTitle: clip?.title ?? null,
 				programTitle: program?.title ?? null,
+				programTags: ch.programId ? (entityTags.programs.get(ch.programId) ?? []) : [],
 				latestArtifact: artifact,
 			}
 		})

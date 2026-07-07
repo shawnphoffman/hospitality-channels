@@ -1,28 +1,97 @@
 export const dynamic = 'force-dynamic'
 
-import Link from 'next/link'
 import { getDb, schema } from '@/db'
-import { DuplicateButton } from '@/components/duplicate-button'
+import { loadAllEntityTags } from '@/lib/tags'
+import { ProgramsSplitPane, type ProgramListItem } from './programs-split-pane'
 
 export default async function ProgramsListPage() {
 	const db = await getDb()
-	const allPrograms = await db.select().from(schema.programs)
-	const allProgramClips = await db.select().from(schema.programClips)
-	const allAudioTracks = await db.select().from(schema.programAudioTracks)
+	const [allPrograms, allProgramClips, allAudioTracks, allClips, allAssets, artifacts, channelDefs, jobs, entityTags] = await Promise.all([
+		db.select().from(schema.programs),
+		db.select().from(schema.programClips),
+		db.select().from(schema.programAudioTracks),
+		db.select({ id: schema.clips.id, title: schema.clips.title }).from(schema.clips),
+		db.select({ id: schema.assets.id, name: schema.assets.name, originalPath: schema.assets.originalPath }).from(schema.assets),
+		db
+			.select({
+				id: schema.publishedArtifacts.id,
+				programId: schema.publishedArtifacts.programId,
+				publishedAt: schema.publishedArtifacts.publishedAt,
+			})
+			.from(schema.publishedArtifacts),
+		db.select().from(schema.channelDefinitions),
+		db
+			.select({
+				programId: schema.jobs.programId,
+				status: schema.jobs.status,
+				createdAt: schema.jobs.createdAt,
+				outputPath: schema.jobs.outputPath,
+			})
+			.from(schema.jobs),
+		loadAllEntityTags(db),
+	])
+
+	const clipTitleById = new Map(allClips.map(c => [c.id, c.title]))
+	const assetById = new Map(allAssets.map(a => [a.id, a]))
+	const artifactProgramById = new Map(artifacts.map(a => [a.id, a.programId]))
+
+	// Channel bindings may reference a program directly or through an artifact
+	const channelByProgram = new Map<string, string>()
+	for (const cd of channelDefs) {
+		if (!cd.enabled) continue
+		const programId = cd.programId ?? (cd.artifactId ? artifactProgramById.get(cd.artifactId) : null)
+		if (programId && !channelByProgram.has(programId)) {
+			channelByProgram.set(programId, `Ch ${cd.channelNumber} · ${cd.channelName}`)
+		}
+	}
+
+	const artifactsByProgram = new Map<string, number>()
+	for (const a of artifacts) {
+		if (a.programId) artifactsByProgram.set(a.programId, (artifactsByProgram.get(a.programId) ?? 0) + 1)
+	}
+
+	// Latest job per program decides failed/rendered when nothing is published
+	const latestJobByProgram = new Map<string, { status: string; createdAt: string; outputPath: string | null }>()
+	for (const j of jobs) {
+		if (!j.programId) continue
+		const prev = latestJobByProgram.get(j.programId)
+		if (!prev || j.createdAt > prev.createdAt) latestJobByProgram.set(j.programId, j)
+	}
 
 	const EMOJI_RE = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
 
-	const programsWithDetails = allPrograms
+	const items: ProgramListItem[] = allPrograms
 		.map(p => {
-			const clips = allProgramClips.filter(pc => pc.programId === p.id)
-			const tracks = allAudioTracks.filter(t => t.programId === p.id)
+			const memberships = allProgramClips.filter(pc => pc.programId === p.id).sort((a, b) => a.position - b.position)
+			const tracks = allAudioTracks.filter(t => t.programId === p.id).sort((a, b) => a.position - b.position)
 			const audioDuration = tracks.reduce((sum, t) => sum + (t.durationSec ?? 0), 0)
 			const computedDuration = p.durationMode === 'manual' ? (p.manualDurationSec ?? 0) : audioDuration
+
+			const channelLabel = channelByProgram.get(p.id) ?? null
+			const latestJob = latestJobByProgram.get(p.id)
+			let status: ProgramListItem['status']
+			if (channelLabel) status = 'onair'
+			else if ((artifactsByProgram.get(p.id) ?? 0) > 0) status = 'published'
+			else if (latestJob?.status === 'failed') status = 'failed'
+			else if (latestJob?.status === 'completed' && latestJob.outputPath) status = 'rendered'
+			else status = 'draft'
+
 			return {
-				...p,
-				clipCount: clips.length,
-				audioTrackCount: tracks.length,
-				computedDuration,
+				id: p.id,
+				title: p.title,
+				slug: p.slug,
+				description: p.description ?? '',
+				clips: memberships.map(m => ({ id: m.clipId, title: clipTitleById.get(m.clipId) ?? 'Unknown clip' })),
+				tracks: tracks.map(t => {
+					const asset = t.assetId ? assetById.get(t.assetId) : undefined
+					const name = asset?.name || (asset?.originalPath ?? t.audioUrl ?? 'audio').split('/').pop() || 'audio'
+					return { name, durationSec: t.durationSec ?? null }
+				}),
+				durationSec: computedDuration,
+				status,
+				channelLabel,
+				updatedAt: p.updatedAt,
+				tags: entityTags.programs.get(p.id) ?? [],
 			}
 		})
 		.sort((a, b) => {
@@ -33,63 +102,5 @@ export default async function ProgramsListPage() {
 			return a.title.localeCompare(b.title)
 		})
 
-	function formatDuration(sec: number): string {
-		if (sec <= 0) return '—'
-		const m = Math.floor(sec / 60)
-		const s = Math.round(sec % 60)
-		return `${m}:${s.toString().padStart(2, '0')}`
-	}
-
-	return (
-		<div>
-			<div className="mb-6 flex items-center justify-between">
-				<div>
-					<h2 className="text-2xl font-bold text-white">Programs</h2>
-					<p className="mt-1 text-sm text-slate-500">Compose multiple clips with audio into a single rendered video</p>
-				</div>
-				<Link
-					href="/programs/new"
-					className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-				>
-					New Program
-				</Link>
-			</div>
-			{programsWithDetails.length === 0 ? (
-				<div className="rounded-xl border border-dashed border-slate-700 p-12 text-center">
-					<p className="text-slate-400">No programs yet. Create one to compose clips together.</p>
-					<Link
-						href="/programs/new"
-						className="mt-4 inline-block rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-500"
-					>
-						Create Program
-					</Link>
-				</div>
-			) : (
-				<div className="space-y-3">
-					{programsWithDetails.map(program => (
-						<div
-							key={program.id}
-							className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-700"
-						>
-							<a href={`/programs/${program.id}`} className="min-w-0 flex-1">
-								<h3 className="font-semibold text-white">{program.title}</h3>
-								<p className="mt-0.5 text-xs text-slate-400">{program.slug}</p>
-								<div className="mt-1.5 flex items-center gap-4 text-xs text-slate-500">
-									<span>
-										{program.clipCount} clip{program.clipCount !== 1 ? 's' : ''}
-									</span>
-									<span>
-										{program.audioTrackCount} track{program.audioTrackCount !== 1 ? 's' : ''}
-									</span>
-									<span>{formatDuration(program.computedDuration)}</span>
-								</div>
-								{program.description && <p className="mt-1.5 line-clamp-1 text-xs text-slate-400">{program.description}</p>}
-							</a>
-							<DuplicateButton endpoint={`/api/programs/${program.id}/duplicate`} />
-						</div>
-					))}
-				</div>
-			)}
-		</div>
-	)
+	return <ProgramsSplitPane programs={items} />
 }

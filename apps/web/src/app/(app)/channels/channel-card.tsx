@@ -1,5 +1,6 @@
 'use client'
 
+import { TagChip } from '@/components/tags/tag-chip'
 import { formatDuration, type ChannelDef, type ClipInfo, type ProgramInfo, type ProgramInfoItem } from './channels-shared'
 
 interface ChannelCardProps {
@@ -89,6 +90,13 @@ export function ChannelCard({
 					</span>
 				)}
 			</p>
+			{ch.programTags.length > 0 && (
+				<div className="mt-1.5 flex flex-wrap gap-1.5">
+					{ch.programTags.map(t => (
+						<TagChip key={t} name={t} />
+					))}
+				</div>
+			)}
 			<p className="mt-1.5 flex items-center gap-1.5 text-xs">
 				{(ch.programTitle || ch.clipTitle) && ch.latestArtifact ? (
 					<>
