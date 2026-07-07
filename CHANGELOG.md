@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.0](https://github.com/shawnphoffman/hospitality-channels/compare/v2.1.0...v2.2.0) (2026-07-07)
+
+### Features
+
+* **db:** add job pipeline steps and asset tags ([302bcaf](https://github.com/shawnphoffman/hospitality-channels/commit/302bcaf868381a43b6bd0e0a2c2ae08f2b2d19e9))
+* one-click publish-to-channel pipeline with live step tracking ([be2b82e](https://github.com/shawnphoffman/hospitality-channels/commit/be2b82eee6e06b20ba9b9459d872b1f30bb0af13))
+* **web:** consolidate Images, Audio, and Videos into one tagged Media page ([8fe1b9f](https://github.com/shawnphoffman/hospitality-channels/commit/8fe1b9f806c2eb546d25f5ae8dba86bb35eaae30))
+* **web:** reframe Publish as Exports and make the dashboard pipeline-first ([1d58b91](https://github.com/shawnphoffman/hospitality-channels/commit/1d58b91ad19a9262e722fb9ad40b77e9eb621769))
+
 ## [2.1.0](https://github.com/shawnphoffman/hospitality-channels/compare/v2.0.0...v2.1.0) (2026-07-07)
 
 ### Features
