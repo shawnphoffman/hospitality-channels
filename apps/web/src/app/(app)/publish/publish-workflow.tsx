@@ -154,7 +154,7 @@ export function PublishWorkflow({
 			if (res.ok) {
 				const data = await res.json()
 				const channelName = tunarrChannels.find(c => c.id === selectedChannelId)?.name ?? 'channel'
-				setPushResult({ ok: true, message: `Pushed "${data.title}" to ${channelName}` })
+				setPushResult({ ok: true, message: `Pushed "${data.title}" to ${channelName}${data.warning ? `. Note: ${data.warning}` : ''}` })
 			} else {
 				const data = await res.json().catch(() => ({}))
 				setPushResult({ ok: false, message: data.error || 'Push failed' })

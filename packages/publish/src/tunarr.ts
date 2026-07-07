@@ -1,6 +1,31 @@
 import { createLogger } from '@hospitality-channels/common'
+import { findProgramByKey, sampleExternalKeys } from './tunarr-paths.js'
 
 const logger = createLogger('tunarr')
+
+/** Per-request time budget for Tunarr API calls. */
+const TUNARR_FETCH_TIMEOUT_MS = Math.max(1_000, Number(process.env.TUNARR_FETCH_TIMEOUT_MS) || 15_000)
+/** Total time to wait for a triggered scan to index a new file. */
+const TUNARR_SCAN_WAIT_MS = Math.max(10_000, Number(process.env.TUNARR_SCAN_WAIT_MS) || 75_000)
+
+/**
+ * fetch with a hard timeout and a single retry on network-level failures
+ * (connection refused, DNS, timeout). HTTP error statuses are not retried;
+ * they reach the caller so the real status can be reported.
+ */
+async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+	for (let attempt = 0; ; attempt++) {
+		try {
+			return await fetch(url, { ...init, signal: AbortSignal.timeout(TUNARR_FETCH_TIMEOUT_MS) })
+		} catch (err) {
+			if (attempt >= 1) {
+				const reason = err instanceof Error && err.name === 'TimeoutError' ? `timed out after ${TUNARR_FETCH_TIMEOUT_MS}ms` : String(err)
+				throw new Error(`Tunarr unreachable (${reason}). Check that the Tunarr URL is correct and Tunarr is running.`)
+			}
+			logger.warn('Tunarr request failed, retrying once', { url, error: String(err) })
+		}
+	}
+}
 
 export interface TunarrChannel {
 	id: string
@@ -11,7 +36,9 @@ export interface TunarrChannel {
 	duration?: number
 }
 
-// Program as returned by Tunarr (flexible to handle various fields)
+// Program as returned by Tunarr (flexible to handle various fields).
+// Older versions return flat objects with externalKey; newer versions wrap
+// the details in a nested `program` object whose path field is externalId.
 export interface TunarrProgram {
 	type: string
 	subtype?: string
@@ -19,13 +46,46 @@ export interface TunarrProgram {
 	uniqueId?: string
 	id?: string
 	externalKey?: string
+	externalId?: string
 	externalSourceType?: string
 	externalSourceName?: string
 	externalSourceId?: string
 	externalIds?: unknown[]
 	duration?: number
 	title?: string
+	program?: TunarrProgram
 	[key: string]: unknown
+}
+
+/** Extracts the file path Tunarr indexed a program under, across API shapes. */
+export function getProgramPath(entry: TunarrProgram): string | undefined {
+	return entry.externalKey ?? entry.program?.externalId ?? entry.program?.externalKey ?? entry.externalId
+}
+
+export interface ProgramMetadata {
+	title: string
+	summary?: string | null
+	description?: string | null
+	durationMs?: number | null
+	icon?: string | null
+}
+
+/**
+ * Applies our metadata onto a program entry before pushing it to a channel,
+ * writing to the nested program object when present (newer Tunarr) and the
+ * top level otherwise (older Tunarr). Duration lives on both levels in the
+ * wrapped shape.
+ */
+export function enrichProgram(entry: TunarrProgram, meta: ProgramMetadata): void {
+	const target = entry.program ?? entry
+	target.title = meta.title
+	if (meta.summary) target.summary = meta.summary
+	if (meta.description) target.description = meta.description
+	if (meta.icon) target.icon = meta.icon
+	if (meta.durationMs) {
+		target.duration = meta.durationMs
+		if (entry.program) entry.duration = meta.durationMs
+	}
 }
 
 interface CondensedProgramming {
@@ -42,7 +102,7 @@ async function tunarrFetch<T>(tunarrUrl: string, path: string, init?: RequestIni
 	if (init?.body) {
 		headers['Content-Type'] = 'application/json'
 	}
-	const res = await fetch(uncachedUrl, {
+	const res = await fetchWithTimeout(uncachedUrl, {
 		...init,
 		headers,
 	})
@@ -90,7 +150,7 @@ export async function scanMediaSource(tunarrUrl: string, sourceId: string, libra
 	const base = tunarrUrl.replace(/\/+$/, '')
 	const path = libraryId ? `/api/media-sources/${sourceId}/libraries/${libraryId}/scan` : `/api/media-sources/${sourceId}/scan`
 	const url = `${base}${path}?_t=${Date.now()}`
-	const res = await fetch(url, { method: 'POST' })
+	const res = await fetchWithTimeout(url, { method: 'POST' })
 	if (!res.ok) {
 		const text = await res.text().catch(() => '')
 		logger.warn('Media source scan failed', { sourceId, libraryId, status: res.status, body: text })
@@ -108,18 +168,34 @@ export async function getLibraryPrograms(tunarrUrl: string, libraryId: string): 
 	return tunarrFetch<TunarrProgram[]>(tunarrUrl, `/media-libraries/${libraryId}/programs`)
 }
 
+export interface ScanFindResult {
+	program: TunarrProgram | null
+	/** How the program was matched, when found. */
+	matchedBy?: 'exact' | 'basename'
+	/** When matched by basename only: the media path that would produce exact matches. */
+	suggestedMediaPath?: string
+	/** A few externalKeys from the library, to show what paths Tunarr actually has. */
+	samplePaths?: string[]
+	/** Why no program could be returned, when not found. */
+	failure?: 'no-media-source' | 'no-library' | 'not-indexed'
+}
+
 /**
  * Scan the media source that contains the given path, then search its library
- * for the program matching the externalKey. Returns the persisted program if found.
+ * for the program matching the externalKey.
  *
  * When mediaSourceId and libraryId are provided, uses those directly instead of
  * auto-discovering from the path. These come from the user's Tunarr settings.
+ *
+ * Matching is normalized (separators, trailing slashes) and falls back to a
+ * unique basename match, which recovers from a misconfigured Tunarr media
+ * path and reports the prefix that would have matched exactly.
  */
 export async function scanAndFindProgram(
 	tunarrUrl: string,
 	externalKey: string,
 	opts?: { mediaSourceId?: string; libraryId?: string }
-): Promise<TunarrProgram | null> {
+): Promise<ScanFindResult> {
 	const sourceId: string | undefined = opts?.mediaSourceId
 	let libraryId: string | undefined = opts?.libraryId
 
@@ -128,15 +204,18 @@ export async function scanAndFindProgram(
 		logger.info('Using configured media source and library', { sourceId, libraryId, externalKey })
 		await scanMediaSource(tunarrUrl, sourceId, libraryId)
 	} else {
-		// Auto-discover from path
+		// Auto-discover from path; fall back to a sole local source, since
+		// exports are always pushed through a local directory Tunarr mounts.
 		const sources = await listMediaSources(tunarrUrl)
-		const matching = sources.find(
-			s => s.paths?.some(p => externalKey.startsWith(p)) || s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
-		)
+		const localSources = sources.filter(s => s.type === 'local')
+		const matching =
+			sources.find(
+				s => s.paths?.some(p => externalKey.startsWith(p)) || s.libraries?.some(l => l.externalKey && externalKey.startsWith(l.externalKey))
+			) ?? (localSources.length === 1 ? localSources[0] : undefined)
 
 		if (!matching) {
 			logger.warn('No matching media source found for path', { externalKey, sourceCount: sources.length })
-			return null
+			return { program: null, failure: 'no-media-source' }
 		}
 
 		// Fetch full source details (list endpoint may not include full library data)
@@ -151,19 +230,13 @@ export async function scanAndFindProgram(
 		const matchingLibrary =
 			fullSource.libraries?.find(l => l.externalKey && externalKey.startsWith(l.externalKey)) ?? fullSource.libraries?.[0]
 
-		logger.info('Library lookup result', {
-			found: !!matchingLibrary,
-			rawLibrary: matchingLibrary ? JSON.stringify(matchingLibrary) : 'none',
-			externalKey,
-		})
-
 		libraryId = matchingLibrary ? getLibraryId(matchingLibrary) : undefined
 		if (!libraryId) {
 			logger.warn('No library with valid ID found in media source', {
 				sourceId: fullSource.id,
 				libraries: JSON.stringify(fullSource.libraries),
 			})
-			return null
+			return { program: null, failure: 'no-library' }
 		}
 
 		logger.info('Using library for program lookup', { libraryId, libraryName: matchingLibrary?.name })
@@ -172,15 +245,27 @@ export async function scanAndFindProgram(
 		await scanMediaSource(tunarrUrl, fullSource.id, libraryId)
 	}
 
-	// Poll for the program to appear (scan may take a moment)
-	for (let attempt = 0; attempt < 15; attempt++) {
-		await new Promise(resolve => setTimeout(resolve, 2000))
+	// Poll for the program to appear. Scans of large libraries can take a
+	// while, so back off gradually up to the total wait budget.
+	const deadline = Date.now() + TUNARR_SCAN_WAIT_MS
+	let delayMs = 2_000
+	let samplePaths: string[] = []
+	for (let attempt = 0; Date.now() < deadline; attempt++) {
+		await new Promise(resolve => setTimeout(resolve, Math.min(delayMs, Math.max(0, deadline - Date.now()))))
+		delayMs = Math.min(Math.round(delayMs * 1.5), 10_000)
 		try {
 			const programs = await getLibraryPrograms(tunarrUrl, libraryId)
-			const found = programs.find(p => p.externalKey === externalKey)
-			if (found) {
-				logger.info('Found indexed program', { externalKey, uniqueId: found.uniqueId, attempt })
-				return found
+			samplePaths = sampleExternalKeys(programs, 3, getProgramPath)
+			const match = findProgramByKey(programs, externalKey, getProgramPath)
+			if (match.program) {
+				logger.info('Found indexed program', {
+					externalKey,
+					uniqueId: match.program.uniqueId,
+					attempt,
+					matchedBy: match.matchedBy,
+					suggestedMediaPath: match.suggestedMediaPath,
+				})
+				return { program: match.program, matchedBy: match.matchedBy, suggestedMediaPath: match.suggestedMediaPath, samplePaths }
 			}
 			logger.info('Program not yet indexed, retrying...', { externalKey, attempt, totalPrograms: programs.length })
 		} catch (err) {
@@ -188,8 +273,8 @@ export async function scanAndFindProgram(
 		}
 	}
 
-	logger.warn('Program not found after scanning', { externalKey })
-	return null
+	logger.warn('Program not found after scanning', { externalKey, samplePaths })
+	return { program: null, failure: 'not-indexed', samplePaths }
 }
 
 export async function updateChannelProgramming(

@@ -325,7 +325,7 @@ export function ProgramEditor({
 			if (res.ok) {
 				const data = await res.json()
 				const chName = tunarrChannels.find(c => c.id === selectedChannelId)?.name ?? 'channel'
-				setPushResult({ ok: true, message: `Pushed "${data.title}" to ${chName}` })
+				setPushResult({ ok: true, message: `Pushed "${data.title}" to ${chName}${data.warning ? `. Note: ${data.warning}` : ''}` })
 			} else {
 				const data = await res.json().catch(() => ({}))
 				setPushResult({ ok: false, message: data.error || 'Push failed' })

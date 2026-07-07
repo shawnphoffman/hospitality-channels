@@ -253,7 +253,11 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 			})
 			if (res.ok) {
 				const data = await res.json()
-				setPushResult({ id: ch.id, ok: true, message: `Pushed "${data.title}" to ${ch.channelName}` })
+				setPushResult({
+					id: ch.id,
+					ok: true,
+					message: `Pushed "${data.title}" to ${ch.channelName}${data.warning ? `. Note: ${data.warning}` : ''}`,
+				})
 				// Refresh programming if expanded
 				if (expandedId === ch.id) {
 					setProgramming(prev => ({ ...prev }))

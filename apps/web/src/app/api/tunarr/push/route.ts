@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb, schema } from '@/db'
-import { updateChannelProgramming, scanAndFindProgram } from '@hospitality-channels/publish'
+import { updateChannelProgramming, scanAndFindProgram, buildExternalKey, enrichProgram } from '@hospitality-channels/publish'
 import { PATHS } from '@hospitality-channels/common'
 import path from 'node:path'
 import { parseJsonBody } from '@/lib/api-validation'
@@ -73,12 +73,7 @@ export async function POST(request: Request) {
 	// If the artifact is already in the Tunarr media path, use it directly.
 	// Otherwise, remap from the default export dir to the Tunarr media path.
 	const [mediaPathSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_path')).limit(1)
-	let externalKey = artifact.outputPath
-	if (mediaPathSetting?.value && !artifact.outputPath.startsWith(mediaPathSetting.value)) {
-		const exportDir = path.resolve(PATHS.exports)
-		const relativePath = path.relative(exportDir, artifact.outputPath)
-		externalKey = path.join(mediaPathSetting.value, relativePath)
-	}
+	const externalKey = buildExternalKey(artifact.outputPath, path.resolve(PATHS.exports), mediaPathSetting?.value)
 
 	// Load configured media source/library if available
 	const [mediaSourceSetting] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'tunarr_media_source_id')).limit(1)
@@ -86,32 +81,51 @@ export async function POST(request: Request) {
 
 	try {
 		// Scan the media source and find the indexed program matching this file
-		const program = await scanAndFindProgram(tunarrUrlSetting.value, externalKey, {
+		const result = await scanAndFindProgram(tunarrUrlSetting.value, externalKey, {
 			mediaSourceId: mediaSourceSetting?.value || undefined,
 			libraryId: librarySetting?.value || undefined,
 		})
-		if (!program) {
-			return NextResponse.json(
-				{ error: `File not found in Tunarr library after scanning. Make sure "${externalKey}" exists and is accessible to Tunarr.` },
-				{ status: 404 }
-			)
+		if (!result.program) {
+			let error: string
+			switch (result.failure) {
+				case 'no-media-source':
+					error = `No Tunarr media source covers "${externalKey}". Select a media source and library in Settings, or add one in Tunarr whose path contains your exports.`
+					break
+				case 'no-library':
+					error = 'The matched Tunarr media source has no usable library. Select a library in Settings.'
+					break
+				default:
+					error =
+						`Tunarr did not index "${externalKey}" after scanning.` +
+						(result.samplePaths?.length
+							? ` The library contains paths like ${result.samplePaths.map(p => `"${p}"`).join(', ')}; if your file is there under a different prefix, correct the Tunarr media path in Settings.`
+							: ' The library returned no programs; check that the export volume is mounted into Tunarr and the media path in Settings matches how Tunarr sees it.')
+			}
+			return NextResponse.json({ error }, { status: 404 })
 		}
+		const program = result.program
 
 		// Enrich the Tunarr program with our metadata
-		program.title = title
-		if (summary) program.summary = summary
-		if (description) program.description = description
-		if (durationSec) program.duration = Math.round(durationSec * 1000) // Tunarr uses milliseconds
+		let icon: string | null = null
 		if (iconAssetId) {
 			// Resolve icon asset path for Tunarr
 			const [iconAsset] = await db.select().from(schema.assets).where(eq(schema.assets.id, iconAssetId)).limit(1)
-			if (iconAsset?.originalPath) {
-				program.icon = iconAsset.originalPath
-			}
+			icon = iconAsset?.originalPath ?? null
 		}
+		enrichProgram(program, {
+			title,
+			summary,
+			description,
+			durationMs: durationSec ? Math.round(durationSec * 1000) : null, // Tunarr uses milliseconds
+			icon,
+		})
 
 		await updateChannelProgramming(tunarrUrlSetting.value, body.channelId, program, body.mode)
-		return NextResponse.json({ success: true, title, channelId: body.channelId, mode: body.mode })
+		const warning =
+			result.matchedBy === 'basename'
+				? `Matched by filename only; Tunarr indexes this file under a different path. Set the Tunarr media path to "${result.suggestedMediaPath ?? 'the path Tunarr uses'}" in Settings for reliable matching.`
+				: undefined
+		return NextResponse.json({ success: true, title, channelId: body.channelId, mode: body.mode, warning })
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err)
 		return NextResponse.json({ error: `Failed to push to Tunarr: ${msg}` }, { status: 502 })
