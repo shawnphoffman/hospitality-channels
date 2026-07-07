@@ -462,6 +462,9 @@ export default async function DashboardPage() {
 				<section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
 					<div className="mb-4 flex items-center justify-between">
 						<h3 className="font-semibold text-white">Recent Jobs</h3>
+						<Link href="/jobs" className="text-xs text-slate-400 hover:text-white">
+							View all
+						</Link>
 					</div>
 					{recentJobs.length === 0 ? (
 						<div className="rounded-lg border border-dashed border-slate-700 py-8 text-center">
