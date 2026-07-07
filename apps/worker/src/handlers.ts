@@ -4,8 +4,9 @@ import { writeFile, unlink, mkdir } from 'node:fs/promises'
 import { createLogger, PATHS } from '@hospitality-channels/common'
 import { capturePageVideo, captureScreenshot, launchBrowser, probeDuration, runFfmpeg } from '@hospitality-channels/render-core'
 import { publishArtifact, scanMediaSource } from '@hospitality-channels/publish'
-import { eq, count } from 'drizzle-orm'
+import { eq, count, max } from 'drizzle-orm'
 import { db, clips, assets, publishedArtifacts, settings } from './db.js'
+import { buildXfadeFilter, computeProgramTiming } from './render-math.js'
 import type { Job } from './queue.js'
 
 const logger = createLogger('worker:handlers')
@@ -16,10 +17,63 @@ function generateId(): string {
 
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3000'
 
-/** Get the next sequence number for a publish profile (count of existing artifacts + 1). */
+/** Total time budget for downloading a single remote asset (connect + body). */
+const ASSET_FETCH_TIMEOUT_MS = Math.max(1_000, Number(process.env.ASSET_FETCH_TIMEOUT_MS) || 120_000)
+/** Refuse to buffer downloads larger than this. */
+const ASSET_FETCH_MAX_BYTES = Math.max(1024 * 1024, Number(process.env.ASSET_FETCH_MAX_BYTES) || 1024 * 1024 * 1024)
+
+/**
+ * Downloads a URL into a Buffer with a hard time budget and size cap, so a
+ * dead or slow source can never hang the worker (which would block the whole
+ * queue) or exhaust memory.
+ */
+async function fetchAssetBuffer(url: string): Promise<{ ok: true; buffer: Buffer } | { ok: false; error: string }> {
+	try {
+		const res = await fetch(url, { signal: AbortSignal.timeout(ASSET_FETCH_TIMEOUT_MS) })
+		if (!res.ok) {
+			return { ok: false, error: `HTTP ${res.status} ${res.statusText}` }
+		}
+		const contentLength = Number(res.headers.get('content-length'))
+		if (Number.isFinite(contentLength) && contentLength > ASSET_FETCH_MAX_BYTES) {
+			return { ok: false, error: `content-length ${contentLength} exceeds the ${ASSET_FETCH_MAX_BYTES} byte limit` }
+		}
+		if (!res.body) {
+			return { ok: false, error: 'response has no body' }
+		}
+		const reader = res.body.getReader()
+		const chunks: Uint8Array[] = []
+		let total = 0
+		for (;;) {
+			const { done, value } = await reader.read()
+			if (done) break
+			total += value.byteLength
+			if (total > ASSET_FETCH_MAX_BYTES) {
+				await reader.cancel().catch(() => {})
+				return { ok: false, error: `download exceeded the ${ASSET_FETCH_MAX_BYTES} byte limit` }
+			}
+			chunks.push(value)
+		}
+		return { ok: true, buffer: Buffer.concat(chunks) }
+	} catch (err) {
+		if (err instanceof Error && err.name === 'TimeoutError') {
+			return { ok: false, error: `download timed out after ${ASSET_FETCH_TIMEOUT_MS}ms` }
+		}
+		return { ok: false, error: err instanceof Error ? err.message : String(err) }
+	}
+}
+
+/**
+ * Get the next {seq} value for a publish profile. Uses the highest recorded
+ * sequence number, falling back to the artifact count for rows published
+ * before sequence numbers were persisted, so the sequence stays monotonic
+ * even after artifacts are deleted.
+ */
 async function getNextSequenceNumber(profileId: string): Promise<number> {
-	const [result] = await db.select({ total: count() }).from(publishedArtifacts).where(eq(publishedArtifacts.publishProfileId, profileId))
-	return (result?.total ?? 0) + 1
+	const [result] = await db
+		.select({ total: count(), maxSeq: max(publishedArtifacts.sequenceNumber) })
+		.from(publishedArtifacts)
+		.where(eq(publishedArtifacts.publishProfileId, profileId))
+	return Math.max(result?.maxSeq ?? 0, result?.total ?? 0) + 1
 }
 
 /** Trigger a Tunarr media source rescan so newly published files are indexed. */
@@ -90,12 +144,12 @@ async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string
 
 			const fullUrl = `${WEB_URL}${audioUrl}`
 			logger.info('resolveAudio: fetching internal asset', { fullUrl })
-			const res = await fetch(fullUrl)
-			if (!res.ok) {
-				logger.warn('resolveAudio: failed to fetch internal asset', { url: fullUrl, status: res.status, statusText: res.statusText })
+			const fetched = await fetchAssetBuffer(fullUrl)
+			if (!fetched.ok) {
+				logger.warn('resolveAudio: failed to fetch internal asset', { url: fullUrl, error: fetched.error })
 				return {}
 			}
-			const buffer = Buffer.from(await res.arrayBuffer())
+			const buffer = fetched.buffer
 			logger.info('resolveAudio: downloaded internal asset', { bytes: buffer.length })
 			const ext = path.extname(assetPath ?? '.mp3') || '.mp3'
 			const tempPath = path.join(rendersDir, `_audio-${Date.now()}${ext}`)
@@ -106,12 +160,12 @@ async function resolveAudioForClip(clipId: string): Promise<{ audioPath?: string
 		// If it's an absolute URL, download it
 		if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
 			logger.info('resolveAudio: fetching external URL', { audioUrl })
-			const res = await fetch(audioUrl)
-			if (!res.ok) {
-				logger.warn('resolveAudio: failed to fetch external audio', { url: audioUrl, status: res.status, statusText: res.statusText })
+			const fetched = await fetchAssetBuffer(audioUrl)
+			if (!fetched.ok) {
+				logger.warn('resolveAudio: failed to fetch external audio', { url: audioUrl, error: fetched.error })
 				return {}
 			}
-			const buffer = Buffer.from(await res.arrayBuffer())
+			const buffer = fetched.buffer
 			logger.info('resolveAudio: downloaded external audio', { bytes: buffer.length })
 			const tempPath = path.join(rendersDir, `_audio-${Date.now()}.mp3`)
 			await writeFile(tempPath, buffer)
@@ -168,12 +222,12 @@ async function resolveVideoForClip(clipId: string): Promise<{ videoPath?: string
 
 			// Fallback: download via HTTP
 			const fullUrl = `${WEB_URL}${videoUrl}`
-			const res = await fetch(fullUrl)
-			if (!res.ok) {
-				logger.warn('resolveVideo: failed to fetch internal asset', { url: fullUrl, status: res.status })
+			const fetched = await fetchAssetBuffer(fullUrl)
+			if (!fetched.ok) {
+				logger.warn('resolveVideo: failed to fetch internal asset', { url: fullUrl, error: fetched.error })
 				return {}
 			}
-			const buffer = Buffer.from(await res.arrayBuffer())
+			const buffer = fetched.buffer
 			const ext = path.extname(assetPath ?? '.mp4') || '.mp4'
 			const tempPath = path.join(rendersDir, `_bgvideo-${Date.now()}${ext}`)
 			await writeFile(tempPath, buffer)
@@ -181,12 +235,12 @@ async function resolveVideoForClip(clipId: string): Promise<{ videoPath?: string
 		}
 
 		if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
-			const res = await fetch(videoUrl)
-			if (!res.ok) {
-				logger.warn('resolveVideo: failed to fetch external video', { url: videoUrl, status: res.status })
+			const fetched = await fetchAssetBuffer(videoUrl)
+			if (!fetched.ok) {
+				logger.warn('resolveVideo: failed to fetch external video', { url: videoUrl, error: fetched.error })
 				return {}
 			}
-			const buffer = Buffer.from(await res.arrayBuffer())
+			const buffer = fetched.buffer
 			const tempPath = path.join(rendersDir, `_bgvideo-${Date.now()}.mp4`)
 			await writeFile(tempPath, buffer)
 			return { videoPath: tempPath, tempFile: tempPath }
@@ -311,6 +365,7 @@ export async function handlePublishJob(job: Job): Promise<string> {
 		renderVersion: '1',
 		status: 'published',
 		publishedAt: new Date().toISOString(),
+		sequenceNumber: seqNum,
 	})
 
 	logger.info('Publish complete', { clipId, outputPath: result.outputPath, artifactId })
@@ -408,6 +463,7 @@ export async function handleRenderPublishJob(job: Job): Promise<string> {
 		renderVersion: '1',
 		status: 'published',
 		publishedAt: new Date().toISOString(),
+		sequenceNumber: seqNum,
 	})
 
 	logger.info('Render+publish complete', { clipId, outputPath: result.outputPath, artifactId })
@@ -463,40 +519,30 @@ async function resolveAudioTracks(tracks: AudioTrackPayload[]): Promise<{ paths:
 		// Internal asset URL
 		if (audioUrl.startsWith('/api/assets/serve')) {
 			const fullUrl = `${WEB_URL}${audioUrl}`
-			try {
-				const res = await fetch(fullUrl)
-				if (!res.ok) {
-					logger.warn('resolveAudioTracks: failed to fetch internal asset', { url: fullUrl, status: res.status })
-					continue
-				}
-				const buffer = Buffer.from(await res.arrayBuffer())
-				const ext = path.extname(new URL(fullUrl, 'http://localhost').searchParams.get('path') ?? '.mp3') || '.mp3'
-				const tempPath = path.join(rendersDir, `_audio-${Date.now()}-${track.position}${ext}`)
-				await writeFile(tempPath, buffer)
-				paths.push(tempPath)
-				tempFiles.push(tempPath)
-			} catch (err) {
-				logger.warn('resolveAudioTracks: fetch error', { url: fullUrl, error: String(err) })
+			const fetched = await fetchAssetBuffer(fullUrl)
+			if (!fetched.ok) {
+				logger.warn('resolveAudioTracks: failed to fetch internal asset', { url: fullUrl, error: fetched.error })
+				continue
 			}
+			const ext = path.extname(new URL(fullUrl, 'http://localhost').searchParams.get('path') ?? '.mp3') || '.mp3'
+			const tempPath = path.join(rendersDir, `_audio-${Date.now()}-${track.position}${ext}`)
+			await writeFile(tempPath, fetched.buffer)
+			paths.push(tempPath)
+			tempFiles.push(tempPath)
 			continue
 		}
 
 		// External URL
 		if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
-			try {
-				const res = await fetch(audioUrl)
-				if (!res.ok) {
-					logger.warn('resolveAudioTracks: failed to fetch external audio', { url: audioUrl, status: res.status })
-					continue
-				}
-				const buffer = Buffer.from(await res.arrayBuffer())
-				const tempPath = path.join(rendersDir, `_audio-${Date.now()}-${track.position}.mp3`)
-				await writeFile(tempPath, buffer)
-				paths.push(tempPath)
-				tempFiles.push(tempPath)
-			} catch (err) {
-				logger.warn('resolveAudioTracks: fetch error', { url: audioUrl, error: String(err) })
+			const fetched = await fetchAssetBuffer(audioUrl)
+			if (!fetched.ok) {
+				logger.warn('resolveAudioTracks: failed to fetch external audio', { url: audioUrl, error: fetched.error })
+				continue
 			}
+			const tempPath = path.join(rendersDir, `_audio-${Date.now()}-${track.position}.mp3`)
+			await writeFile(tempPath, fetched.buffer)
+			paths.push(tempPath)
+			tempFiles.push(tempPath)
 			continue
 		}
 
@@ -542,40 +588,6 @@ async function concatenateAudio(audioPaths: string[], outputPath: string): Promi
 		return false
 	}
 	return true
-}
-
-/**
- * Builds a chained xfade filter for N clips.
- * For the simple (all-screenshot) pipeline, inputs are [0:v], [1:v], etc.
- * For the mixed pipeline, inputs are [v0], [v1], etc. (set labelPrefix='v').
- *
- * Example output for 3 clips, fade 0.5s, perClipDuration=10s:
- *   [0:v][1:v]xfade=transition=fade:duration=0.5:offset=9.5[xf0];
- *   [xf0][2:v]xfade=transition=fade:duration=0.5:offset=19.0[outv]
- */
-function buildXfadeFilter(
-	n: number,
-	durations: number[],
-	transitionType: string,
-	transitionSec: number,
-	labelPrefix?: string,
-	preTrimOutput?: boolean
-): string {
-	let filter = ''
-	// Track cumulative output time to compute each transition's offset
-	let cumulativeTime = durations[0]
-	for (let i = 0; i < n - 1; i++) {
-		const inputA = i === 0 ? (labelPrefix ? `[${labelPrefix}0]` : '[0:v]') : `[xf${i - 1}]`
-		const inputB = labelPrefix ? `[${labelPrefix}${i + 1}]` : `[${i + 1}:v]`
-		const finalLabel = preTrimOutput ? '[pretrim]' : '[outv]'
-		const outputLabel = i === n - 2 ? finalLabel : `[xf${i}]`
-		const offset = cumulativeTime - transitionSec
-		filter += `${inputA}${inputB}xfade=transition=${transitionType}:duration=${transitionSec}:offset=${offset.toFixed(3)}${outputLabel}`
-		if (i < n - 2) filter += ';'
-		// After this transition, combined duration grows by next clip minus overlap
-		cumulativeTime = offset + durations[i + 1]
-	}
-	return filter
 }
 
 /**
@@ -754,13 +766,17 @@ export async function handleRenderProgramJob(job: Job): Promise<string> {
 	const totalDuration = payload.durationSec
 	const transitionType = payload.transitionType ?? 'none'
 	const transitionSec = payload.transitionSec ?? 0.5
-	const useTransitions = transitionType !== 'none' && clipIds.length >= 2
-	const loopTransition = payload.loopTransition === true && useTransitions
-
-	// When transitions are enabled, each clip needs extra time to account for xfade overlap.
-	// With loop transition there's one extra transition (last→tail) plus a front trim of transitionSec.
-	const transitionOverlaps = useTransitions ? (loopTransition ? clipIds.length * transitionSec : (clipIds.length - 1) * transitionSec) : 0
-	const perClipDuration = clipIds.length > 0 ? (totalDuration + transitionOverlaps) / clipIds.length : totalDuration
+	const {
+		useTransitions,
+		loopTransition,
+		perClipDurationSec: perClipDuration,
+	} = computeProgramTiming({
+		clipCount: clipIds.length,
+		totalDurationSec: totalDuration,
+		transitionType,
+		transitionSec,
+		loopTransition: payload.loopTransition === true,
+	})
 
 	logger.info('Starting program render', {
 		programId,
@@ -1020,6 +1036,7 @@ export async function handleRenderProgramPublishJob(job: Job): Promise<string> {
 		renderVersion: '1',
 		status: 'published',
 		publishedAt: new Date().toISOString(),
+		sequenceNumber: seqNum,
 	})
 
 	logger.info('Program render+publish complete', { programId, outputPath: result.outputPath, artifactId })
