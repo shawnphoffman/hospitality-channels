@@ -251,6 +251,26 @@ export const MIGRATIONS: Migration[] = [
       )`)
 		},
 	},
+	{
+		// Per-step pipeline progress for multi-stage jobs (render, export,
+		// index, push), stored as a JSON array.
+		id: '0004_job_steps',
+		run: async client => {
+			await addColumnIfMissing(client, 'jobs', 'steps', 'TEXT')
+		},
+	},
+	{
+		// Tags on media assets, same vocabulary as programs and clips.
+		id: '0005_asset_tags',
+		run: async client => {
+			await client.execute(`CREATE TABLE IF NOT EXISTS asset_tags (
+        id TEXT PRIMARY KEY,
+        asset_id TEXT NOT NULL REFERENCES assets(id),
+        tag_id TEXT NOT NULL REFERENCES tags(id),
+        UNIQUE(asset_id, tag_id)
+      )`)
+		},
+	},
 ]
 
 /**

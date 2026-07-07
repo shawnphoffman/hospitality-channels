@@ -49,6 +49,7 @@ describe('runMigrations', () => {
 			'tags',
 			'program_tags',
 			'page_tags',
+			'asset_tags',
 		]) {
 			expect(tables.has(table), `missing table ${table}`).toBe(true)
 		}

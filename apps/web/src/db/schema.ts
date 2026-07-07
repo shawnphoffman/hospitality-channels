@@ -79,6 +79,7 @@ export const jobs = sqliteTable('jobs', {
 	outputPath: text('output_path'),
 	error: text('error'),
 	attempts: integer('attempts').notNull().default(0),
+	steps: text('steps', { mode: 'json' }),
 	createdAt: text('created_at').notNull(),
 	startedAt: text('started_at'),
 	completedAt: text('completed_at'),
@@ -154,6 +155,16 @@ export const clipTags = sqliteTable('page_tags', {
 	clipId: text('page_id')
 		.notNull()
 		.references(() => clips.id),
+	tagId: text('tag_id')
+		.notNull()
+		.references(() => tags.id),
+})
+
+export const assetTags = sqliteTable('asset_tags', {
+	id: text('id').primaryKey(),
+	assetId: text('asset_id')
+		.notNull()
+		.references(() => assets.id),
 	tagId: text('tag_id')
 		.notNull()
 		.references(() => tags.id),

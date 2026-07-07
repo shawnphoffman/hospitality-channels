@@ -20,6 +20,7 @@ export const jobs = sqliteTable('jobs', {
 	outputPath: text('output_path'),
 	error: text('error'),
 	attempts: integer('attempts').notNull().default(0),
+	steps: text('steps', { mode: 'json' }),
 	createdAt: text('created_at').notNull(),
 	startedAt: text('started_at'),
 	completedAt: text('completed_at'),
@@ -134,5 +135,6 @@ async function addColumnIfMissing(table: string, column: string, definition: str
  */
 export async function ensureWorkerColumns(): Promise<void> {
 	await addColumnIfMissing('jobs', 'attempts', 'INTEGER NOT NULL DEFAULT 0')
+	await addColumnIfMissing('jobs', 'steps', 'TEXT')
 	await addColumnIfMissing('published_artifacts', 'sequence_number', 'INTEGER')
 }

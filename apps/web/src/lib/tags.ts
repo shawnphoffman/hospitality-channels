@@ -25,7 +25,12 @@ export function normalizeTagName(raw: string): string {
  * left with no references anywhere are pruned so the vocabulary stays tidy.
  * Returns the final normalized tag names for the entity.
  */
-export async function setEntityTags(db: Database, entity: 'program' | 'clip', entityId: string, names: string[]): Promise<string[]> {
+export async function setEntityTags(
+	db: Database,
+	entity: 'program' | 'clip' | 'asset',
+	entityId: string,
+	names: string[]
+): Promise<string[]> {
 	const normalized = [...new Set(names.map(normalizeTagName).filter(Boolean))]
 
 	// Ensure every requested tag exists
@@ -45,10 +50,15 @@ export async function setEntityTags(db: Database, entity: 'program' | 'clip', en
 		for (const name of normalized) {
 			await db.insert(schema.programTags).values({ id: generateId(), programId: entityId, tagId: existingByName.get(name)! })
 		}
-	} else {
+	} else if (entity === 'clip') {
 		await db.delete(schema.clipTags).where(eq(schema.clipTags.clipId, entityId))
 		for (const name of normalized) {
 			await db.insert(schema.clipTags).values({ id: generateId(), clipId: entityId, tagId: existingByName.get(name)! })
+		}
+	} else {
+		await db.delete(schema.assetTags).where(eq(schema.assetTags.assetId, entityId))
+		for (const name of normalized) {
+			await db.insert(schema.assetTags).values({ id: generateId(), assetId: entityId, tagId: existingByName.get(name)! })
 		}
 	}
 
@@ -58,12 +68,13 @@ export async function setEntityTags(db: Database, entity: 'program' | 'clip', en
 
 /** Deletes tags no longer referenced by any entity. */
 export async function pruneOrphanTags(db: Database): Promise<void> {
-	const [allTags, programRefs, clipRefs] = await Promise.all([
+	const [allTags, programRefs, clipRefs, assetRefs] = await Promise.all([
 		db.select({ id: schema.tags.id }).from(schema.tags),
 		db.select({ tagId: schema.programTags.tagId }).from(schema.programTags),
 		db.select({ tagId: schema.clipTags.tagId }).from(schema.clipTags),
+		db.select({ tagId: schema.assetTags.tagId }).from(schema.assetTags),
 	])
-	const referenced = new Set([...programRefs.map(r => r.tagId), ...clipRefs.map(r => r.tagId)])
+	const referenced = new Set([...programRefs.map(r => r.tagId), ...clipRefs.map(r => r.tagId), ...assetRefs.map(r => r.tagId)])
 	const orphans = allTags.map(t => t.id).filter(id => !referenced.has(id))
 	if (orphans.length) {
 		await db.delete(schema.tags).where(inArray(schema.tags.id, orphans))
@@ -75,11 +86,13 @@ export interface EntityTags {
 	programs: Map<string, string[]>
 	/** Tag names per clip id */
 	clips: Map<string, string[]>
+	/** Tag names per asset id */
+	assets: Map<string, string[]>
 }
 
-/** Loads every tag assignment in two queries, for list pages. */
+/** Loads every tag assignment in a few queries, for list pages. */
 export async function loadAllEntityTags(db: Database): Promise<EntityTags> {
-	const [programRows, clipRows] = await Promise.all([
+	const [programRows, clipRows, assetRows] = await Promise.all([
 		db
 			.select({ entityId: schema.programTags.programId, name: schema.tags.name })
 			.from(schema.programTags)
@@ -88,6 +101,10 @@ export async function loadAllEntityTags(db: Database): Promise<EntityTags> {
 			.select({ entityId: schema.clipTags.clipId, name: schema.tags.name })
 			.from(schema.clipTags)
 			.innerJoin(schema.tags, eq(schema.clipTags.tagId, schema.tags.id)),
+		db
+			.select({ entityId: schema.assetTags.assetId, name: schema.tags.name })
+			.from(schema.assetTags)
+			.innerJoin(schema.tags, eq(schema.assetTags.tagId, schema.tags.id)),
 	])
 	const collect = (rows: { entityId: string; name: string }[]) => {
 		const map = new Map<string, string[]>()
@@ -99,5 +116,5 @@ export async function loadAllEntityTags(db: Database): Promise<EntityTags> {
 		for (const list of map.values()) list.sort()
 		return map
 	}
-	return { programs: collect(programRows), clips: collect(clipRows) }
+	return { programs: collect(programRows), clips: collect(clipRows), assets: collect(assetRows) }
 }
