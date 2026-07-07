@@ -3,60 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-interface ChannelDef {
-	id: string
-	tunarrChannelId: string | null
-	channelNumber: number
-	channelName: string
-	clipId: string | null
-	programId: string | null
-	pushMode: string | null
-	enabled: boolean | null
-	description: string | null
-	clipTitle: string | null
-	programTitle: string | null
-	latestArtifact: {
-		id: string
-		outputPath: string
-		durationSec: number
-		publishedAt: string | null
-	} | null
-}
-
-interface ClipInfo {
-	id: string
-	title: string
-}
-
-interface ProgramInfoItem {
-	id: string
-	title: string
-}
-
-interface TunarrChannel {
-	id: string
-	number: number
-	name: string
-}
-
-interface ProgramInfo {
-	title: string
-	duration: number
-}
+import type { ChannelDef, ClipInfo, ProgramInfo, ProgramInfoItem, TunarrChannel } from './channels-shared'
+import { AddChannelForm } from './add-channel-form'
+import { ChannelCard } from './channel-card'
 
 interface ChannelsClientProps {
 	initialChannels: ChannelDef[]
 	clips: ClipInfo[]
 	programs: ProgramInfoItem[]
 	tunarrConfigured: boolean
-}
-
-function formatDuration(ms: number): string {
-	const totalSec = Math.round(ms / 1000)
-	const m = Math.floor(totalSec / 60)
-	const s = totalSec % 60
-	return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigured }: ChannelsClientProps) {
@@ -346,122 +301,25 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 				</div>
 
 				{showAdd && (
-					<div className="mb-6 space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-5">
-						{loadingTunarr ? (
-							<p className="text-sm text-slate-400">Loading Tunarr channels...</p>
-						) : tunarrChannels.length === 0 ? (
-							<div className="flex items-center justify-between">
-								<p className="text-sm text-slate-400">No unmanaged Tunarr channels available.</p>
-								<button onClick={fetchTunarrChannels} className="text-xs text-blue-400 hover:text-blue-300">
-									Refresh
-								</button>
-							</div>
-						) : (
-							<>
-								<div>
-									<div className="flex items-center justify-between">
-										<label className="block text-sm text-slate-400">Tunarr Channel</label>
-										<button onClick={fetchTunarrChannels} className="text-xs text-blue-400 hover:text-blue-300">
-											Refresh
-										</button>
-									</div>
-									<select
-										value={selectedTunarrId}
-										onChange={e => setSelectedTunarrId(e.target.value)}
-										className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-									>
-										{tunarrChannels.map(c => (
-											<option key={c.id} value={c.id}>
-												{c.number}. {c.name}
-											</option>
-										))}
-									</select>
-								</div>
-								<div>
-									<label className="block text-sm text-slate-400">Bind to (optional)</label>
-									<div className="mt-1 flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-0.5 mb-2">
-										<button
-											type="button"
-											onClick={() => {
-												setBindType('program')
-												setBindClipId('')
-											}}
-											className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${bindType === 'program' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
-										>
-											Program
-										</button>
-										<button
-											type="button"
-											onClick={() => {
-												setBindType('clip')
-												setBindProgramId('')
-											}}
-											className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${bindType === 'clip' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
-										>
-											Clip (legacy)
-										</button>
-									</div>
-									{bindType === 'program' ? (
-										<select
-											value={bindProgramId}
-											onChange={e => setBindProgramId(e.target.value)}
-											className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-										>
-											<option value="">None</option>
-											{programs.map(p => (
-												<option key={p.id} value={p.id}>
-													{p.title}
-												</option>
-											))}
-										</select>
-									) : (
-										<select
-											value={bindClipId}
-											onChange={e => setBindClipId(e.target.value)}
-											className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-										>
-											<option value="">None</option>
-											{clips.map(c => (
-												<option key={c.id} value={c.id}>
-													{c.title}
-												</option>
-											))}
-										</select>
-									)}
-								</div>
-								<div>
-									<label className="block text-sm text-slate-400">Default Push Mode</label>
-									<div className="mt-1 flex gap-4">
-										<label className="flex items-center gap-2 text-sm text-slate-300">
-											<input
-												type="radio"
-												checked={addPushMode === 'replace'}
-												onChange={() => setAddPushMode('replace')}
-												className="accent-blue-500"
-											/>
-											Replace
-										</label>
-										<label className="flex items-center gap-2 text-sm text-slate-300">
-											<input
-												type="radio"
-												checked={addPushMode === 'append'}
-												onChange={() => setAddPushMode('append')}
-												className="accent-blue-500"
-											/>
-											Append
-										</label>
-									</div>
-								</div>
-								<button
-									onClick={handleAdd}
-									disabled={adding || !selectedTunarrId}
-									className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-								>
-									{adding ? 'Adding...' : 'Add Channel'}
-								</button>
-							</>
-						)}
-					</div>
+					<AddChannelForm
+						loadingTunarr={loadingTunarr}
+						tunarrChannels={tunarrChannels}
+						selectedTunarrId={selectedTunarrId}
+						setSelectedTunarrId={setSelectedTunarrId}
+						bindType={bindType}
+						setBindType={setBindType}
+						bindProgramId={bindProgramId}
+						setBindProgramId={setBindProgramId}
+						bindClipId={bindClipId}
+						setBindClipId={setBindClipId}
+						addPushMode={addPushMode}
+						setAddPushMode={setAddPushMode}
+						adding={adding}
+						clips={clips}
+						programs={programs}
+						onRefresh={fetchTunarrChannels}
+						onAdd={handleAdd}
+					/>
 				)}
 
 				{channels.length === 0 && !showAdd ? (
@@ -477,226 +335,34 @@ export function ChannelsClient({ initialChannels, clips, programs, tunarrConfigu
 				) : (
 					<div className="space-y-3">
 						{channels.map(ch => (
-							<div key={ch.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-								{/* Channel info */}
-								<div className="flex flex-wrap items-center gap-2">
-									<span className="text-sm font-mono text-slate-500">{ch.channelNumber}.</span>
-									<p className="font-medium text-white">{ch.channelName}</p>
-									<span
-										className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-											ch.pushMode === 'append' ? 'bg-blue-900 text-blue-300' : 'bg-amber-900 text-amber-300'
-										}`}
-									>
-										{ch.pushMode}
-									</span>
-									{!ch.enabled && <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-500">disabled</span>}
-								</div>
-								<p className="mt-1 text-xs text-slate-400">
-									{ch.programTitle ? (
-										`Bound to program: ${ch.programTitle}`
-									) : ch.clipTitle ? (
-										<>
-											<span className="text-amber-400">(legacy)</span> Bound to clip: {ch.clipTitle}
-										</>
-									) : (
-										'Unbound'
-									)}
-									{ch.latestArtifact && (
-										<span className="ml-2 text-slate-500">
-											&middot; Last published{' '}
-											{ch.latestArtifact.publishedAt ? new Date(ch.latestArtifact.publishedAt).toLocaleDateString() : 'unknown'}
-										</span>
-									)}
-								</p>
-								<p className="mt-1.5 flex items-center gap-1.5 text-xs">
-									{(ch.programTitle || ch.clipTitle) && ch.latestArtifact ? (
-										<>
-											<span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
-											<span className="text-green-400">Ready to push</span>
-										</>
-									) : (ch.programTitle || ch.clipTitle) && !ch.latestArtifact ? (
-										<>
-											<span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-											<span className="text-amber-400">Awaiting publish</span>
-										</>
-									) : (
-										<>
-											<span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-500" />
-											<span className="text-slate-500">Not bound — assign a program to enable quick publishing</span>
-										</>
-									)}
-								</p>
-
-								{/* Actions */}
-								<div className="mt-3 flex flex-wrap gap-2">
-									{ch.latestArtifact && ch.tunarrChannelId && (
-										<button
-											onClick={() => handlePush(ch)}
-											disabled={pushingId === ch.id}
-											className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
-										>
-											{pushingId === ch.id ? 'Pushing...' : 'Push Now'}
-										</button>
-									)}
-									<button
-										onClick={() => handleToggleProgramming(ch)}
-										className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-											expandedId === ch.id ? 'bg-slate-700 text-white' : 'border border-slate-700 text-slate-400 hover:bg-slate-800'
-										}`}
-									>
-										Programming
-									</button>
-									<button
-										onClick={() => (editingId === ch.id ? setEditingId(null) : handleStartEdit(ch))}
-										className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800"
-									>
-										{editingId === ch.id ? 'Cancel' : 'Edit'}
-									</button>
-									<button
-										onClick={() => handleToggleEnabled(ch)}
-										className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-											ch.enabled
-												? 'border-slate-700 text-slate-400 hover:bg-slate-800'
-												: 'border-green-800 text-green-400 hover:bg-green-950'
-										}`}
-									>
-										{ch.enabled ? 'Disable' : 'Enable'}
-									</button>
-									<button
-										onClick={() => handleRemove(ch.id)}
-										className="rounded-lg border border-red-900 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-950"
-									>
-										Remove
-									</button>
-								</div>
-
-								{pushResult && pushResult.id === ch.id && (
-									<p className={`mt-2 text-sm ${pushResult.ok ? 'text-green-400' : 'text-red-400'}`}>{pushResult.message}</p>
-								)}
-
-								{/* Edit panel */}
-								{editingId === ch.id && (
-									<div className="mt-3 space-y-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-										<div>
-											<label className="block text-xs text-slate-400">Bind to</label>
-											<div className="mt-1 flex gap-1 rounded-lg border border-slate-700 bg-slate-800 p-0.5 mb-2">
-												<button
-													type="button"
-													onClick={() => {
-														setEditBindType('program')
-														setEditClipId('')
-													}}
-													className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${editBindType === 'program' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
-												>
-													Program
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setEditBindType('clip')
-														setEditProgramId('')
-													}}
-													className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${editBindType === 'clip' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}`}
-												>
-													Clip (legacy)
-												</button>
-											</div>
-											{editBindType === 'program' ? (
-												<select
-													value={editProgramId}
-													onChange={e => setEditProgramId(e.target.value)}
-													className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-												>
-													<option value="">None</option>
-													{programs.map(p => (
-														<option key={p.id} value={p.id}>
-															{p.title}
-														</option>
-													))}
-												</select>
-											) : (
-												<select
-													value={editClipId}
-													onChange={e => setEditClipId(e.target.value)}
-													className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-												>
-													<option value="">None</option>
-													{clips.map(c => (
-														<option key={c.id} value={c.id}>
-															{c.title}
-														</option>
-													))}
-												</select>
-											)}
-										</div>
-										<div>
-											<label className="block text-xs text-slate-400">Push Mode</label>
-											<div className="mt-1 flex gap-4">
-												<label className="flex items-center gap-2 text-sm text-slate-300">
-													<input
-														type="radio"
-														checked={editPushMode === 'replace'}
-														onChange={() => setEditPushMode('replace')}
-														className="accent-blue-500"
-													/>
-													Replace
-												</label>
-												<label className="flex items-center gap-2 text-sm text-slate-300">
-													<input
-														type="radio"
-														checked={editPushMode === 'append'}
-														onChange={() => setEditPushMode('append')}
-														className="accent-blue-500"
-													/>
-													Append
-												</label>
-											</div>
-										</div>
-										<button
-											onClick={() => handleSaveEdit(ch.id)}
-											className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-										>
-											Save
-										</button>
-									</div>
-								)}
-
-								{/* Programming panel */}
-								{expandedId === ch.id && (
-									<div className="mt-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-										<div className="mb-2 flex items-center justify-between">
-											<span className="text-xs font-medium text-slate-400">Channel Programming</span>
-											<button
-												onClick={() => handleRefreshProgramming(ch)}
-												disabled={loadingProgramming === ch.id}
-												className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
-											>
-												{loadingProgramming === ch.id ? 'Loading...' : 'Refresh'}
-											</button>
-										</div>
-										{loadingProgramming === ch.id ? (
-											<p className="text-sm text-slate-400">Loading programming...</p>
-										) : programming[ch.id] && programming[ch.id].length > 0 ? (
-											<>
-												<p className="mb-2 text-xs text-slate-500">
-													{programming[ch.id].length} program{programming[ch.id].length !== 1 ? 's' : ''} &middot; Total{' '}
-													{formatDuration(programming[ch.id].reduce((sum, p) => sum + p.duration, 0))}
-												</p>
-												<div className="space-y-1">
-													{programming[ch.id].map((p, i) => (
-														<div key={i} className="flex items-center justify-between text-sm">
-															<span className="text-slate-300">{p.title}</span>
-															<span className="text-xs text-slate-500">{formatDuration(p.duration)}</span>
-														</div>
-													))}
-												</div>
-											</>
-										) : (
-											<p className="text-sm text-slate-400">No programming found for this channel.</p>
-										)}
-									</div>
-								)}
-							</div>
+							<ChannelCard
+								key={ch.id}
+								ch={ch}
+								clips={clips}
+								programs={programs}
+								editing={editingId === ch.id}
+								editBindType={editBindType}
+								setEditBindType={setEditBindType}
+								editProgramId={editProgramId}
+								setEditProgramId={setEditProgramId}
+								editClipId={editClipId}
+								setEditClipId={setEditClipId}
+								editPushMode={editPushMode}
+								setEditPushMode={setEditPushMode}
+								onStartEdit={() => handleStartEdit(ch)}
+								onCancelEdit={() => setEditingId(null)}
+								onSaveEdit={() => handleSaveEdit(ch.id)}
+								expanded={expandedId === ch.id}
+								programming={programming[ch.id]}
+								loadingProgramming={loadingProgramming === ch.id}
+								onToggleProgramming={() => handleToggleProgramming(ch)}
+								onRefreshProgramming={() => handleRefreshProgramming(ch)}
+								pushing={pushingId === ch.id}
+								pushResult={pushResult && pushResult.id === ch.id ? { ok: pushResult.ok, message: pushResult.message } : null}
+								onPush={() => handlePush(ch)}
+								onToggleEnabled={() => handleToggleEnabled(ch)}
+								onRemove={() => handleRemove(ch.id)}
+							/>
 						))}
 					</div>
 				)}
