@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/shawnphoffman/hospitality-channels/compare/v2.0.0...v2.1.0) (2026-07-07)
+
+### Features
+
+* **web:** add a shared tag vocabulary across programs and clips ([556a72b](https://github.com/shawnphoffman/hospitality-channels/commit/556a72b3ff1766eb4a1886fe3709cd21a4639d37))
+* **web:** add duplication for programs, custom templates, and publish profiles ([d3a803a](https://github.com/shawnphoffman/hospitality-channels/commit/d3a803a992559ee3d8862cbd042bfadb6c54f6f2))
+* **web:** redesign Programs and Clips as tagged split-pane browsers ([fdc70ec](https://github.com/shawnphoffman/hospitality-channels/commit/fdc70ec23aaf3b6e0186fed1726fbee95854404d))
+
+### Bug Fixes
+
+* **tunarr:** push manual lineup as content items, not invalid index type ([df6ab69](https://github.com/shawnphoffman/hospitality-channels/commit/df6ab6925f8f507c813e15b3accdf0ac459438ae))
+
 ## [2.0.0](https://github.com/shawnphoffman/hospitality-channels/compare/v1.3.0...v2.0.0) (2026-07-07)
 
 ### ⚠ BREAKING CHANGES
