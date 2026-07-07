@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/shawnphoffman/hospitality-channels/compare/v2.2.0...v2.2.1) (2026-07-07)
+
+### Bug Fixes
+
+* **publish:** strip leading dash from sanitized filenames ([0b87eb4](https://github.com/shawnphoffman/hospitality-channels/commit/0b87eb41775c1aed67d02a7d18cc637027baa817))
+* **web:** return full channel shape from API and add error boundaries ([76eda40](https://github.com/shawnphoffman/hospitality-channels/commit/76eda40b1df6f1f3158ff2d75c32cf4c81532d66))
+
 ## [2.2.0](https://github.com/shawnphoffman/hospitality-channels/compare/v2.1.0...v2.2.0) (2026-07-07)
 
 ### Features
