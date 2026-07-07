@@ -22,9 +22,18 @@ interface TunarrSettingsProps {
 	setSaved: (saved: boolean) => void
 }
 
+interface DiagnosticStep {
+	name: string
+	ok: boolean
+	detail: string
+	suggestion?: string
+}
+
 export function TunarrSettings({ settings, update, setSettings, setSaved }: TunarrSettingsProps) {
 	const [testing, setTesting] = useState(false)
 	const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+	const [diagnosing, setDiagnosing] = useState(false)
+	const [diagnosticSteps, setDiagnosticSteps] = useState<DiagnosticStep[] | null>(null)
 
 	// Media source/library state
 	const [mediaSources, setMediaSources] = useState<MediaSource[]>([])
@@ -52,6 +61,31 @@ export function TunarrSettings({ settings, update, setSettings, setSaved }: Tuna
 			setTestResult({ ok: false, message: 'Connection failed' })
 		} finally {
 			setTesting(false)
+		}
+	}
+
+	const handleDiagnose = async () => {
+		setDiagnosing(true)
+		setDiagnosticSteps(null)
+		try {
+			// Save settings first so the diagnostics run against the current values
+			await fetch('/api/settings', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(settings),
+			})
+			const res = await fetch('/api/tunarr/diagnose')
+			if (res.ok) {
+				const data = await res.json()
+				setDiagnosticSteps(data.steps ?? [])
+			} else {
+				const data = await res.json().catch(() => ({}))
+				setDiagnosticSteps([{ name: 'Diagnostics', ok: false, detail: data.error || `Diagnostics failed (${res.status})` }])
+			}
+		} catch {
+			setDiagnosticSteps([{ name: 'Diagnostics', ok: false, detail: 'Diagnostics request failed' }])
+		} finally {
+			setDiagnosing(false)
 		}
 	}
 
@@ -192,6 +226,39 @@ export function TunarrSettings({ settings, update, setSettings, setSaved }: Tuna
 						</p>
 					)}
 					<p className="mt-1 text-xs text-slate-500">The library used when scanning for published artifacts and pushing to channels</p>
+				</div>
+
+				{/* Diagnostics */}
+				<div className="border-t border-slate-700 pt-4">
+					<div className="flex items-center justify-between">
+						<div>
+							<label className="block text-sm text-slate-400">Diagnostics</label>
+							<p className="mt-1 text-xs text-slate-500">Checks the full push chain: connection, media source, library, and path mapping</p>
+						</div>
+						<button
+							onClick={handleDiagnose}
+							disabled={diagnosing || !settings.tunarr_url}
+							className="shrink-0 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+						>
+							{diagnosing ? 'Running...' : 'Run diagnostics'}
+						</button>
+					</div>
+					{diagnosticSteps && (
+						<ul className="mt-3 space-y-2">
+							{diagnosticSteps.map(step => (
+								<li key={step.name} className="rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2">
+									<div className="flex items-start gap-2">
+										<span className={`mt-0.5 text-sm ${step.ok ? 'text-green-400' : 'text-red-400'}`}>{step.ok ? '✓' : '✗'}</span>
+										<div className="min-w-0">
+											<p className="text-sm text-white">{step.name}</p>
+											<p className="break-all text-xs text-slate-400">{step.detail}</p>
+											{step.suggestion && <p className="mt-1 break-all text-xs text-amber-400">{step.suggestion}</p>}
+										</div>
+									</div>
+								</li>
+							))}
+						</ul>
+					)}
 				</div>
 			</div>
 		</section>
