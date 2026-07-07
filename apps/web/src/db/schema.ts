@@ -65,6 +65,7 @@ export const publishedArtifacts = sqliteTable('published_artifacts', {
 	renderVersion: text('render_version'),
 	status: text('status').notNull().default('published'),
 	publishedAt: text('published_at'),
+	sequenceNumber: integer('sequence_number'),
 })
 
 export const jobs = sqliteTable('jobs', {
@@ -77,6 +78,7 @@ export const jobs = sqliteTable('jobs', {
 	status: text('status').notNull().default('queued'),
 	outputPath: text('output_path'),
 	error: text('error'),
+	attempts: integer('attempts').notNull().default(0),
 	createdAt: text('created_at').notNull(),
 	startedAt: text('started_at'),
 	completedAt: text('completed_at'),

@@ -19,6 +19,7 @@ export const jobs = sqliteTable('jobs', {
 	status: text('status').notNull().default('queued'),
 	outputPath: text('output_path'),
 	error: text('error'),
+	attempts: integer('attempts').notNull().default(0),
 	createdAt: text('created_at').notNull(),
 	startedAt: text('started_at'),
 	completedAt: text('completed_at'),
@@ -57,6 +58,7 @@ export const publishedArtifacts = sqliteTable('published_artifacts', {
 	renderVersion: text('render_version'),
 	status: text('status').notNull().default('published'),
 	publishedAt: text('published_at'),
+	sequenceNumber: integer('sequence_number'),
 })
 
 export const programs = sqliteTable('programs', {
@@ -112,3 +114,25 @@ export const settings = sqliteTable('settings', {
 
 const schema = { jobs, clips, publishProfiles, publishedArtifacts, programs, programClips, programAudioTracks, assets, settings }
 export const db = drizzle(client, { schema })
+
+async function addColumnIfMissing(table: string, column: string, definition: string): Promise<void> {
+	const info = await client.execute(`PRAGMA table_info('${table}')`)
+	// Empty result means the table doesn't exist yet (fresh install where the
+	// web app hasn't created the schema); leave creation to the web app.
+	if (info.rows.length === 0) return
+	const exists = info.rows.some((r: any) => r.name === column || r[1] === column)
+	if (exists) return
+	await client.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+}
+
+/**
+ * Safety net for the columns this worker reads and writes. The web app owns
+ * schema migrations, but it migrates lazily on its first request, and the
+ * worker may poll before that happens. These mirror migrations 0001 and 0002
+ * in apps/web/src/db/migrations.ts; both sides check column presence first,
+ * so whichever runs first wins and the other becomes a no-op.
+ */
+export async function ensureWorkerColumns(): Promise<void> {
+	await addColumnIfMissing('jobs', 'attempts', 'INTEGER NOT NULL DEFAULT 0')
+	await addColumnIfMissing('published_artifacts', 'sequence_number', 'INTEGER')
+}
