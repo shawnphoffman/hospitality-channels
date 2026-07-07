@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.0](https://github.com/shawnphoffman/hospitality-channels/compare/v2.2.1...v2.3.0) (2026-07-07)
+
+### Features
+
+* **web:** add Jobs activity page with pipeline steps and full errors ([982fce9](https://github.com/shawnphoffman/hospitality-channels/commit/982fce91265a2a9d37ec2886b3bcc44c09bd6813))
+
+### Bug Fixes
+
+* **web:** publish to channel via a designated Tunarr export profile ([6e9c20f](https://github.com/shawnphoffman/hospitality-channels/commit/6e9c20feaa27e76b682d84e67e3f2621821c4e47))
+
 ## [2.2.1](https://github.com/shawnphoffman/hospitality-channels/compare/v2.2.0...v2.2.1) (2026-07-07)
 
 ### Bug Fixes
