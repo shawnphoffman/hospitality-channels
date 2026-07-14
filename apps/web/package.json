@@ -18,7 +18,7 @@
 		"@hospitality-channels/storage": "workspace:*",
 		"@hospitality-channels/templates": "workspace:*",
 		"@hospitality-channels/ui": "workspace:*",
-		"@libsql/client": "^0.14.0",
+		"@libsql/client": "^0.17.4",
 		"drizzle-orm": "^0.45.2",
 		"next": "^15.5.20",
 		"qrcode.react": "^4.2.0",
@@ -27,18 +27,18 @@
 		"zod": "^3.23.8"
 	},
 	"optionalDependencies": {
-		"@libsql/darwin-arm64": "0.4.7",
-		"@libsql/darwin-x64": "0.4.7"
+		"@libsql/darwin-arm64": "0.5.29",
+		"@libsql/darwin-x64": "0.5.29"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.1",
 		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",
-		"autoprefixer": "^10.4.20",
+		"autoprefixer": "^10.5.2",
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^8.57.1",
 		"eslint-config-next": "15.5.20",
-		"postcss": "^8.5.16",
+		"postcss": "^8.5.19",
 		"tailwindcss": "^3.4.16",
 		"typescript": "^5.6.3",
 		"vitest": "^4.1.10"
