@@ -33,22 +33,29 @@ function formatDate(dateStr: string): string {
 function ClipPreview({ clip, scale }: { clip: ClipListItem; scale: number }) {
 	const width = Math.round(1920 * scale)
 	const height = Math.round(1080 * scale)
-	if (clip.thumbnailPath) {
-		/* eslint-disable-next-line @next/next/no-img-element */
-		return <img src={`/api/assets/serve?path=${encodeURIComponent(clip.thumbnailPath)}`} alt="" className="h-full w-full object-cover" />
-	}
-	if (clip.bgImageUrl) {
-		/* eslint-disable-next-line @next/next/no-img-element */
-		return <img src={clip.bgImageUrl} alt="" className="h-full w-full object-cover" />
-	}
+	const [rendered, setRendered] = useState(false)
+	// Always render the full scene (background + template overlay) via the shared render
+	// route. A bare background <img> would omit the title/body/side-image overlay. The
+	// background thumbnail/image is used only as a cheap placeholder while the iframe mounts,
+	// then faded out once the full scene has loaded.
+	const placeholder = clip.thumbnailPath ? `/api/assets/serve?path=${encodeURIComponent(clip.thumbnailPath)}` : clip.bgImageUrl
 	return (
-		<div className="pointer-events-none overflow-hidden" style={{ width, height }}>
-			<LazyMount className="h-full w-full">
+		<div className="pointer-events-none relative overflow-hidden" style={{ width, height }}>
+			{placeholder && (
+				/* eslint-disable-next-line @next/next/no-img-element */
+				<img
+					src={placeholder}
+					alt=""
+					className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${rendered ? 'opacity-0' : 'opacity-100'}`}
+				/>
+			)}
+			<LazyMount className="relative h-full w-full">
 				<iframe
 					src={`/clips/${clip.id}/render`}
 					className="pointer-events-none origin-top-left"
 					style={{ width: 1920, height: 1080, transform: `scale(${scale})` }}
 					tabIndex={-1}
+					onLoad={() => setRendered(true)}
 				/>
 			</LazyMount>
 		</div>
