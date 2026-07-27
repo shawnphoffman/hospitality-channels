@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.4.0](https://github.com/shawnphoffman/hospitality-channels/compare/v2.3.0...v2.4.0) (2026-07-27)
+
+### Features
+
+* **web:** add data providers with weather auto-fill for clips ([d338952](https://github.com/shawnphoffman/hospitality-channels/commit/d338952114787051f51f56624473a7596223f3ce))
+
+### Bug Fixes
+
+* **web:** render full scene in clip preview, not just background ([8c6e216](https://github.com/shawnphoffman/hospitality-channels/commit/8c6e2160026ab10dea953e7901bf3992e2ddd5a9))
+
 ## [2.3.0](https://github.com/shawnphoffman/hospitality-channels/compare/v2.2.1...v2.3.0) (2026-07-07)
 
 ### Features
