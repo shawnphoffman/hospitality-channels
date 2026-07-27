@@ -8,7 +8,7 @@ import { ComposableScene } from '@/components/composable-scene'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { WifiQrCode } from '@/templates/wifi-qr-code'
 import { TemplateField } from '@/components/template-field'
-import type { ComposableLayout } from '@hospitality-channels/content-model'
+import type { ComposableLayout, ProviderBinding } from '@hospitality-channels/content-model'
 
 interface TemplateFieldDef {
 	key: string
@@ -24,6 +24,7 @@ interface ClipData {
 	slug: string
 	templateId: string
 	dataJson: Record<string, string>
+	providersJson: ProviderBinding[]
 	defaultDurationSec: number
 }
 
@@ -52,6 +53,8 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 	const [title, setTitle] = useState(clip.title)
 	const [slug, setSlug] = useState(clip.slug)
 	const [fieldValues, setFieldValues] = useState<Record<string, string>>(clip.dataJson)
+	const [providers, setProviders] = useState<ProviderBinding[]>(clip.providersJson ?? [])
+	const [fetchingId, setFetchingId] = useState<string | null>(null)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -72,6 +75,47 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 
 	const handleFieldChange = useCallback((key: string, value: string) => {
 		setFieldValues(prev => ({ ...prev, [key]: value }))
+	}, [])
+
+	// --- Data providers ---
+	const weatherBinding = providers.find(p => p.provider === 'weather')
+
+	const addWeatherBinding = useCallback(() => {
+		setProviders(prev => [...prev, { id: crypto.randomUUID(), provider: 'weather', params: { place: '', days: 5, units: 'fahrenheit' } }])
+	}, [])
+
+	const removeBinding = useCallback((id: string) => {
+		setProviders(prev => prev.filter(p => p.id !== id))
+	}, [])
+
+	const updateBindingParam = useCallback((id: string, key: string, value: unknown) => {
+		setProviders(prev => prev.map(p => (p.id === id ? { ...p, params: { ...p.params, [key]: value } } : p)))
+	}, [])
+
+	const handleFetchProvider = useCallback(async (binding: ProviderBinding) => {
+		setFetchingId(binding.id)
+		setError(null)
+		setSuccessMsg(null)
+		try {
+			const res = await fetch(`/api/data-providers/${binding.provider}/resolve`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(binding.params),
+			})
+			const payload = await res.json().catch(() => ({}))
+			if (!res.ok) {
+				throw new Error(payload.error || `Fetch failed (${res.status})`)
+			}
+			const data = (payload.data ?? {}) as Record<string, string>
+			const keys = Object.keys(data)
+			setFieldValues(prev => ({ ...prev, ...data }))
+			setSuccessMsg(`Fetched ${binding.provider} (${keys.length} field${keys.length === 1 ? '' : 's'}). Save to keep.`)
+			setTimeout(() => setSuccessMsg(null), 4000)
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Failed to fetch data')
+		} finally {
+			setFetchingId(null)
+		}
 	}, [])
 
 	// Preview scaling — fill container width
@@ -105,6 +149,7 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 					title,
 					slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
 					dataJson: fieldValues,
+					providersJson: providers,
 				}),
 			})
 			if (!res.ok) {
@@ -337,6 +382,78 @@ export function ClipEditor({ clip, templateName, templateSlug, fields, programs,
 					</section>
 				)}
 			</div>
+
+			{/* Data Providers */}
+			<section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+				<div className="mb-1 flex items-center justify-between">
+					<h3 className="text-lg font-semibold text-white">Data Providers</h3>
+					{!weatherBinding && (
+						<button
+							onClick={addWeatherBinding}
+							className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+						>
+							+ Add weather
+						</button>
+					)}
+				</div>
+				<p className="mb-4 text-sm text-slate-400">
+					Pull live values into this clip&apos;s fields. Fetch writes into the content fields above; Save to keep them.
+				</p>
+
+				{!weatherBinding && <p className="text-sm text-slate-500">No providers configured.</p>}
+
+				{weatherBinding && (
+					<div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+						<div className="flex items-center justify-between">
+							<span className="text-sm font-semibold text-white">Weather forecast</span>
+							<button onClick={() => removeBinding(weatherBinding.id)} className="text-xs text-red-400 hover:text-red-300">
+								Remove
+							</button>
+						</div>
+						<div className="grid gap-4 sm:grid-cols-3">
+							<div className="sm:col-span-1">
+								<label className="block text-sm text-slate-400">Location</label>
+								<input
+									type="text"
+									placeholder="Seattle, WA"
+									value={String(weatherBinding.params.place ?? '')}
+									onChange={e => updateBindingParam(weatherBinding.id, 'place', e.target.value)}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
+							</div>
+							<div>
+								<label className="block text-sm text-slate-400">Days</label>
+								<input
+									type="number"
+									min={1}
+									max={7}
+									value={Number(weatherBinding.params.days ?? 5)}
+									onChange={e => updateBindingParam(weatherBinding.id, 'days', Number(e.target.value))}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+								/>
+							</div>
+							<div>
+								<label className="block text-sm text-slate-400">Units</label>
+								<select
+									value={String(weatherBinding.params.units ?? 'fahrenheit')}
+									onChange={e => updateBindingParam(weatherBinding.id, 'units', e.target.value)}
+									className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+								>
+									<option value="fahrenheit">Fahrenheit (&deg;F)</option>
+									<option value="celsius">Celsius (&deg;C)</option>
+								</select>
+							</div>
+						</div>
+						<button
+							onClick={() => handleFetchProvider(weatherBinding)}
+							disabled={fetchingId === weatherBinding.id || !String(weatherBinding.params.place ?? '').trim()}
+							className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+						>
+							{fetchingId === weatherBinding.id ? 'Fetching...' : 'Fetch weather'}
+						</button>
+					</div>
+				)}
+			</section>
 
 			{/* Actions */}
 			<div className="flex items-center justify-between">

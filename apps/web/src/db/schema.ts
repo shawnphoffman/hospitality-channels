@@ -23,6 +23,7 @@ export const clips = sqliteTable('pages', {
 	title: text('title').notNull(),
 	themeId: text('theme_id'),
 	dataJson: text('data_json', { mode: 'json' }).default({}),
+	providersJson: text('providers_json', { mode: 'json' }),
 	animationProfile: text('animation_profile'),
 	defaultDurationSec: integer('default_duration_sec').default(30),
 	createdAt: text('created_at').notNull(),

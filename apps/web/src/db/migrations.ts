@@ -271,6 +271,15 @@ export const MIGRATIONS: Migration[] = [
       )`)
 		},
 	},
+	{
+		// Per-clip data-provider bindings (e.g. weather) stored as a JSON array.
+		// A "Fetch" action in the editor resolves these and writes the values
+		// into data_json; clips with no bindings are unaffected.
+		id: '0006_page_providers',
+		run: async client => {
+			await addColumnIfMissing(client, 'pages', 'providers_json', 'TEXT')
+		},
+	},
 ]
 
 /**

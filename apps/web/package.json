@@ -14,6 +14,7 @@
 	"dependencies": {
 		"@hospitality-channels/common": "workspace:*",
 		"@hospitality-channels/content-model": "workspace:*",
+		"@hospitality-channels/data-providers": "workspace:*",
 		"@hospitality-channels/publish": "workspace:*",
 		"@hospitality-channels/storage": "workspace:*",
 		"@hospitality-channels/templates": "workspace:*",
