@@ -41,6 +41,7 @@ COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
 COPY packages/common/package.json packages/common/
 COPY packages/content-model/package.json packages/content-model/
+COPY packages/data-providers/package.json packages/data-providers/
 COPY packages/storage/package.json packages/storage/
 COPY packages/templates/package.json packages/templates/
 COPY packages/render-core/package.json packages/render-core/
