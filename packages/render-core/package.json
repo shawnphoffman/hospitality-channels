@@ -22,7 +22,7 @@
     "@hospitality-channels/common": "workspace:*",
     "@hospitality-channels/content-model": "workspace:*",
     "@hospitality-channels/templates": "workspace:*",
-    "playwright": "^1.61.1"
+    "playwright": "^1.62.1"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
